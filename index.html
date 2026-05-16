@@ -514,9 +514,7 @@
   let pendingTopic = '';
   const explainCache = {};
 
-  // ── Persist API key ──────────────────────────────────────────────────────────
-  apiKeyInput.value = localStorage.getItem('ak_concept_map') || '';
-  apiKeyInput.addEventListener('input', () => localStorage.setItem('ak_concept_map', apiKeyInput.value.trim()));
+  // API key is intentionally never stored — user enters it fresh each session
 
   // ── URL param auto-trigger ───────────────────────────────────────────────────
   (function() {
