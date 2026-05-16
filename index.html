@@ -148,26 +148,49 @@
     .modal-cancel:hover { color:var(--text); background:var(--surface2); }
 
     /* ════════════════════════════════════════
-       EXPLORE BUTTON
+       STEP BUTTONS
     ════════════════════════════════════════ */
-    .explore-wrap { margin-bottom:1.25rem; }
-    .explore-btn-outer {
-      width:100%; padding:1.1rem 2rem; border:none; border-radius:14px;
-      font-size:1rem; font-weight:800; font-family:inherit; cursor:pointer;
+    .steps-wrap { display:flex; gap:.85rem; margin-bottom:1.25rem; }
+    @media(max-width:580px) { .steps-wrap { flex-direction:column; } }
+
+    .step-btn {
+      flex:1; border:none; border-radius:14px; cursor:pointer;
+      font-family:inherit; padding:1rem 1.4rem; text-align:left;
       position:relative; overflow:hidden;
-      transition:transform .15s, box-shadow .2s;
-      background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 45%,#2563eb 100%);
-      color:#fff; letter-spacing:.01em;
+      transition:transform .15s, box-shadow .2s, opacity .15s;
+      color:#fff;
     }
-    .explore-btn-outer::before { content:''; position:absolute; top:0; left:-75%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent); transform:skewX(-20deg); animation:btnShimmer 2.8s ease-in-out infinite; }
+    .step-btn::before {
+      content:''; position:absolute; top:0; left:-75%; width:50%; height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+      transform:skewX(-20deg); animation:btnShimmer 2.8s ease-in-out infinite;
+    }
     @keyframes btnShimmer { 0%{left:-75%} 60%{left:130%} 100%{left:130%} }
-    .explore-btn-outer:hover { transform:translateY(-2px); box-shadow:0 8px 32px color-mix(in srgb,#7c3aed 45%,transparent); }
-    .explore-btn-outer:active { transform:translateY(0); }
-    .explore-btn-outer:disabled { background:var(--surface2); color:var(--text-muted); cursor:not-allowed; transform:none; box-shadow:none; border:1px solid var(--border); }
-    .explore-btn-outer:disabled::before { display:none; }
-    .explore-btn-inner { display:flex; align-items:center; justify-content:center; gap:.6rem; position:relative; z-index:1; }
-    .explore-btn-icon { font-size:1.1rem; }
-    .explore-btn-sub { font-size:.72rem; font-weight:500; opacity:.82; margin-top:.15rem; display:block; letter-spacing:.03em; }
+    .step-btn:hover:not(:disabled) { transform:translateY(-2px); }
+    .step-btn:active:not(:disabled) { transform:translateY(0) scale(.98); }
+    .step-btn:disabled { opacity:.38; cursor:not-allowed; transform:none !important; filter:grayscale(.4); }
+    .step-btn:disabled::before { display:none; }
+
+    .step1-btn {
+      background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 45%,#2563eb 100%);
+      box-shadow:0 4px 20px rgba(124,58,237,.35);
+    }
+    .step1-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(124,58,237,.5); }
+
+    .step2-btn {
+      background:linear-gradient(135deg,#0f766e 0%,#0284c7 100%);
+      box-shadow:0 4px 20px rgba(8,145,178,.3);
+    }
+    .step2-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(8,145,178,.45); }
+
+    .step-label {
+      font-size:.6rem; font-weight:900; letter-spacing:.14em; text-transform:uppercase;
+      opacity:.72; margin-bottom:.3rem; position:relative; z-index:1;
+    }
+    .step-inner { display:flex; align-items:center; gap:.75rem; position:relative; z-index:1; }
+    .step-icon { font-size:1.6rem; flex-shrink:0; }
+    .step-title { font-size:.98rem; font-weight:800; line-height:1.2; margin-bottom:.12rem; }
+    .step-sub { font-size:.7rem; font-weight:500; opacity:.8; display:block; letter-spacing:.02em; }
 
     /* ── Loader ── */
     .loader-wrap { height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-bottom:1.25rem; display:none; }
@@ -349,19 +372,6 @@
     @media(prefers-color-scheme:dark){ .section-error{background:#1c0606;color:#f87171;border-color:#450a0a;} }
 
     /* ── Optimal Reading Sequence ── */
-    .rs-trigger-wrap { display:flex; justify-content:center; margin: 2.5rem 0 0; }
-    .rs-trigger-btn {
-      display:flex; align-items:center; gap:.65rem;
-      padding:.85rem 2rem; border:none; border-radius:12px; cursor:pointer;
-      font-family:inherit; font-size:.92rem; font-weight:700;
-      background:linear-gradient(135deg,#0f766e 0%,#0891b2 100%);
-      color:#fff; transition:opacity .15s, transform .1s; box-shadow:0 2px 12px rgba(8,145,178,.25);
-    }
-    .rs-trigger-btn:hover { opacity:.9; }
-    .rs-trigger-btn:active { transform:scale(.97); }
-    .rs-trigger-btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
-    .rs-trigger-icon { font-size:1.2rem; }
-
     .rs-section { margin-top:2rem; }
     .rs-loader { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin:.75rem 0 1.5rem; display:none; }
     .rs-loader.active { display:block; }
@@ -484,13 +494,24 @@
     </div>
   </div>
 
-  <div class="explore-wrap">
-    <button class="explore-btn-outer" id="exploreBtn" disabled>
-      <div class="explore-btn-inner">
-        <span class="explore-btn-icon">&#x29C9;</span>
+  <div class="steps-wrap">
+    <button class="step-btn step1-btn" id="step1Btn">
+      <div class="step-label">Step 1</div>
+      <div class="step-inner">
+        <span class="step-icon">⇅</span>
         <div>
-          <div id="exploreBtnLabel">Explore Full Learning Paths &amp; Specializations</div>
-          <span class="explore-btn-sub">Cold Start &bull; Cold Finish &bull; Specialization Tracks</span>
+          <div class="step-title" id="step1BtnTitle">Learning Path</div>
+          <span class="step-sub">Cold Start &bull; Cold Finish &bull; Specializations</span>
+        </div>
+      </div>
+    </button>
+    <button class="step-btn step2-btn" id="step2Btn" disabled>
+      <div class="step-label">Step 2</div>
+      <div class="step-inner">
+        <span class="step-icon">📖</span>
+        <div>
+          <div class="step-title">Optimal Reading Sequence</div>
+          <span class="step-sub">All works &bull; Foundation to frontier</span>
         </div>
       </div>
     </button>
@@ -532,12 +553,6 @@
       </div>
       <div class="tracks-grid" id="tracksGrid"></div>
 
-      <div class="rs-trigger-wrap" id="rsTriggerWrap" style="display:none">
-        <button class="rs-trigger-btn" id="rsBtn">
-          <span class="rs-trigger-icon">📖</span>
-          Generate Optimal Reading Sequence
-        </button>
-      </div>
 
       <div class="rs-section" id="rsSection" style="display:none">
         <div class="zone-header" style="margin-top:0">
@@ -581,8 +596,9 @@
   const loaderWrap    = $('loaderWrap');
   const errorBox      = $('errorBox');
   const output        = $('output');
-  const exploreBtn    = $('exploreBtn');
-  const exploreBtnLabel = $('exploreBtnLabel');
+  const step1Btn      = $('step1Btn');
+  const step1BtnTitle = $('step1BtnTitle');
+  const step2Btn      = $('step2Btn');
   const pathsSection  = $('pathsSection');
   const pathsLoader   = $('pathsLoader');
   const intentModal   = $('intentModal');
@@ -615,7 +631,7 @@
   );
   mapBtn.addEventListener('click', triggerIntent);
   topicInput.addEventListener('keydown', e => { if (e.key === 'Enter') triggerIntent(); });
-  exploreBtn.addEventListener('click', () => showModal(topicInput.value.trim() || $('sumTopic').textContent.trim()));
+  step1Btn.addEventListener('click', () => showModal(topicInput.value.trim() || $('sumTopic').textContent.trim()));
 
   // ── Modal ────────────────────────────────────────────────────────────────────
   function triggerIntent() {
@@ -831,7 +847,8 @@ Rules:
     topicInput.value = topic;
     output.classList.remove('visible', 'paths-only');
     pathsSection.style.display = 'none';
-    exploreBtn.disabled = true;
+    step1Btn.disabled = true;
+    step2Btn.disabled = true;
 
     if      (choice === 'map')   await runConceptMap(topic);
     else if (choice === 'paths') await runPathsOnly(topic);
@@ -847,8 +864,8 @@ Rules:
       renderZone(data.core,        'coreGrid','coreMeta','core');
       renderZone(data.successors,  'succGrid','succMeta','succ');
       output.classList.add('visible');
-      exploreBtn.disabled = false;
-      exploreBtnLabel.textContent = 'Explore Full Learning Paths & Specializations';
+      step1Btn.disabled = false;
+      step1BtnTitle.textContent = 'Explore Learning Paths';
       output.scrollIntoView({ behavior:'smooth', block:'start' });
     } catch(err) { showError(err.message); }
     finally { setLoading(false); }
@@ -867,8 +884,9 @@ Rules:
     ]);
     pathsLoader.classList.remove('active');
     renderPathResults(sr,fr,tr,topic);
-    exploreBtn.disabled = false;
-    exploreBtnLabel.textContent = 'Re-generate Paths';
+    step1Btn.disabled = false;
+    step1BtnTitle.textContent = 'Re-generate Path';
+    step2Btn.disabled = false;
   }
 
   async function runBoth(topic) {
@@ -892,8 +910,9 @@ Rules:
     ]);
     pathsLoader.classList.remove('active');
     renderPathResults(sr,fr,tr,topic);
-    exploreBtn.disabled = false;
-    exploreBtnLabel.textContent = 'Re-generate Paths';
+    step1Btn.disabled = false;
+    step1BtnTitle.textContent = 'Re-generate Path';
+    step2Btn.disabled = false;
   }
 
   function renderPathResults(sr,fr,tr,topic) {
@@ -906,9 +925,9 @@ Rules:
     else $('cfLadder').innerHTML=`<div class="section-error">Cold finish failed: ${esc(fr.reason?.message)}</div>`;
     if (tr.status==='fulfilled') renderTracks(tr.value);
     else $('tracksGrid').innerHTML=`<div class="section-error">Specializations failed: ${esc(tr.reason?.message)}</div>`;
-    // Show reading sequence trigger if we have at least one path
+    // Enable Step 2 once paths are loaded
     if (_lastStartData || _lastFinishData) {
-      $('rsTriggerWrap').style.display = 'flex';
+      step2Btn.disabled = false;
       $('rsSection').style.display = 'none';
       $('rsList').innerHTML = '';
       $('rsCount').textContent = '';
@@ -1183,10 +1202,10 @@ Return ONLY JSON.`;
     });
   }
 
-  $('rsBtn').addEventListener('click', async () => {
+  step2Btn.addEventListener('click', async () => {
     const refs = collectAllRefs(_lastStartData, _lastFinishData);
     if (!refs.length) return;
-    $('rsTriggerWrap').style.display = 'none';
+    step2Btn.disabled = true;
     $('rsSection').style.display = 'block';
     $('rsLoader').classList.add('active');
     $('rsList').innerHTML = '';
@@ -1198,6 +1217,7 @@ Return ONLY JSON.`;
       $('rsList').innerHTML = `<div class="section-error">${esc(err.message)}</div>`;
     } finally {
       $('rsLoader').classList.remove('active');
+      step2Btn.disabled = false;
     }
   });
 </script>
