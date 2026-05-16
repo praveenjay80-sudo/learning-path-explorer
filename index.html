@@ -347,6 +347,63 @@
 
     .section-error { font-size:.82rem; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:.5rem .75rem; margin:.5rem 0; }
     @media(prefers-color-scheme:dark){ .section-error{background:#1c0606;color:#f87171;border-color:#450a0a;} }
+
+    /* ── Optimal Reading Sequence ── */
+    .rs-trigger-wrap { display:flex; justify-content:center; margin: 2.5rem 0 0; }
+    .rs-trigger-btn {
+      display:flex; align-items:center; gap:.65rem;
+      padding:.85rem 2rem; border:none; border-radius:12px; cursor:pointer;
+      font-family:inherit; font-size:.92rem; font-weight:700;
+      background:linear-gradient(135deg,#0f766e 0%,#0891b2 100%);
+      color:#fff; transition:opacity .15s, transform .1s; box-shadow:0 2px 12px rgba(8,145,178,.25);
+    }
+    .rs-trigger-btn:hover { opacity:.9; }
+    .rs-trigger-btn:active { transform:scale(.97); }
+    .rs-trigger-btn:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+    .rs-trigger-icon { font-size:1.2rem; }
+
+    .rs-section { margin-top:2rem; }
+    .rs-loader { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin:.75rem 0 1.5rem; display:none; }
+    .rs-loader.active { display:block; }
+    .rs-loader-bar { height:100%; width:40%; background:linear-gradient(90deg,#0f766e,#0891b2); border-radius:2px; animation:rsload 1.4s ease-in-out infinite; }
+    @keyframes rsload { 0%{transform:translateX(-100%)} 100%{transform:translateX(350%)} }
+
+    .rs-intro { font-size:.84rem; color:var(--text-muted); text-align:center; margin-bottom:1.5rem; font-style:italic; }
+    .rs-count { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); text-align:center; margin-bottom:1.5rem; }
+
+    .rs-list { display:flex; flex-direction:column; align-items:center; max-width:620px; margin:0 auto; }
+
+    .rs-item { width:100%; }
+    .rs-item-inner {
+      display:flex; gap:1rem; align-items:flex-start;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; padding:1rem 1.1rem;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      transition:border-color .15s;
+    }
+    .rs-item-inner:hover { border-color:#0891b2; }
+
+    .rs-num {
+      flex-shrink:0; width:2rem; height:2rem; border-radius:50%;
+      background:linear-gradient(135deg,#0f766e,#0891b2);
+      color:#fff; font-size:.78rem; font-weight:900;
+      display:flex; align-items:center; justify-content:center;
+      margin-top:.1rem;
+    }
+    .rs-body { flex:1; min-width:0; }
+    .rs-meta { margin-bottom:.3rem; }
+    .rs-title { font-size:.9rem; font-weight:700; color:var(--text); margin-bottom:.15rem; line-height:1.3; }
+    .rs-authors { font-size:.77rem; color:var(--text-muted); margin-bottom:.45rem; }
+    .rs-bridge {
+      font-size:.8rem; color:var(--text-muted); line-height:1.5;
+      padding:.4rem .6rem; background:var(--surface2);
+      border-left:2px solid #0891b2; border-radius:0 6px 6px 0;
+    }
+    .rs-bridge-arrow { color:#0891b2; font-weight:700; margin-right:.3rem; }
+
+    .rs-connector { display:flex; flex-direction:column; align-items:center; padding:.25rem 0; gap:0; }
+    .rs-connector-line { width:2px; height:1.2rem; background:linear-gradient(to bottom,#0f766e,#0891b2); opacity:.4; }
+    .rs-connector-dot { width:6px; height:6px; border-radius:50%; background:#0891b2; opacity:.5; }
   </style>
 </head>
 <body>
@@ -474,6 +531,25 @@
         <div class="zone-hr"></div>
       </div>
       <div class="tracks-grid" id="tracksGrid"></div>
+
+      <div class="rs-trigger-wrap" id="rsTriggerWrap" style="display:none">
+        <button class="rs-trigger-btn" id="rsBtn">
+          <span class="rs-trigger-icon">📖</span>
+          Generate Optimal Reading Sequence
+        </button>
+      </div>
+
+      <div class="rs-section" id="rsSection" style="display:none">
+        <div class="zone-header" style="margin-top:0">
+          <div class="zone-hr"></div>
+          <div class="zone-pill" style="background:linear-gradient(135deg,#0f766e,#0891b2);color:#fff;border:none">📖 Optimal Reading Sequence</div>
+          <div class="zone-hr"></div>
+        </div>
+        <div class="rs-loader" id="rsLoader"><div class="rs-loader-bar"></div></div>
+        <div class="rs-intro">The single most natural path through every work in this learning journey — each book preparing you perfectly for the next.</div>
+        <div class="rs-count" id="rsCount"></div>
+        <div class="rs-list" id="rsList"></div>
+      </div>
     </div>
 
     <div class="concepts-section">
@@ -513,6 +589,9 @@
 
   let pendingTopic = '';
   const explainCache = {};
+  let _lastStartData = null;
+  let _lastFinishData = null;
+  let _lastTopic = '';
 
   // API key is intentionally never stored — user enters it fresh each session
 
@@ -818,12 +897,22 @@ Rules:
   }
 
   function renderPathResults(sr,fr,tr,topic) {
-    if (sr.status==='fulfilled') renderColdStart(sr.value,topic);
+    _lastTopic = topic;
+    _lastStartData = sr.status==='fulfilled' ? sr.value : null;
+    _lastFinishData = fr.status==='fulfilled' ? fr.value : null;
+    if (_lastStartData) renderColdStart(_lastStartData,topic);
     else $('csLadder').innerHTML=`<div class="section-error">Cold start failed: ${esc(sr.reason?.message)}</div>`;
-    if (fr.status==='fulfilled') renderColdFinish(fr.value,topic);
+    if (_lastFinishData) renderColdFinish(_lastFinishData,topic);
     else $('cfLadder').innerHTML=`<div class="section-error">Cold finish failed: ${esc(fr.reason?.message)}</div>`;
     if (tr.status==='fulfilled') renderTracks(tr.value);
     else $('tracksGrid').innerHTML=`<div class="section-error">Specializations failed: ${esc(tr.reason?.message)}</div>`;
+    // Show reading sequence trigger if we have at least one path
+    if (_lastStartData || _lastFinishData) {
+      $('rsTriggerWrap').style.display = 'flex';
+      $('rsSection').style.display = 'none';
+      $('rsList').innerHTML = '';
+      $('rsCount').textContent = '';
+    }
   }
 
   // ── Rendering helpers ────────────────────────────────────────────────────────
@@ -1024,6 +1113,93 @@ Rules:
       grid.appendChild(card);
     });
   }
+
+  // ── Optimal Reading Sequence ─────────────────────────────────────────────────
+
+  function collectAllRefs(startData, finishData) {
+    const seen = new Set();
+    const refs = [];
+    const add = layers => (layers||[]).forEach(layer =>
+      (layer.concepts||[]).forEach(concept =>
+        (concept.refs||[]).forEach(ref => {
+          const key = (ref.title||'').toLowerCase().trim();
+          if (key && !seen.has(key)) { seen.add(key); refs.push(ref); }
+        })
+      )
+    );
+    if (startData) add(startData.layers);
+    if (finishData) add(finishData.layers);
+    return refs;
+  }
+
+  function optimalReadingPrompt(topic, refs) {
+    const list = refs.map((r,i) => `${i+1}. "${r.title}" — ${r.authors} [${r.type||'ref'}]`).join('\n');
+    return `You are a master academic librarian curating the perfect reading journey through the entire learning path for "${topic}" — from absolute foundation to research frontier.
+
+The works below come from the complete Cold Start and Cold Finish paths. Arrange every single one into the most natural, continuously flowing reading sequence — where each work hands the reader's mind directly to the next.
+
+Works:
+${list}
+
+Return ONLY raw valid JSON — no markdown, no code fences:
+{"sequence":[{"order":1,"title":"exact title from list","authors":"exact authors string","type":"seminal|breakthrough|pedagogical","bridge":"one vivid sentence: what intellectual capability or insight this work deposits in the reader, and exactly how that makes the next work land with full force"}]}
+
+Rules:
+- Include every single work — do not omit any, do not cap
+- bridge faces forward: describe the handoff to the next work, not a summary of this one. The final item's bridge can say what it opens beyond
+- The sequence must feel like one unbroken intellectual journey — each work is a stepping stone laid precisely for the next
+- Flow from most foundational to most advanced; within that follow true intellectual dependency, not alphabetical order or publication date
+- Never group or skip — one entry per work
+Return ONLY JSON.`;
+  }
+
+  function renderReadingSequence(data) {
+    const list = $('rsList');
+    list.innerHTML = '';
+    const seq = data.sequence || [];
+    $('rsCount').textContent = `${seq.length} work${seq.length!==1?'s':''} in sequence`;
+    seq.forEach((item, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'rs-item';
+      const t = (item.type||'').toLowerCase();
+      const inner = document.createElement('div');
+      inner.className = 'rs-item-inner';
+      inner.innerHTML = `
+        <div class="rs-num">${item.order||i+1}</div>
+        <div class="rs-body">
+          <div class="rs-meta"><span class="badge ${badgeClass(item.type)}">${TYPE_ICON[t]||'•'} ${esc(t||'ref')}</span></div>
+          <div class="rs-title">${esc(item.title)}</div>
+          <div class="rs-authors">${esc(item.authors)}</div>
+          ${item.bridge?`<div class="rs-bridge"><span class="rs-bridge-arrow">→</span>${esc(item.bridge)}</div>`:''}
+        </div>`;
+      wrap.appendChild(inner);
+      if (i < seq.length - 1) {
+        const conn = document.createElement('div');
+        conn.className = 'rs-connector';
+        conn.innerHTML = '<div class="rs-connector-line"></div><div class="rs-connector-dot"></div>';
+        wrap.appendChild(conn);
+      }
+      list.appendChild(wrap);
+    });
+  }
+
+  $('rsBtn').addEventListener('click', async () => {
+    const refs = collectAllRefs(_lastStartData, _lastFinishData);
+    if (!refs.length) return;
+    $('rsTriggerWrap').style.display = 'none';
+    $('rsSection').style.display = 'block';
+    $('rsLoader').classList.add('active');
+    $('rsList').innerHTML = '';
+    $('rsCount').textContent = '';
+    try {
+      const data = await callAPI(optimalReadingPrompt(_lastTopic, refs), 8192);
+      renderReadingSequence(data);
+    } catch(err) {
+      $('rsList').innerHTML = `<div class="section-error">${esc(err.message)}</div>`;
+    } finally {
+      $('rsLoader').classList.remove('active');
+    }
+  });
 </script>
 </body>
 </html>
