@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning Path Explorer</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface2: #eef0f3;
+      --text: #1a1d23;
+      --text-muted: #6b7280;
+      --border: #e2e5ea;
+      --pred-header: #15803d;
+      --core-header: #6d28d9;
+      --succ-header: #1d4ed8;
+      --badge-seminal: #15803d;
+      --badge-breakthrough: #1d4ed8;
+      --badge-pedagogical: #6d28d9;
+      --loader-a: #6d28d9;
+      --loader-b: #a855f7;
+      --amber: #b45309;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+        --text: #e6edf3; --text-muted: #8b949e; --border: #30363d;
+        --pred-header: #16a34a; --core-header: #7c3aed; --succ-header: #2563eb;
+        --badge-seminal: #16a34a; --badge-breakthrough: #2563eb; --badge-pedagogical: #7c3aed;
+        --amber: #d97706;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 2.5rem 1rem 5rem;
+    }
+
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .app-header { text-align: center; margin-bottom: 2rem; }
+
+    .app-header h1 {
+      font-size: 2rem; font-weight: 900; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 0.4rem;
+    }
+
+    .app-header p { color: var(--text-muted); font-size: 0.92rem; }
+
+    .header-tags {
+      display: flex; justify-content: center; gap: 0.5rem;
+      margin-top: 0.75rem; flex-wrap: wrap;
+    }
+
+    .header-tag {
+      padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.72rem;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--surface2);
+    }
+
+    /* ── Controls ── */
+    .controls {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.25rem 1rem;
+      margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.875rem;
+    }
+
+    .field-row { display: flex; align-items: center; gap: 0.625rem; }
+    .field-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; width: 54px; flex-shrink: 0; }
+
+    input { flex: 1; padding: 0.55rem 0.85rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 0.9rem; font-family: inherit; transition: border-color .15s, box-shadow .15s; }
+    input::placeholder { color: var(--text-muted); opacity: .7; }
+    input:focus { outline: none; border-color: var(--core-header); box-shadow: 0 0 0 3px color-mix(in srgb,var(--core-header) 18%,transparent); }
+
+    button.primary { padding: .55rem 1.4rem; border: none; border-radius: 8px; font-size: .9rem; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity .15s, transform .1s; white-space: nowrap; background: var(--core-header); color: #fff; }
+    button.primary:active { transform: scale(.97); }
+    button.primary:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .chips-row { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
+    .chips-label { font-size: .75rem; color: var(--text-muted); margin-right: .25rem; }
+    .chip { padding: .25rem .7rem; border: 1px solid var(--border); border-radius: 999px; font-size: .78rem; font-family: inherit; cursor: pointer; background: var(--surface2); color: var(--text); transition: background .13s, border-color .13s, color .13s; }
+    .chip:hover { background: color-mix(in srgb,var(--core-header) 14%,var(--surface2)); border-color: var(--core-header); color: var(--core-header); }
+    .chip:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ════════════════════════════════════════
+       INTENT MODAL
+    ════════════════════════════════════════ */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    .modal-backdrop.visible { display: flex; }
+
+    .modal-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2rem 2rem 1.5rem;
+      max-width: 600px; width: 100%;
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      animation: modalIn .22s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    @keyframes modalIn { from{opacity:0;transform:scale(.92) translateY(12px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+    .modal-eyebrow { text-align:center; font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); margin-bottom:.35rem; }
+    .modal-topic { text-align:center; font-size:1.35rem; font-weight:800; letter-spacing:-.02em; color:var(--core-header); margin-bottom:.35rem; }
+    .modal-question { text-align:center; color:var(--text-muted); font-size:.88rem; margin-bottom:1.5rem; }
+
+    .modal-options { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.75rem; margin-bottom:1.25rem; }
+    @media(max-width:520px){ .modal-options{grid-template-columns:1fr;} }
+
+    .modal-opt {
+      border: 2px solid var(--border); border-radius:14px;
+      padding:1.25rem .875rem 1.125rem; background:var(--surface2);
+      cursor:pointer; font-family:inherit; text-align:center;
+      transition:border-color .15s, background .15s, transform .12s, box-shadow .15s;
+      color:var(--text); position:relative;
+    }
+    .modal-opt.recommended { border-color: var(--core-header); }
+    .modal-opt.recommended::after {
+      content: 'RECOMMENDED';
+      position:absolute; top:-.6rem; left:50%; transform:translateX(-50%);
+      font-size:.6rem; font-weight:800; letter-spacing:.07em;
+      background:var(--core-header); color:#fff;
+      padding:.1rem .5rem; border-radius:999px;
+    }
+    .modal-opt:hover { transform:translateY(-3px); }
+    .modal-opt[data-choice="map"]:hover { border-color:var(--pred-header); background:color-mix(in srgb,var(--pred-header) 7%,var(--surface)); box-shadow:0 6px 24px color-mix(in srgb,var(--pred-header) 20%,transparent); }
+    .modal-opt[data-choice="paths"]:hover, .modal-opt[data-choice="paths"].recommended:hover { border-color:var(--core-header); background:color-mix(in srgb,var(--core-header) 7%,var(--surface)); box-shadow:0 6px 24px color-mix(in srgb,var(--core-header) 20%,transparent); }
+    .modal-opt[data-choice="both"]:hover { border-color:var(--succ-header); background:color-mix(in srgb,var(--succ-header) 7%,var(--surface)); box-shadow:0 6px 24px color-mix(in srgb,var(--succ-header) 20%,transparent); }
+
+    .modal-opt-icon { font-size:2rem; margin-bottom:.6rem; display:block; }
+    .modal-opt-title { font-weight:800; font-size:.9rem; margin-bottom:.5rem; }
+    .modal-opt-features { list-style:none; text-align:left; display:flex; flex-direction:column; gap:.2rem; }
+    .modal-opt-features li { font-size:.73rem; color:var(--text-muted); display:flex; align-items:baseline; gap:.3rem; }
+    .modal-opt-features li::before { content:'·'; flex-shrink:0; }
+
+    .modal-cancel { display:block; margin:0 auto; background:none; border:none; color:var(--text-muted); font-family:inherit; font-size:.83rem; cursor:pointer; padding:.3rem .75rem; border-radius:6px; transition:color .13s, background .13s; }
+    .modal-cancel:hover { color:var(--text); background:var(--surface2); }
+
+    /* ════════════════════════════════════════
+       EXPLORE BUTTON
+    ════════════════════════════════════════ */
+    .explore-wrap { margin-bottom:1.25rem; }
+    .explore-btn-outer {
+      width:100%; padding:1.1rem 2rem; border:none; border-radius:14px;
+      font-size:1rem; font-weight:800; font-family:inherit; cursor:pointer;
+      position:relative; overflow:hidden;
+      transition:transform .15s, box-shadow .2s;
+      background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 45%,#2563eb 100%);
+      color:#fff; letter-spacing:.01em;
+    }
+    .explore-btn-outer::before { content:''; position:absolute; top:0; left:-75%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent); transform:skewX(-20deg); animation:btnShimmer 2.8s ease-in-out infinite; }
+    @keyframes btnShimmer { 0%{left:-75%} 60%{left:130%} 100%{left:130%} }
+    .explore-btn-outer:hover { transform:translateY(-2px); box-shadow:0 8px 32px color-mix(in srgb,#7c3aed 45%,transparent); }
+    .explore-btn-outer:active { transform:translateY(0); }
+    .explore-btn-outer:disabled { background:var(--surface2); color:var(--text-muted); cursor:not-allowed; transform:none; box-shadow:none; border:1px solid var(--border); }
+    .explore-btn-outer:disabled::before { display:none; }
+    .explore-btn-inner { display:flex; align-items:center; justify-content:center; gap:.6rem; position:relative; z-index:1; }
+    .explore-btn-icon { font-size:1.1rem; }
+    .explore-btn-sub { font-size:.72rem; font-weight:500; opacity:.82; margin-top:.15rem; display:block; letter-spacing:.03em; }
+
+    /* ── Loader ── */
+    .loader-wrap { height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-bottom:1.25rem; display:none; }
+    .loader-wrap.active { display:block; }
+    .loader-bar { height:100%; width:38%; background:linear-gradient(90deg,var(--loader-a),var(--loader-b),var(--loader-a)); border-radius:2px; animation:slide 1.5s ease-in-out infinite; }
+    @keyframes slide { 0%{transform:translateX(-150%)} 100%{transform:translateX(430%)} }
+
+    /* ── Error ── */
+    .error-box { display:none; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:10px; padding:.75rem 1rem; margin-bottom:1.25rem; font-size:.88rem; line-height:1.5; }
+    @media(prefers-color-scheme:dark){ .error-box{background:#1c0606;color:#f87171;border-color:#450a0a;} }
+    .error-box.visible { display:block; }
+
+    /* ── Output ── */
+    #output { display:none; }
+    #output.visible { display:block; }
+
+    /* ── Summary ── */
+    .summary { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.375rem 1.5rem; margin-bottom:2rem; }
+    .summary-mode-badge { display:inline-block; margin-bottom:.625rem; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; padding:.18rem .6rem; border-radius:999px; color:#fff; }
+    .summary-mode-badge.map   { background:var(--pred-header); }
+    .summary-mode-badge.paths { background:var(--core-header); }
+    .summary-mode-badge.both  { background:var(--succ-header); }
+    .summary-topic { font-size:1.5rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.5rem; }
+    .summary-text { color:var(--text-muted); font-size:.92rem; line-height:1.65; }
+
+    /* ── Zone divider ── */
+    .zone-header { display:flex; align-items:center; gap:.75rem; margin:2.25rem 0 1.125rem; flex-wrap:wrap; }
+    .zone-hr { flex:1; height:1px; background:var(--border); min-width:20px; }
+    .zone-pill { padding:.35rem 1rem; border-radius:999px; font-size:.78rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#fff; white-space:nowrap; }
+    .zone-pill.pred   { background:var(--pred-header); }
+    .zone-pill.core   { background:var(--core-header); }
+    .zone-pill.succ   { background:var(--succ-header); }
+    .zone-pill.cold-s { background:var(--pred-header); }
+    .zone-pill.cold-f { background:var(--succ-header); }
+    .zone-pill.specs  { background:var(--amber); }
+    .zone-meta { display:flex; align-items:center; gap:.35rem; white-space:nowrap; }
+    .zone-direct-count { font-size:.76rem; color:var(--text-muted); }
+    .zone-sep { font-size:.76rem; color:var(--border); }
+    .zone-toggle { font-size:.76rem; font-family:inherit; font-weight:600; border:1px solid var(--border); border-radius:999px; background:var(--surface2); color:var(--text-muted); padding:.18rem .6rem; cursor:pointer; transition:background .13s,border-color .13s,color .13s; }
+    .zone-toggle:hover, .zone-toggle.active { background:color-mix(in srgb,var(--core-header) 12%,var(--surface2)); border-color:var(--core-header); color:var(--core-header); }
+
+    /* ── Cards ── */
+    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(275px,1fr)); gap:1rem; }
+    .contextual-group { display:contents; }
+    .contextual-group.hidden { display:none; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; transition:box-shadow .15s,transform .15s; }
+    .card:hover { box-shadow:0 4px 18px color-mix(in srgb,var(--text) 9%,transparent); transform:translateY(-2px); }
+    .card.contextual .card-header { opacity:.72; }
+    .card-header { padding:.9rem 1rem .8rem; display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; }
+    .card.pred .card-header { background:var(--pred-header); }
+    .card.core .card-header { background:var(--core-header); }
+    .card.succ .card-header { background:var(--succ-header); }
+    .card-header-left { flex:1; min-width:0; }
+    .card-name { font-size:.975rem; font-weight:700; color:#fff; margin-bottom:.25rem; line-height:1.3; cursor:pointer; display:inline-block; border-bottom:1px solid transparent; transition:border-color .15s; }
+    .card-name:hover { border-bottom-color:rgba(255,255,255,.7); }
+    .card-desc { font-size:.78rem; color:rgba(255,255,255,.82); line-height:1.4; }
+    .ctx-tag { font-size:.64rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:.1rem .35rem; white-space:nowrap; flex-shrink:0; margin-top:.1rem; }
+    .ctx-tag.direct-tag { color:rgba(255,255,255,.9); border-color:rgba(255,255,255,.55); background:rgba(255,255,255,.12); }
+    .card-body { padding:.9rem 1rem; flex:1; display:flex; flex-direction:column; gap:.75rem; }
+    .card-relation { font-style:italic; color:var(--text-muted); font-size:.84rem; line-height:1.55; padding-bottom:.75rem; border-bottom:1px solid var(--border); }
+    .refs { display:flex; flex-direction:column; gap:.7rem; }
+    .ref { display:flex; flex-direction:column; gap:.2rem; }
+    .badge { display:inline-block; padding:.12rem .5rem; border-radius:999px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#fff; align-self:flex-start; margin-bottom:.15rem; }
+    .badge-seminal{background:var(--badge-seminal);} .badge-breakthrough{background:var(--badge-breakthrough);} .badge-pedagogical{background:var(--badge-pedagogical);} .badge-unknown{background:var(--text-muted);}
+    .ref-step { display:inline-flex; align-items:center; justify-content:center; width:1.1rem; height:1.1rem; border-radius:50%; font-size:.62rem; font-weight:800; background:var(--surface2); color:var(--text-muted); border:1px solid var(--border); flex-shrink:0; }
+    .ref-row-top { display:flex; align-items:center; gap:.35rem; margin-bottom:.15rem; }
+    .ref-title { font-size:.82rem; font-weight:600; color:var(--text); line-height:1.4; }
+    .ref-authors { font-size:.77rem; color:var(--text-muted); line-height:1.4; }
+    .ref-note { font-size:.74rem; color:var(--text-muted); font-style:italic; }
+
+    /* ════════════════════════════════════════
+       COLD PATH LADDERS
+    ════════════════════════════════════════ */
+    #pathsSection { display:none; margin-bottom:2.5rem; }
+    #pathsSection.visible { display:block; }
+    .paths-loader { height:2px; background:var(--surface2); border-radius:1px; overflow:hidden; margin-bottom:1.5rem; display:none; }
+    .paths-loader.active { display:block; }
+    .paths-loader-bar { height:100%; width:40%; background:linear-gradient(90deg,#7c3aed,#a855f7,#7c3aed); border-radius:1px; animation:slide 1.4s ease-in-out infinite; }
+
+    .cold-paths-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.75rem; margin-bottom:.5rem; }
+    @media(max-width:680px){ .cold-paths-grid{grid-template-columns:1fr;} }
+
+    .cold-col-title { font-size:.76rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; margin-bottom:.875rem; display:flex; align-items:center; gap:.4rem; }
+    .cold-col-title.cs { color:var(--pred-header); }
+    .cold-col-title.cf { color:var(--succ-header); }
+
+    .cold-ladder { display:flex; flex-direction:column; }
+    .cold-endpoint { display:flex; align-items:center; gap:.6rem; padding:.6rem .875rem; border-radius:9px; font-weight:700; font-size:.88rem; }
+    .cold-endpoint.foundation { background:color-mix(in srgb,var(--pred-header) 10%,var(--surface)); border:1px solid var(--pred-header); color:var(--pred-header); }
+    .cold-endpoint.horizon    { background:color-mix(in srgb,var(--succ-header) 10%,var(--surface)); border:1px solid var(--succ-header); color:var(--succ-header); }
+    .cold-endpoint.topic-node { background:color-mix(in srgb,var(--core-header) 10%,var(--surface)); border:2px solid var(--core-header); color:var(--core-header); font-size:.95rem; }
+    .cold-connector { padding-left:1.35rem; height:1.375rem; display:flex; align-items:stretch; }
+    .cold-connector-line { width:2px; background:var(--border); }
+    .cold-layer { display:flex; gap:.7rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.7rem .875rem; }
+    .cold-num { width:1.75rem; height:1.75rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.72rem; color:white; flex-shrink:0; margin-top:.1rem; }
+    .cs-col .cold-num { background:var(--pred-header); }
+    .cf-col .cold-num { background:var(--succ-header); }
+    .cold-layer-body { flex:1; min-width:0; }
+    .cold-layer-label { font-weight:700; font-size:.82rem; margin-bottom:.45rem; display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .cold-layer-progress { font-size:.68rem; font-weight:600; color:var(--text-muted); white-space:nowrap; }
+    .cold-layer-desc { font-size:.74rem; color:var(--text-muted); font-style:italic; margin-top:.4rem; }
+    .cold-concepts-list { display:flex; flex-direction:column; gap:.4rem; }
+
+    /* ── Concept item ── */
+    .cold-concept-item { border:1px solid var(--border); border-radius:7px; padding:.5rem .65rem; background:var(--surface2); transition:opacity .2s; }
+    .cold-concept-item.studied { opacity:.55; }
+    .cold-concept-item.studied .cold-concept-name { text-decoration:line-through; }
+
+    .cold-concept-row { display:flex; align-items:flex-start; justify-content:space-between; gap:.5rem; margin-bottom:.35rem; }
+    .cold-concept-left { display:flex; align-items:baseline; gap:.4rem; flex:1; min-width:0; }
+
+    .cold-progress-check { width:.9rem; height:.9rem; cursor:pointer; accent-color:var(--core-header); flex-shrink:0; margin-top:.18rem; }
+
+    .cold-concept-name { font-size:.82rem; font-weight:700; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:.25rem; border-bottom:1px solid transparent; transition:border-color .13s,color .13s; text-decoration:none; }
+    .cold-concept-name:hover { color:var(--core-header); border-bottom-color:var(--core-header); }
+    .cold-ext-icon { font-size:.65rem; opacity:.5; }
+
+    /* Explain button */
+    .explain-btn {
+      padding:.12rem .5rem; border:1px solid var(--border); border-radius:999px;
+      font-size:.65rem; font-weight:700; letter-spacing:.03em;
+      background:var(--surface); color:var(--text-muted);
+      cursor:pointer; font-family:inherit; white-space:nowrap;
+      transition:background .13s,border-color .13s,color .13s;
+      flex-shrink:0;
+    }
+    .explain-btn:hover { background:color-mix(in srgb,var(--core-header) 10%,var(--surface)); border-color:var(--core-header); color:var(--core-header); }
+    .explain-btn.active { background:color-mix(in srgb,var(--core-header) 12%,var(--surface)); border-color:var(--core-header); color:var(--core-header); }
+    .explain-btn:disabled { opacity:.45; cursor:not-allowed; }
+
+    /* Explain panel */
+    .explain-panel {
+      display:none; margin-top:.4rem;
+      padding:.6rem .75rem;
+      background:color-mix(in srgb,var(--core-header) 5%,var(--surface));
+      border:1px solid color-mix(in srgb,var(--core-header) 22%,var(--border));
+      border-radius:7px; font-size:.78rem; line-height:1.65; color:var(--text);
+    }
+    .explain-panel.visible { display:block; }
+    .explain-loading { color:var(--text-muted); font-style:italic; }
+    .explain-icon { margin-right:.3rem; }
+
+    .cold-concept-refs { display:flex; flex-direction:column; gap:.22rem; }
+    .cold-ref-row { display:flex; align-items:baseline; gap:.35rem; flex-wrap:wrap; }
+    .cold-ref-badge { font-size:.63rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; padding:.08rem .4rem; border-radius:999px; flex-shrink:0; }
+    .cold-ref-badge.s{background:var(--badge-seminal);} .cold-ref-badge.b{background:var(--badge-breakthrough);} .cold-ref-badge.p{background:var(--badge-pedagogical);} .cold-ref-badge.u{background:var(--text-muted);}
+    .cold-ref-title { font-size:.74rem; font-weight:600; color:var(--text); }
+    .cold-ref-authors { font-size:.7rem; color:var(--text-muted); }
+
+    .cold-pinnacles-label { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin:.5rem 0 .35rem; }
+    .cold-pinnacles { display:flex; flex-wrap:wrap; gap:.35rem; }
+    .cold-pinnacle { padding:.25rem .65rem; border-radius:999px; font-size:.76rem; font-weight:600; border:1px solid var(--succ-header); color:var(--succ-header); background:color-mix(in srgb,var(--succ-header) 8%,var(--surface)); cursor:pointer; font-family:inherit; transition:background .12s; text-decoration:none; display:inline-block; }
+    .cold-pinnacle:hover { background:color-mix(in srgb,var(--succ-header) 18%,var(--surface)); }
+
+    /* ── Specialization Tracks ── */
+    .tracks-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1rem; }
+    .track-card { border:1px solid var(--border); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; background:var(--surface); transition:box-shadow .15s,transform .15s; }
+    .track-card:hover { box-shadow:0 4px 18px color-mix(in srgb,var(--text) 9%,transparent); transform:translateY(-2px); }
+    .track-header { padding:.8rem 1rem; }
+    .track-name { font-weight:700; color:#fff; font-size:.92rem; margin-bottom:.2rem; line-height:1.3; }
+    .track-tagline { font-size:.76rem; color:rgba(255,255,255,.82); }
+    .track-0 .track-header{background:var(--pred-header);} .track-1 .track-header{background:var(--succ-header);} .track-2 .track-header{background:var(--core-header);} .track-3 .track-header{background:var(--amber);}
+    .track-body { padding:.75rem 1rem; flex:1; display:flex; flex-direction:column; gap:.5rem; }
+    .track-step { display:flex; gap:.45rem; align-items:flex-start; }
+    .track-step-num { width:1.15rem; height:1.15rem; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.6rem; font-weight:800; color:var(--text-muted); flex-shrink:0; margin-top:.12rem; }
+    .track-step-body { flex:1; }
+    .track-step-concept { font-size:.82rem; font-weight:600; color:var(--text); cursor:pointer; border-bottom:1px solid transparent; display:inline; transition:border-color .13s,color .13s; text-decoration:none; }
+    .track-step-concept:hover { border-bottom-color:var(--text-muted); color:var(--core-header); }
+    .track-step-note { font-size:.73rem; color:var(--text-muted); font-style:italic; margin-top:.05rem; }
+    .track-dest { padding:.5rem 1rem; background:var(--surface2); border-top:1px solid var(--border); }
+    .track-dest-label { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted); display:block; margin-bottom:.15rem; }
+    .track-dest-value { font-size:.8rem; font-weight:700; color:var(--text); }
+
+    /* Concepts section */
+    .concepts-section { display:block; }
+    #output.paths-only .concepts-section { display:none; }
+
+    .section-error { font-size:.82rem; color:#b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:.5rem .75rem; margin:.5rem 0; }
+    @media(prefers-color-scheme:dark){ .section-error{background:#1c0606;color:#f87171;border-color:#450a0a;} }
+  </style>
+</head>
+<body>
+
+<!-- Intent Modal -->
+<div class="modal-backdrop" id="intentModal">
+  <div class="modal-card">
+    <div class="modal-eyebrow">You searched for</div>
+    <div class="modal-topic" id="modalTopic"></div>
+    <div class="modal-question">What would you like to create?</div>
+    <div class="modal-options">
+      <button class="modal-opt" data-choice="map">
+        <span class="modal-opt-icon">◎</span>
+        <div class="modal-opt-title">Concept Map</div>
+        <ul class="modal-opt-features">
+          <li>Predecessor concepts</li>
+          <li>Core facets</li>
+          <li>Successor concepts</li>
+          <li>Full bibliography</li>
+        </ul>
+      </button>
+      <button class="modal-opt recommended" data-choice="paths">
+        <span class="modal-opt-icon">⇅</span>
+        <div class="modal-opt-title">Learning Path</div>
+        <ul class="modal-opt-features">
+          <li>Cold Start — zero to topic</li>
+          <li>Cold Finish — to frontier</li>
+          <li>Specialization tracks</li>
+          <li>Explain any concept</li>
+        </ul>
+      </button>
+      <button class="modal-opt" data-choice="both">
+        <span class="modal-opt-icon">⊕</span>
+        <div class="modal-opt-title">Full Exploration</div>
+        <ul class="modal-opt-features">
+          <li>Concept map</li>
+          <li>Learning paths</li>
+          <li>Specialization tracks</li>
+          <li>Everything above</li>
+        </ul>
+      </button>
+    </div>
+    <button class="modal-cancel" id="modalCancel">&#x2190; Cancel</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <header class="app-header">
+    <h1>Learning Path Explorer</h1>
+    <p>Navigate any academic topic from absolute zero to the research frontier</p>
+    <div class="header-tags">
+      <span class="header-tag">Cold Start</span>
+      <span class="header-tag">Cold Finish</span>
+      <span class="header-tag">Specializations</span>
+      <span class="header-tag">Concept Maps</span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="field-row">
+      <span class="field-label">API Key</span>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Topic</span>
+      <input type="text" id="topicInput" placeholder="e.g. Fourier Analysis, Reinforcement Learning…">
+      <button class="primary" id="mapBtn">Explore</button>
+    </div>
+    <div class="chips-row">
+      <span class="chips-label">Quick:</span>
+      <button class="chip" data-topic="Measure Theory">Measure Theory</button>
+      <button class="chip" data-topic="Reinforcement Learning">Reinforcement Learning</button>
+      <button class="chip" data-topic="Information Theory">Information Theory</button>
+      <button class="chip" data-topic="Stochastic Calculus">Stochastic Calculus</button>
+      <button class="chip" data-topic="Causal Inference">Causal Inference</button>
+      <button class="chip" data-topic="Category Theory">Category Theory</button>
+    </div>
+  </div>
+
+  <div class="explore-wrap">
+    <button class="explore-btn-outer" id="exploreBtn" disabled>
+      <div class="explore-btn-inner">
+        <span class="explore-btn-icon">&#x29C9;</span>
+        <div>
+          <div id="exploreBtnLabel">Explore Full Learning Paths &amp; Specializations</div>
+          <span class="explore-btn-sub">Cold Start &bull; Cold Finish &bull; Specialization Tracks</span>
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="loader-wrap" id="loaderWrap"><div class="loader-bar"></div></div>
+  <div class="error-box" id="errorBox"></div>
+
+  <div id="output">
+    <div class="summary">
+      <div id="summaryModeBadge"></div>
+      <div class="summary-topic" id="sumTopic"></div>
+      <div class="summary-text"  id="sumText"></div>
+    </div>
+
+    <div id="pathsSection">
+      <div class="paths-loader" id="pathsLoader"><div class="paths-loader-bar"></div></div>
+      <div class="zone-header">
+        <div class="zone-hr"></div>
+        <div class="zone-pill cold-s">&#x2193; Cold Start Path</div>
+        <div class="zone-hr"></div>
+        <div class="zone-pill cold-f">&#x2191; Cold Finish Path</div>
+        <div class="zone-hr"></div>
+      </div>
+      <div class="cold-paths-grid">
+        <div class="cs-col">
+          <div class="cold-col-title cs">&#x2B07; From zero to <span id="csLabel"></span></div>
+          <div class="cold-ladder" id="csLadder"></div>
+        </div>
+        <div class="cf-col">
+          <div class="cold-col-title cf">&#x2B06; From <span id="cfLabel"></span> to the frontier</div>
+          <div class="cold-ladder" id="cfLadder"></div>
+        </div>
+      </div>
+      <div class="zone-header" style="margin-top:2.5rem">
+        <div class="zone-hr"></div>
+        <div class="zone-pill specs">&#x29C9; Specialization Paths</div>
+        <div class="zone-hr"></div>
+      </div>
+      <div class="tracks-grid" id="tracksGrid"></div>
+    </div>
+
+    <div class="concepts-section">
+      <div class="zone-header">
+        <div class="zone-hr"></div><div class="zone-pill pred">&#x2191; Predecessor Concepts</div>
+        <div class="zone-meta" id="predMeta"></div><div class="zone-hr"></div>
+      </div>
+      <div class="cards-grid" id="predGrid"></div>
+      <div class="zone-header">
+        <div class="zone-hr"></div><div class="zone-pill core">&#x25CE; Core Concepts</div>
+        <div class="zone-meta" id="coreMeta"></div><div class="zone-hr"></div>
+      </div>
+      <div class="cards-grid" id="coreGrid"></div>
+      <div class="zone-header">
+        <div class="zone-hr"></div><div class="zone-pill succ">&#x2193; Successor Concepts</div>
+        <div class="zone-meta" id="succMeta"></div><div class="zone-hr"></div>
+      </div>
+      <div class="cards-grid" id="succGrid"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+  const $ = id => document.getElementById(id);
+
+  const apiKeyInput   = $('apiKeyInput');
+  const topicInput    = $('topicInput');
+  const mapBtn        = $('mapBtn');
+  const loaderWrap    = $('loaderWrap');
+  const errorBox      = $('errorBox');
+  const output        = $('output');
+  const exploreBtn    = $('exploreBtn');
+  const exploreBtnLabel = $('exploreBtnLabel');
+  const pathsSection  = $('pathsSection');
+  const pathsLoader   = $('pathsLoader');
+  const intentModal   = $('intentModal');
+
+  let pendingTopic = '';
+  const explainCache = {};
+
+  // ── Persist API key ──────────────────────────────────────────────────────────
+  apiKeyInput.value = localStorage.getItem('ak_concept_map') || '';
+  apiKeyInput.addEventListener('input', () => localStorage.setItem('ak_concept_map', apiKeyInput.value.trim()));
+
+  // ── URL param auto-trigger ───────────────────────────────────────────────────
+  (function() {
+    const p = new URLSearchParams(window.location.search).get('topic');
+    if (p) { topicInput.value = p; setTimeout(triggerIntent, 120); }
+  })();
+
+  // ── Open in new tab ──────────────────────────────────────────────────────────
+  function openTab(name) {
+    const url = new URL(window.location.href);
+    url.search = '';
+    url.searchParams.set('topic', name);
+    window.open(url.toString(), '_blank');
+  }
+
+  // ── Wiring ───────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.chip').forEach(c =>
+    c.addEventListener('click', () => { topicInput.value = c.dataset.topic; triggerIntent(); })
+  );
+  mapBtn.addEventListener('click', triggerIntent);
+  topicInput.addEventListener('keydown', e => { if (e.key === 'Enter') triggerIntent(); });
+  exploreBtn.addEventListener('click', () => showModal(topicInput.value.trim() || $('sumTopic').textContent.trim()));
+
+  // ── Modal ────────────────────────────────────────────────────────────────────
+  function triggerIntent() {
+    const apiKey = apiKeyInput.value.trim();
+    const topic  = topicInput.value.trim();
+    clearError();
+    if (!apiKey) { showError('Enter your Anthropic API key above.'); return; }
+    if (!topic)  { showError('Enter an academic concept to explore.'); return; }
+    showModal(topic);
+  }
+
+  function showModal(topic) {
+    pendingTopic = topic;
+    $('modalTopic').textContent = `"${topic}"`;
+    intentModal.classList.add('visible');
+  }
+
+  function hideModal() { intentModal.classList.remove('visible'); }
+
+  intentModal.addEventListener('click', e => { if (e.target === intentModal) hideModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') hideModal(); });
+  $('modalCancel').addEventListener('click', hideModal);
+
+  document.querySelectorAll('.modal-opt').forEach(btn =>
+    btn.addEventListener('click', () => { const c = btn.dataset.choice; hideModal(); executeChoice(c, pendingTopic); })
+  );
+
+  // ── UI helpers ───────────────────────────────────────────────────────────────
+  function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); }
+  function clearError()   { errorBox.classList.remove('visible'); }
+
+  function setLoading(on) {
+    loaderWrap.classList.toggle('active', on);
+    mapBtn.disabled = on; topicInput.disabled = on;
+    document.querySelectorAll('.chip').forEach(c => { c.disabled = on; });
+  }
+
+  function setSummary(topic, text, mode) {
+    const labels = { map: 'Concept Map', paths: 'Learning Path', both: 'Full Exploration' };
+    const badge = $('summaryModeBadge');
+    badge.className = `summary-mode-badge ${mode}`;
+    badge.textContent = labels[mode] || mode;
+    $('sumTopic').textContent = topic;
+    $('sumText').textContent  = text || '';
+  }
+
+  // ── Progress tracking ────────────────────────────────────────────────────────
+  function progressKey(topic, concept) {
+    return 'lp_' + topic.toLowerCase().replace(/[^a-z0-9]/g,'_') + '__' + concept.toLowerCase().replace(/[^a-z0-9]/g,'_');
+  }
+
+  function isStudied(topic, concept) {
+    return localStorage.getItem(progressKey(topic, concept)) === '1';
+  }
+
+  function setStudied(topic, concept, val) {
+    if (val) localStorage.setItem(progressKey(topic, concept), '1');
+    else localStorage.removeItem(progressKey(topic, concept));
+  }
+
+  // ── API ──────────────────────────────────────────────────────────────────────
+  async function callAPI(prompt, maxTokens) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKeyInput.value.trim(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) {
+      let msg = `API error ${res.status}: ${res.statusText}`;
+      try { const j = await res.json(); msg = j?.error?.message || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+    const raw = (await res.json())?.content?.[0]?.text || '';
+    try { return JSON.parse(raw); } catch(_) {
+      const m = raw.match(/\{[\s\S]*/);
+      if (m) { try { return repairJSON(m[0]); } catch(_2) {} }
+      throw new Error('Model returned non-JSON. Try again.');
+    }
+  }
+
+  function repairJSON(text) {
+    try { return JSON.parse(text); } catch(_) {}
+    // Walk the string tracking bracket depth; record the position after each
+    // fully-closed top-level-array element (depth==2 means inside root object's
+    // first array, and we just closed an element object).
+    let stack = [], inStr = false, esc = false, lastLayerEnd = -1;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (esc)            { esc = false; continue; }
+      if (c==='\\' && inStr) { esc = true; continue; }
+      if (c==='"')        { inStr = !inStr; continue; }
+      if (inStr)          continue;
+      if (c==='{' || c==='[') stack.push(c==='{' ? '}' : ']');
+      else if (c==='}' || c===']') {
+        stack.pop();
+        if (stack.length === 2) lastLayerEnd = i + 1; // completed a layer object
+      }
+    }
+    if (lastLayerEnd < 0) throw new Error('no complete layer found');
+    const partial = text.slice(0, lastLayerEnd);
+    // Re-count open brackets in the truncated string and close them
+    const closes = [];
+    inStr = false; esc = false;
+    for (let i = 0; i < partial.length; i++) {
+      const c = partial[i];
+      if (esc)               { esc = false; continue; }
+      if (c==='\\' && inStr) { esc = true; continue; }
+      if (c==='"')           { inStr = !inStr; continue; }
+      if (inStr)             continue;
+      if (c==='{' || c==='[') closes.push(c==='{' ? '}' : ']');
+      else if (c==='}' || c===']') closes.pop();
+    }
+    return JSON.parse(partial + closes.reverse().join(''));
+  }
+
+  async function callText(prompt, maxTokens) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKeyInput.value.trim(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (!res.ok) {
+      let msg = `API error ${res.status}`;
+      try { const j = await res.json(); msg = j?.error?.message || msg; } catch(_) {}
+      throw new Error(msg);
+    }
+    return (await res.json())?.content?.[0]?.text || '';
+  }
+
+  // ── Prompts ──────────────────────────────────────────────────────────────────
+
+  function mainPrompt(topic) {
+    return `You are an expert academic librarian. Map the concept graph for: "${topic}".
+Return ONLY raw valid JSON:
+{"topic":"","summary":"2-sentence explanation.",
+"predecessors":[{"name":"","description":"","relation":"","coupling":"direct","refs":[{"title":"","authors":"Lastname,F.(Year).Publisher.","type":"seminal|breakthrough|pedagogical","note":""}]}],
+"core":[{"name":"","description":"","relation":"","refs":[{"title":"","authors":"","type":"","note":""}]}],
+"successors":[{"name":"","description":"","relation":"","coupling":"direct","refs":[{"title":"","authors":"","type":"","note":""}]}]}
+coupling:"direct"=hard prerequisite;"contextual"=enriching but optional. All genuinely relevant concepts; 3-5 core; 2-3 refs each; real verifiable works. Return ONLY JSON.`;
+  }
+
+  function coldStartPrompt(topic) {
+    return `You are building the most complete, rigorous, zero-to-mastery learning path leading to "${topic}".
+Your goal: capture 100% of what a learner must understand before they can genuinely work with "${topic}". Miss nothing.
+
+Return ONLY raw valid JSON — no markdown, no explanation, no code fences:
+{"layers":[{"level":1,"label":"layer name","description":"one sentence: what capability this layer builds","concepts":[{"name":"concept name","refs":[{"title":"full book/paper title","authors":"Lastname,F.(Year).Publisher/Journal.","type":"seminal|breakthrough|pedagogical"}]}]}]}
+
+Rules:
+- Layer 1 = truly foundational (assume the learner knows absolutely nothing — not even basic math unless this is non-mathematical)
+- Build 6–10 layers total, each one strictly prerequisite to the next
+- Final layer must connect directly and naturally into "${topic}" itself
+- GRANULARITY: every concept must be at subject or field level — the kind of topic that has its own dedicated textbook or full university course (e.g. "Linear Algebra", "Probability Theory", "Thermodynamics"). Do NOT list sub-topics, individual theorems, specific algorithms, or chapter-level details. If something is a chapter inside a textbook, name the textbook subject instead
+- Each layer should have 3–6 subject-level concepts; do not pad with filler
+- Each concept gets 1–2 real verifiable references — the canonical textbook or landmark paper for that subject
+- Cover every major subject area a learner would need; omit nothing significant at this level
+- No duplicate concepts across layers
+Return ONLY JSON.`;
+  }
+
+  function coldFinishPrompt(topic) {
+    return `You are mapping the complete intellectual frontier beyond mastery of "${topic}" — every horizon a dedicated expert would explore.
+Your goal: capture 100% of the advanced territory that opens once someone fully understands "${topic}". Miss nothing.
+
+Return ONLY raw valid JSON — no markdown, no explanation, no code fences:
+{"layers":[{"level":1,"label":"horizon name","description":"one sentence: what this layer unlocks","concepts":[{"name":"concept name","refs":[{"title":"full book/paper title","authors":"Lastname,F.(Year).Publisher/Journal.","type":"seminal|breakthrough|pedagogical"}]}]}],"pinnacles":["frontier research area 1","frontier research area 2"]}
+
+Rules:
+- Layer 1 = first horizon directly beyond "${topic}" (advanced applications, extensions, adjacent fields)
+- Build 5–8 layers total, each opening progressively deeper or broader territory
+- Final layer = current active research frontier (areas being actively published and debated right now)
+- GRANULARITY: every concept must be at subject or research-area level — the kind of thing that has its own graduate course, research community, or dedicated monograph (e.g. "Topological Data Analysis", "Causal Inference", "Quantum Error Correction"). Do NOT list individual techniques, specific papers, or sub-topics within an area
+- Each layer should have 3–6 such area-level concepts; do not pad with filler
+- Each concept gets 1–2 real verifiable references — the canonical graduate text or landmark paper for that area
+- Cover every major advanced area a serious expert would explore; omit nothing significant at this level
+- pinnacles: 3–6 specific named open problems or cutting-edge research frontiers
+- No duplicate concepts across layers
+Return ONLY JSON.`;
+  }
+
+  function specsPrompt(topic) {
+    return `Identify 3-4 distinct specialization paths branching from "${topic}".
+Return ONLY raw valid JSON:
+{"tracks":[{"name":"track name","tagline":"what specialist this creates","steps":[{"concept":"name","note":"one phrase"}],"destination":"specific career or research area"}]}
+Rules: 3-4 meaningfully distinct tracks; 5-7 ordered steps each; tracks diverge clearly; concrete destinations. Return ONLY JSON.`;
+  }
+
+  function explainPrompt(conceptName) {
+    return `Explain "${conceptName}" as if talking to a curious, intelligent person who has never studied this subject before.
+
+Rules:
+- Plain everyday language only — absolutely zero technical jargon
+- Start with one simple real-world analogy (e.g. "Think of it like...")
+- Give one concrete everyday example showing what it looks like in practice
+- Warm, conversational tone — like a knowledgeable friend explaining over coffee
+- Maximum 120 words
+- Return ONLY the explanation — no title, no label, no preamble`;
+  }
+
+  // ── Choice execution ─────────────────────────────────────────────────────────
+  async function executeChoice(choice, topic) {
+    clearError();
+    topicInput.value = topic;
+    output.classList.remove('visible', 'paths-only');
+    pathsSection.style.display = 'none';
+    exploreBtn.disabled = true;
+
+    if      (choice === 'map')   await runConceptMap(topic);
+    else if (choice === 'paths') await runPathsOnly(topic);
+    else                          await runBoth(topic);
+  }
+
+  async function runConceptMap(topic) {
+    setLoading(true);
+    try {
+      const data = await callAPI(mainPrompt(topic), 10000);
+      setSummary(data.topic||topic, data.summary||'', 'map');
+      renderZone(data.predecessors,'predGrid','predMeta','pred');
+      renderZone(data.core,        'coreGrid','coreMeta','core');
+      renderZone(data.successors,  'succGrid','succMeta','succ');
+      output.classList.add('visible');
+      exploreBtn.disabled = false;
+      exploreBtnLabel.textContent = 'Explore Full Learning Paths & Specializations';
+      output.scrollIntoView({ behavior:'smooth', block:'start' });
+    } catch(err) { showError(err.message); }
+    finally { setLoading(false); }
+  }
+
+  async function runPathsOnly(topic) {
+    output.classList.add('visible','paths-only');
+    setSummary(topic,'','paths');
+    pathsSection.style.display = 'block';
+    pathsLoader.classList.add('active');
+    output.scrollIntoView({ behavior:'smooth', block:'start' });
+    const [sr,fr,tr] = await Promise.allSettled([
+      callAPI(coldStartPrompt(topic),8192),
+      callAPI(coldFinishPrompt(topic),8192),
+      callAPI(specsPrompt(topic),4000)
+    ]);
+    pathsLoader.classList.remove('active');
+    renderPathResults(sr,fr,tr,topic);
+    exploreBtn.disabled = false;
+    exploreBtnLabel.textContent = 'Re-generate Paths';
+  }
+
+  async function runBoth(topic) {
+    setLoading(true);
+    try {
+      const data = await callAPI(mainPrompt(topic),10000);
+      setSummary(data.topic||topic, data.summary||'', 'both');
+      renderZone(data.predecessors,'predGrid','predMeta','pred');
+      renderZone(data.core,        'coreGrid','coreMeta','core');
+      renderZone(data.successors,  'succGrid','succMeta','succ');
+      output.classList.add('visible');
+      output.scrollIntoView({ behavior:'smooth', block:'start' });
+    } catch(err) { showError(err.message); setLoading(false); return; }
+    finally { setLoading(false); }
+    pathsSection.style.display='block';
+    pathsLoader.classList.add('active');
+    const [sr,fr,tr] = await Promise.allSettled([
+      callAPI(coldStartPrompt(topic),8192),
+      callAPI(coldFinishPrompt(topic),8192),
+      callAPI(specsPrompt(topic),4000)
+    ]);
+    pathsLoader.classList.remove('active');
+    renderPathResults(sr,fr,tr,topic);
+    exploreBtn.disabled = false;
+    exploreBtnLabel.textContent = 'Re-generate Paths';
+  }
+
+  function renderPathResults(sr,fr,tr,topic) {
+    if (sr.status==='fulfilled') renderColdStart(sr.value,topic);
+    else $('csLadder').innerHTML=`<div class="section-error">Cold start failed: ${esc(sr.reason?.message)}</div>`;
+    if (fr.status==='fulfilled') renderColdFinish(fr.value,topic);
+    else $('cfLadder').innerHTML=`<div class="section-error">Cold finish failed: ${esc(fr.reason?.message)}</div>`;
+    if (tr.status==='fulfilled') renderTracks(tr.value);
+    else $('tracksGrid').innerHTML=`<div class="section-error">Specializations failed: ${esc(tr.reason?.message)}</div>`;
+  }
+
+  // ── Rendering helpers ────────────────────────────────────────────────────────
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  const TYPE_ORDER = {seminal:0,breakthrough:1,pedagogical:2};
+  const TYPE_ICON  = {seminal:'⚑',breakthrough:'⚡',pedagogical:'✦'};
+
+  function badgeClass(t) { const k=(t||'').toLowerCase(); return k==='seminal'?'badge-seminal':k==='breakthrough'?'badge-breakthrough':k==='pedagogical'?'badge-pedagogical':'badge-unknown'; }
+  function sortRefs(r)   { return [...(r||[])].sort((a,b)=>(TYPE_ORDER[(a.type||'').toLowerCase()]??9)-(TYPE_ORDER[(b.type||'').toLowerCase()]??9)); }
+
+  // ── Concept card (main map) ──────────────────────────────────────────────────
+  function buildCard(concept, zone, isContextual) {
+    const sorted = sortRefs(concept.refs);
+    const refsHtml = sorted.map((r,i)=>{
+      const t=(r.type||'').toLowerCase();
+      return `<div class="ref"><div class="ref-row-top"><span class="ref-step">${i+1}</span><span class="badge ${badgeClass(r.type)}">${TYPE_ICON[t]||'•'} ${esc(t||'ref')}</span></div><div class="ref-title">${esc(r.title)}</div><div class="ref-authors">${esc(r.authors)}</div>${r.note?`<div class="ref-note">${esc(r.note)}</div>`:''}</div>`;
+    }).join('');
+    const ctxTag = zone==='core'?'':isContextual?`<span class="ctx-tag">&#x25CB; contextual</span>`:`<span class="ctx-tag direct-tag">&#x25CF; direct</span>`;
+    const card = document.createElement('article');
+    card.className=`card ${zone}${isContextual?' contextual':''}`;
+    card.innerHTML=`<div class="card-header"><div class="card-header-left"><div class="card-name">${esc(concept.name)}</div><div class="card-desc">${esc(concept.description)}</div></div>${ctxTag}</div><div class="card-body"><div class="card-relation">${esc(concept.relation)}</div><div class="refs">${refsHtml}</div></div>`;
+    card.querySelector('.card-name').addEventListener('click',()=>openTab(concept.name));
+    return card;
+  }
+
+  function renderZone(items,gridId,metaId,zone) {
+    const grid=$(gridId),meta=$(metaId);
+    grid.innerHTML='';meta.innerHTML='';
+    if(!items||!items.length)return;
+    if(zone==='core'){items.forEach(c=>grid.appendChild(buildCard(c,zone,false)));meta.textContent=`${items.length} concept${items.length!==1?'s':''}`;return;}
+    const direct=items.filter(c=>c.coupling!=='contextual');
+    const contextual=items.filter(c=>c.coupling==='contextual');
+    direct.forEach(c=>grid.appendChild(buildCard(c,zone,false)));
+    const ctxGroup=document.createElement('div');ctxGroup.className='contextual-group hidden';
+    contextual.forEach(c=>ctxGroup.appendChild(buildCard(c,zone,true)));
+    grid.appendChild(ctxGroup);
+    const cs=document.createElement('span');cs.className='zone-direct-count';cs.textContent=`${direct.length} direct`;meta.appendChild(cs);
+    if(contextual.length>0){
+      const sep=document.createElement('span');sep.className='zone-sep';sep.textContent='·';meta.appendChild(sep);
+      const btn=document.createElement('button');btn.className='zone-toggle';btn.textContent=`+ ${contextual.length} contextual`;
+      let exp=false;
+      btn.addEventListener('click',()=>{exp=!exp;ctxGroup.classList.toggle('hidden',!exp);btn.textContent=exp?`− hide contextual`:`+ ${contextual.length} contextual`;btn.classList.toggle('active',exp);});
+      meta.appendChild(btn);
+    }
+  }
+
+  // ── Concept item in cold path (with explain + progress) ──────────────────────
+  function buildConceptItem(concept, currentTopic) {
+    const item = document.createElement('div');
+    item.className = 'cold-concept-item';
+
+    const studied = isStudied(currentTopic, concept.name);
+    if (studied) item.classList.add('studied');
+
+    // Row: checkbox + name + explain button
+    const row = document.createElement('div');
+    row.className = 'cold-concept-row';
+
+    const left = document.createElement('div');
+    left.className = 'cold-concept-left';
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.className = 'cold-progress-check';
+    check.checked = studied;
+    check.title = 'Mark as studied';
+    check.addEventListener('change', () => {
+      setStudied(currentTopic, concept.name, check.checked);
+      item.classList.toggle('studied', check.checked);
+      updateLayerProgress(item);
+    });
+
+    const nameEl = document.createElement('a');
+    nameEl.className = 'cold-concept-name';
+    nameEl.href = '#';
+    nameEl.innerHTML = `${esc(concept.name)} <span class="cold-ext-icon">&#x2197;</span>`;
+    nameEl.addEventListener('click', e => { e.preventDefault(); openTab(concept.name); });
+
+    left.appendChild(check);
+    left.appendChild(nameEl);
+
+    // Explain button
+    const explainBtn = document.createElement('button');
+    explainBtn.className = 'explain-btn';
+    explainBtn.innerHTML = '&#x1F4A1; Explain';
+
+    // Explain panel
+    const panel = document.createElement('div');
+    panel.className = 'explain-panel';
+
+    explainBtn.addEventListener('click', async () => {
+      if (panel.classList.contains('visible')) {
+        panel.classList.remove('visible');
+        explainBtn.classList.remove('active');
+        explainBtn.innerHTML = '&#x1F4A1; Explain';
+        return;
+      }
+      panel.classList.add('visible');
+      explainBtn.classList.add('active');
+      explainBtn.innerHTML = '&#x2715; Close';
+      explainBtn.disabled = true;
+
+      if (explainCache[concept.name]) {
+        panel.textContent = explainCache[concept.name];
+        explainBtn.disabled = false;
+        return;
+      }
+
+      panel.innerHTML = '<span class="explain-loading">Explaining in plain language…</span>';
+      try {
+        const text = await callText(explainPrompt(concept.name), 400);
+        explainCache[concept.name] = text;
+        panel.textContent = text;
+      } catch(err) {
+        panel.textContent = `Couldn't load explanation: ${err.message}`;
+      } finally {
+        explainBtn.disabled = false;
+      }
+    });
+
+    row.appendChild(left);
+    row.appendChild(explainBtn);
+
+    // Refs
+    const refsDiv = document.createElement('div');
+    refsDiv.className = 'cold-concept-refs';
+    (concept.refs||[]).forEach(r => {
+      const rrow = document.createElement('div');
+      rrow.className = 'cold-ref-row';
+      const t = (r.type||'').toLowerCase();
+      const bc = t==='seminal'?'s':t==='breakthrough'?'b':t==='pedagogical'?'p':'u';
+      rrow.innerHTML = `<span class="cold-ref-badge ${bc}">${TYPE_ICON[t]||'•'} ${esc(t||'ref')}</span><span class="cold-ref-title">${esc(r.title)}</span><span class="cold-ref-authors">— ${esc(r.authors)}</span>`;
+      refsDiv.appendChild(rrow);
+    });
+
+    item.appendChild(row);
+    item.appendChild(panel);
+    item.appendChild(refsDiv);
+    return item;
+  }
+
+  function updateLayerProgress(item) {
+    const layer = item.closest('.cold-layer');
+    if (!layer) return;
+    const all   = layer.querySelectorAll('.cold-concept-item').length;
+    const done  = layer.querySelectorAll('.cold-concept-item.studied').length;
+    const prog  = layer.querySelector('.cold-layer-progress');
+    if (prog) prog.textContent = `${done} / ${all} studied`;
+  }
+
+  function buildColdLayer(layer, idx, currentTopic) {
+    const frag = document.createDocumentFragment();
+    const conn = document.createElement('div'); conn.className='cold-connector'; conn.innerHTML='<div class="cold-connector-line"></div>'; frag.appendChild(conn);
+    const layerEl = document.createElement('div'); layerEl.className='cold-layer';
+
+    const all = (layer.concepts||[]).length;
+    const done = (layer.concepts||[]).filter(c=>isStudied(currentTopic,c.name)).length;
+
+    layerEl.innerHTML=`<div class="cold-num">${idx+1}</div><div class="cold-layer-body"><div class="cold-layer-label">${esc(layer.label)}<span class="cold-layer-progress">${done} / ${all} studied</span></div><div class="cold-concepts-list"></div><div class="cold-layer-desc">${esc(layer.description)}</div></div>`;
+    (layer.concepts||[]).forEach(c=>layerEl.querySelector('.cold-concepts-list').appendChild(buildConceptItem(c, currentTopic)));
+    frag.appendChild(layerEl);
+    return frag;
+  }
+
+  function renderColdStart(data, topic) {
+    const ladder=$('csLadder'); $('csLabel').textContent=topic; ladder.innerHTML='';
+    const top=document.createElement('div'); top.className='cold-endpoint foundation'; top.innerHTML='<span>&#x25A0;</span> Absolute Foundation'; ladder.appendChild(top);
+    (data.layers||[]).forEach((l,i)=>ladder.appendChild(buildColdLayer(l,i,topic)));
+    const c=document.createElement('div');c.className='cold-connector';c.innerHTML='<div class="cold-connector-line"></div>';ladder.appendChild(c);
+    const bot=document.createElement('div');bot.className='cold-endpoint topic-node';bot.innerHTML=`<span>&#x25CE;</span> ${esc(topic)}`;ladder.appendChild(bot);
+  }
+
+  function renderColdFinish(data, topic) {
+    const ladder=$('cfLadder'); $('cfLabel').textContent=topic; ladder.innerHTML='';
+    const top=document.createElement('div');top.className='cold-endpoint topic-node';top.innerHTML=`<span>&#x25CE;</span> ${esc(topic)}`;ladder.appendChild(top);
+    (data.layers||[]).forEach((l,i)=>ladder.appendChild(buildColdLayer(l,i,topic)));
+    if((data.pinnacles||[]).length>0){
+      const c=document.createElement('div');c.className='cold-connector';c.innerHTML='<div class="cold-connector-line"></div>';ladder.appendChild(c);
+      const h=document.createElement('div');h.className='cold-endpoint horizon';h.innerHTML='<span>&#x2605;</span> Research Frontier';ladder.appendChild(h);
+      const lbl=document.createElement('div');lbl.className='cold-pinnacles-label';lbl.textContent='Pinnacle destinations';ladder.appendChild(lbl);
+      const wrap=document.createElement('div');wrap.className='cold-pinnacles';
+      data.pinnacles.forEach(p=>{const a=document.createElement('a');a.className='cold-pinnacle';a.href='#';a.textContent=p;a.addEventListener('click',e=>{e.preventDefault();openTab(p);});wrap.appendChild(a);});
+      ladder.appendChild(wrap);
+    }
+  }
+
+  function renderTracks(data) {
+    const grid=$('tracksGrid');grid.innerHTML='';
+    (data.tracks||[]).forEach((track,i)=>{
+      const card=document.createElement('div');card.className=`track-card track-${Math.min(i,3)}`;
+      const sh=(track.steps||[]).map((s,j)=>`<div class="track-step"><div class="track-step-num">${j+1}</div><div class="track-step-body"><a class="track-step-concept" href="#" data-c="${esc(s.concept)}">${esc(s.concept)}</a>${s.note?`<div class="track-step-note">${esc(s.note)}</div>`:''}</div></div>`).join('');
+      card.innerHTML=`<div class="track-header"><div class="track-name">${esc(track.name)}</div><div class="track-tagline">${esc(track.tagline)}</div></div><div class="track-body">${sh}</div><div class="track-dest"><span class="track-dest-label">&#x2192; Destination</span><div class="track-dest-value">${esc(track.destination)}</div></div>`;
+      card.querySelectorAll('.track-step-concept').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();openTab(el.dataset.c);}));
+      grid.appendChild(card);
+    });
+  }
+</script>
+</body>
+</html>
