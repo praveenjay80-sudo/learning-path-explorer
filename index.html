@@ -483,6 +483,23 @@
     .lib-field-meta { font-size:.67rem; color:var(--text-muted); }
 
     .library-grid { max-height:310px; }
+    .library-grid.lib-detail-mode { max-height:500px; }
+
+    .lib-loading { width:100%; padding:1.75rem 1rem; text-align:center; font-size:.82rem; color:var(--text-muted); }
+    .lib-loading-bar { height:2px; background:var(--surface2); border-radius:1px; overflow:hidden; margin:.6rem auto; width:120px; }
+    .lib-loading-bar-inner { height:100%; width:40%; background:linear-gradient(90deg,var(--core-header),var(--succ-header),var(--core-header)); animation:slide 1.4s ease-in-out infinite; }
+
+    .lib-topic-detail { padding:1rem 1.1rem 1.25rem; }
+    .lib-topic-detail-crumb { font-size:.7rem; color:var(--text-muted); margin-bottom:.45rem; }
+    .lib-topic-detail-name { font-size:1.1rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.7rem; line-height:1.3; }
+    .lib-topic-detail-summary { font-size:.84rem; color:var(--text-muted); line-height:1.65; margin-bottom:.8rem; }
+    .lib-topic-keywords { display:flex; flex-wrap:wrap; gap:.3rem; margin-bottom:.85rem; }
+    .lib-kw-tag { padding:.15rem .52rem; border-radius:999px; font-size:.7rem; background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
+    .lib-topic-actions { display:flex; gap:.55rem; flex-wrap:wrap; align-items:center; }
+    .lib-gen-btn { padding:.5rem 1.1rem; border:none; border-radius:8px; font-size:.85rem; font-weight:700; font-family:inherit; cursor:pointer; background:var(--core-header); color:#fff; transition:opacity .15s; }
+    .lib-gen-btn:hover { opacity:.88; }
+    .lib-wiki-btn { padding:.5rem 1rem; border:1px solid var(--border); border-radius:8px; font-size:.82rem; font-weight:600; font-family:inherit; cursor:pointer; background:var(--surface2); color:var(--text-muted); transition:border-color .13s,color .13s; text-decoration:none; display:inline-flex; align-items:center; gap:.3rem; }
+    .lib-wiki-btn:hover { border-color:var(--text); color:var(--text); }
 
     .rs-section { margin-top:2rem; }
     .rs-loader { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin:.75rem 0 1.5rem; display:none; }
@@ -613,7 +630,7 @@
         <span class="step-icon">⊞</span>
         <div>
           <div class="step-title">Browse Topics</div>
-          <span class="step-sub">1000+ topics &bull; 8 domains &bull; All human knowledge</span>
+          <span class="step-sub">10,000+ curated topics &bull; All academic domains</span>
         </div>
       </div>
     </button>
@@ -641,7 +658,7 @@
 
   <div class="library-panel" id="libraryPanel" style="display:none">
     <div class="library-search-wrap">
-      <input class="library-search" id="librarySearch" placeholder="Search 1000+ topics across all domains of human knowledge…" autocomplete="off" spellcheck="false">
+      <input class="library-search" id="librarySearch" placeholder="Search 10,000+ research topics across all academic domains…" autocomplete="off" spellcheck="false">
     </div>
     <div class="library-tabs" id="libraryTabs"></div>
     <div class="lib-breadcrumb" id="libBreadcrumb">
@@ -1270,8 +1287,11 @@ Rules:
 
   // ── Topic Library ────────────────────────────────────────────────────────────
 
-  // ── Topic Library data: Domain → Field → Category → Topic (4 levels) ────────
-  const TOPIC_LIBRARY = [
+  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1v-MAq64x4YjhO7RWcB-yrKV5D_2vOOsxl4u6GBKEXY8/export?format=csv&gid=983250122';
+  const DOMAIN_COLORS = ['#7c3aed','#1d4ed8','#15803d','#b45309','#374151','#b91c1c','#be185d','#0f766e','#0369a1','#7c2d12','#4338ca','#065f46'];
+
+  // legacy data kept for syntax validity — replaced by sheet fetch below
+  const _TOPIC_LIB_LEGACY = [
     { name:'Formal Sciences', color:'#7c3aed', fields:[
       { name:'Mathematics', cats:[
         { name:'Algebra', topics:['Abstract Algebra','Group Theory','Ring Theory','Field Theory','Galois Theory','Linear Algebra','Multilinear Algebra','Commutative Algebra','Homological Algebra','Universal Algebra','Representation Theory','Lie Algebras','Category Theory','K-Theory','Noncommutative Algebra','Hopf Algebras'] },
@@ -1556,46 +1576,148 @@ Rules:
     ]}
   ];
 
+  let _sheetDomains = null;
+  let _sheetLoading = false;
   let _libDomain = 0;
   let _libField  = -1;
   let _libCat    = -1;
+  let _libTopicDetail = null;
   let _libInited = false;
 
-  function initLibrary() {
-    const tabs = $('libraryTabs');
-    TOPIC_LIBRARY.forEach((d, i) => {
-      const t = document.createElement('button');
-      t.className = 'library-tab' + (i === 0 ? ' lib-active' : '');
-      t.textContent = d.name;
-      t.style.setProperty('--lib-c', d.color);
-      t.addEventListener('click', () => {
-        _libDomain = i; _libField = -1; _libCat = -1;
-        $('librarySearch').value = '';
-        tabs.querySelectorAll('.library-tab').forEach((el,j) => el.classList.toggle('lib-active', j === i));
-        renderLibraryView('');
+  // ── Sheet CSV parsing ────────────────────────────────────────────────────────
+  function parseCSV(text) {
+    const rows = [];
+    let field = '', fields = [], inQuote = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (c === '"') {
+        if (inQuote && text[i+1] === '"') { field += '"'; i++; }
+        else inQuote = !inQuote;
+      } else if (c === ',' && !inQuote) {
+        fields.push(field); field = '';
+      } else if ((c === '\n' || c === '\r') && !inQuote) {
+        if (c === '\r' && text[i+1] === '\n') i++;
+        fields.push(field); field = '';
+        if (fields.length > 1 || fields[0]) rows.push(fields);
+        fields = [];
+      } else {
+        field += c;
+      }
+    }
+    if (fields.length || field) { fields.push(field); if (fields.length > 1 || fields[0]) rows.push(fields); }
+    return rows;
+  }
+
+  function buildSheetData(rows) {
+    // cols: 0=topic_id,1=topic_name,2=subfield_id,3=subfield_name,
+    //       4=field_id,5=field_name,6=domain_id,7=domain_name,8=keywords,9=summary,10=wikipedia_url
+    const domainMap = new Map();
+    const domainOrder = [];
+    let colorIdx = 0;
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (row.length < 10) continue;
+      const topicName    = (row[1]||'').trim();
+      const subfieldName = (row[3]||'').trim();
+      const fieldName    = (row[5]||'').trim();
+      const domainName   = (row[7]||'').trim();
+      if (!topicName || !domainName) continue;
+      if (!domainMap.has(domainName)) {
+        domainMap.set(domainName, { color: DOMAIN_COLORS[colorIdx % DOMAIN_COLORS.length], fieldMap: new Map() });
+        domainOrder.push(domainName);
+        colorIdx++;
+      }
+      const domain = domainMap.get(domainName);
+      if (!domain.fieldMap.has(fieldName)) domain.fieldMap.set(fieldName, new Map());
+      const fMap = domain.fieldMap.get(fieldName);
+      if (!fMap.has(subfieldName)) fMap.set(subfieldName, []);
+      fMap.get(subfieldName).push({
+        name: topicName,
+        keywords: (row[8]||'').trim(),
+        summary:  (row[9]||'').trim(),
+        wikiUrl:  (row[10]||'').trim()
       });
-      tabs.appendChild(t);
+    }
+    return domainOrder.map(dName => {
+      const d = domainMap.get(dName);
+      return {
+        name: dName, color: d.color,
+        fields: [...d.fieldMap.entries()].map(([fName, sfMap]) => ({
+          name: fName,
+          subfields: [...sfMap.entries()].map(([sfName, topics]) => ({ name: sfName, topics }))
+        }))
+      };
     });
+  }
+
+  async function fetchSheetData() {
+    if (_sheetDomains) return _sheetDomains;
+    if (_sheetLoading) return null;
+    _sheetLoading = true;
+    try {
+      const resp = await fetch(SHEET_CSV_URL);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      _sheetDomains = buildSheetData(parseCSV(text));
+      return _sheetDomains;
+    } catch(e) {
+      console.error('Sheet fetch failed:', e);
+      return null;
+    } finally {
+      _sheetLoading = false;
+    }
+  }
+
+  function initLibrary() {
     $('libBack').addEventListener('click', () => {
-      if (_libCat >= 0) { _libCat = -1; }
-      else if (_libField >= 0) { _libField = -1; }
+      if (_libTopicDetail)    { _libTopicDetail = null; }
+      else if (_libCat >= 0)  { _libCat = -1; }
+      else if (_libField >= 0){ _libField = -1; }
       $('librarySearch').value = '';
       renderLibraryView('');
     });
     $('librarySearch').addEventListener('input', e => renderLibraryView(e.target.value.trim().toLowerCase()));
-    renderLibraryView('');
+
+    const grid = $('libraryGrid');
+    grid.innerHTML = '<div class="lib-loading"><div class="lib-loading-bar"><div class="lib-loading-bar-inner"></div></div>Loading topics…</div>';
+
+    fetchSheetData().then(domains => {
+      if (!domains) {
+        grid.innerHTML = '<div class="lib-empty">Could not load topics. Check your connection and try again.</div>';
+        return;
+      }
+      _libDomain = 0; _libField = -1; _libCat = -1; _libTopicDetail = null;
+      const tabs = $('libraryTabs');
+      tabs.innerHTML = '';
+      domains.forEach((d, i) => {
+        const t = document.createElement('button');
+        t.className = 'library-tab' + (i === 0 ? ' lib-active' : '');
+        t.textContent = d.name;
+        t.style.setProperty('--lib-c', d.color);
+        t.addEventListener('click', () => {
+          _libDomain = i; _libField = -1; _libCat = -1; _libTopicDetail = null;
+          $('librarySearch').value = '';
+          tabs.querySelectorAll('.library-tab').forEach((el,j) => el.classList.toggle('lib-active', j === i));
+          renderLibraryView('');
+        });
+        tabs.appendChild(t);
+      });
+      renderLibraryView('');
+    });
   }
 
   function renderLibraryView(query) {
+    if (!_sheetDomains) return;
     if (query) { renderSearchResults(query); return; }
-    if (_libCat >= 0)        renderTopics();
+    if (_libTopicDetail)     renderTopicDetail();
+    else if (_libCat >= 0)   renderTopics();
     else if (_libField >= 0) renderCategories();
     else                     renderFields();
     updateBreadcrumb();
   }
 
   function renderFields() {
-    const d = TOPIC_LIBRARY[_libDomain];
+    const d = _sheetDomains[_libDomain];
     const grid = $('libraryGrid');
     grid.className = 'library-grid lib-field-grid';
     grid.style.setProperty('--lib-c', d.color);
@@ -1604,73 +1726,117 @@ Rules:
       const card = document.createElement('button');
       card.className = 'lib-field-card';
       card.style.setProperty('--lib-c', d.color);
-      const total = f.cats.reduce((s, c) => s + c.topics.length, 0);
-      card.innerHTML = `<div class="lib-field-name">${esc(f.name)}</div><div class="lib-field-meta">${f.cats.length} categories · ${total} topics</div>`;
-      card.addEventListener('click', () => { _libField = i; _libCat = -1; $('librarySearch').value=''; renderLibraryView(''); });
+      const total = f.subfields.reduce((s, sf) => s + sf.topics.length, 0);
+      card.innerHTML = `<div class="lib-field-name">${esc(f.name)}</div><div class="lib-field-meta">${f.subfields.length} subfields · ${total} topics</div>`;
+      card.addEventListener('click', () => { _libField = i; _libCat = -1; _libTopicDetail = null; $('librarySearch').value=''; renderLibraryView(''); });
       grid.appendChild(card);
     });
   }
 
   function renderCategories() {
-    const d = TOPIC_LIBRARY[_libDomain];
+    const d = _sheetDomains[_libDomain];
     const f = d.fields[_libField];
     const grid = $('libraryGrid');
     grid.className = 'library-grid lib-cat-grid';
     grid.style.setProperty('--lib-c', d.color);
     grid.innerHTML = '';
-    f.cats.forEach((cat, i) => {
+    f.subfields.forEach((sf, i) => {
       const card = document.createElement('button');
       card.className = 'lib-cat-card';
       card.style.setProperty('--lib-c', d.color);
-      card.innerHTML = `<span class="lib-cat-name">${esc(cat.name)}</span><span class="lib-cat-count">${cat.topics.length}</span>`;
-      card.addEventListener('click', () => { _libCat = i; $('librarySearch').value=''; renderLibraryView(''); });
+      card.innerHTML = `<span class="lib-cat-name">${esc(sf.name)}</span><span class="lib-cat-count">${sf.topics.length}</span>`;
+      card.addEventListener('click', () => { _libCat = i; _libTopicDetail = null; $('librarySearch').value=''; renderLibraryView(''); });
       grid.appendChild(card);
     });
   }
 
   function renderTopics() {
-    const d = TOPIC_LIBRARY[_libDomain];
+    const d = _sheetDomains[_libDomain];
     const f = d.fields[_libField];
-    const cat = f.cats[_libCat];
+    const sf = f.subfields[_libCat];
     const grid = $('libraryGrid');
     grid.className = 'library-grid';
     grid.style.setProperty('--lib-c', d.color);
     grid.innerHTML = '';
-    cat.topics.forEach(t => {
+    sf.topics.forEach(topic => {
       const chip = document.createElement('button');
       chip.className = 'library-chip';
-      chip.textContent = t;
-      chip.addEventListener('click', () => selectTopic(t));
+      chip.style.setProperty('--lib-c', d.color);
+      chip.textContent = topic.name;
+      chip.addEventListener('click', () => { _libTopicDetail = topic; renderLibraryView(''); });
       grid.appendChild(chip);
     });
   }
 
+  function renderTopicDetail() {
+    const d = _sheetDomains[_libDomain];
+    const topic = _libTopicDetail;
+    const grid = $('libraryGrid');
+    grid.className = 'library-grid lib-detail-mode';
+    grid.style.setProperty('--lib-c', d.color);
+    grid.innerHTML = '';
+    const kwArr = topic.keywords ? topic.keywords.split(',').map(k => k.trim()).filter(Boolean) : [];
+    const kwHtml = kwArr.slice(0, 15).map(k => `<span class="lib-kw-tag">${esc(k)}</span>`).join('');
+    const detail = document.createElement('div');
+    detail.className = 'lib-topic-detail';
+    detail.innerHTML = `
+      <div class="lib-topic-detail-name" style="color:${d.color}">${esc(topic.name)}</div>
+      ${topic.summary ? `<div class="lib-topic-detail-summary">${esc(topic.summary)}</div>` : ''}
+      ${kwHtml ? `<div class="lib-topic-keywords">${kwHtml}</div>` : ''}
+      <div class="lib-topic-actions">
+        <button class="lib-gen-btn" id="libGenBtn">Generate Learning Path →</button>
+        ${topic.wikiUrl ? `<a class="lib-wiki-btn" href="${esc(topic.wikiUrl)}" target="_blank" rel="noopener">Wikipedia ↗</a>` : ''}
+      </div>`;
+    grid.appendChild(detail);
+    document.getElementById('libGenBtn').addEventListener('click', () => {
+      topicInput.value = topic.name;
+      $('libraryPanel').style.display = 'none';
+      libBtn.classList.remove('lib-open');
+      showModal(topic.name);
+    });
+  }
+
   function renderSearchResults(query) {
+    if (!_sheetDomains) return;
     const grid = $('libraryGrid');
     grid.className = 'library-grid';
     grid.innerHTML = '';
     $('libBreadcrumb').style.display = 'none';
     const hits = [];
-    TOPIC_LIBRARY.forEach(d => d.fields.forEach(f => f.cats.forEach(cat =>
-      cat.topics.filter(t => t.toLowerCase().includes(query)).forEach(t => hits.push({ t, color: d.color }))
+    _sheetDomains.forEach(d => d.fields.forEach(f => f.subfields.forEach(sf =>
+      sf.topics.filter(t => t.name.toLowerCase().includes(query)).forEach(t => hits.push({ t, color: d.color, domain: d }))
     )));
     if (!hits.length) { grid.innerHTML = '<div class="lib-empty">No topics match.</div>'; return; }
-    hits.forEach(({ t, color }) => {
+    hits.slice(0, 200).forEach(({ t, color, domain }) => {
       const chip = document.createElement('button');
       chip.className = 'library-chip';
       chip.style.setProperty('--lib-c', color);
-      chip.textContent = t;
-      chip.addEventListener('click', () => selectTopic(t));
+      chip.textContent = t.name;
+      chip.addEventListener('click', () => {
+        _libTopicDetail = t;
+        $('librarySearch').value = '';
+        renderLibraryView('');
+      });
       grid.appendChild(chip);
     });
   }
 
   function updateBreadcrumb() {
+    if (!_sheetDomains) return;
     const bc = $('libBreadcrumb');
-    const d = TOPIC_LIBRARY[_libDomain];
-    if (_libCat >= 0) {
+    const d = _sheetDomains[_libDomain];
+    if (_libTopicDetail) {
+      if (_libField >= 0 && _libCat >= 0) {
+        const f = d.fields[_libField];
+        const sf = f.subfields[_libCat];
+        $('libBreadcrumbPath').innerHTML = `${esc(d.name)} › ${esc(f.name)} › ${esc(sf.name)} <strong>› ${esc(_libTopicDetail.name)}</strong>`;
+      } else {
+        $('libBreadcrumbPath').innerHTML = `<strong>${esc(_libTopicDetail.name)}</strong>`;
+      }
+      bc.style.display = 'flex';
+    } else if (_libCat >= 0) {
       const f = d.fields[_libField];
-      $('libBreadcrumbPath').innerHTML = `${esc(d.name)} › ${esc(f.name)} <strong>› ${esc(f.cats[_libCat].name)}</strong>`;
+      $('libBreadcrumbPath').innerHTML = `${esc(d.name)} › ${esc(f.name)} <strong>› ${esc(f.subfields[_libCat].name)}</strong>`;
       bc.style.display = 'flex';
     } else if (_libField >= 0) {
       $('libBreadcrumbPath').innerHTML = `${esc(d.name)} <strong>› ${esc(d.fields[_libField].name)}</strong>`;
