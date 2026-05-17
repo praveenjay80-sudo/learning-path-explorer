@@ -687,7 +687,7 @@
         <span class="step-icon">⊞</span>
         <div>
           <div class="step-title">Browse Topics</div>
-          <span class="step-sub">10,000+ curated topics &bull; All academic domains</span>
+          <span class="step-sub" id="libTopicCount">Loading topics…</span>
         </div>
       </div>
     </button>
@@ -734,7 +734,7 @@
 
   <div class="library-panel" id="libraryPanel" style="display:none">
     <div class="library-search-wrap">
-      <input class="library-search" id="librarySearch" placeholder="Search 10,000+ research topics across all academic domains…" autocomplete="off" spellcheck="false">
+      <input class="library-search" id="librarySearch" placeholder="Search research topics across all academic domains…" autocomplete="off" spellcheck="false">
     </div>
     <div class="library-tabs" id="libraryTabs"></div>
     <div class="lib-breadcrumb" id="libBreadcrumb">
@@ -1734,7 +1734,12 @@ Rules:
       const resp = await fetch(SHEET_CSV_URL);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const text = await resp.text();
-      _sheetDomains = buildSheetData(parseCSV(text));
+      const rows = parseCSV(text);
+      _sheetDomains = buildSheetData(rows);
+      // update the button label with real count
+      const topicCount = rows.slice(1).filter(r => r.length > 1 && r[1] && r[1].trim()).length;
+      const el = document.getElementById('libTopicCount');
+      if(el) el.textContent = `${topicCount.toLocaleString()} curated topics · All academic domains`;
       return _sheetDomains;
     } catch(e) {
       console.error('Sheet fetch failed:', e);
