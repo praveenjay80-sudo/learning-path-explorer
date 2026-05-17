@@ -464,6 +464,26 @@
       padding:.12rem .38rem; border-radius:999px; flex-shrink:0;
     }
 
+    .lib-field-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:.55rem;
+    }
+    .lib-field-card {
+      padding:.7rem 1rem; border:1px solid var(--border);
+      border-top:3px solid var(--lib-c,var(--border));
+      border-radius:10px; background:var(--surface2); cursor:pointer; text-align:left;
+      font-family:inherit; transition:border-color .13s, background .13s, transform .1s;
+      display:flex; flex-direction:column; gap:.18rem;
+    }
+    .lib-field-card:hover {
+      border-color:var(--lib-c); border-top-color:var(--lib-c);
+      background:color-mix(in srgb,var(--lib-c) 8%,var(--surface2));
+      transform:translateY(-1px);
+    }
+    .lib-field-name { font-size:.82rem; font-weight:800; color:var(--text); line-height:1.25; }
+    .lib-field-meta { font-size:.67rem; color:var(--text-muted); }
+
+    .library-grid { max-height:310px; }
+
     .rs-section { margin-top:2rem; }
     .rs-loader { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin:.75rem 0 1.5rem; display:none; }
     .rs-loader.active { display:block; }
@@ -593,7 +613,7 @@
         <span class="step-icon">⊞</span>
         <div>
           <div class="step-title">Browse Topics</div>
-          <span class="step-sub">500+ topics &bull; 12 fields &bull; All disciplines</span>
+          <span class="step-sub">1000+ topics &bull; 8 domains &bull; All human knowledge</span>
         </div>
       </div>
     </button>
@@ -621,7 +641,7 @@
 
   <div class="library-panel" id="libraryPanel" style="display:none">
     <div class="library-search-wrap">
-      <input class="library-search" id="librarySearch" placeholder="Search 500+ topics across all fields…" autocomplete="off" spellcheck="false">
+      <input class="library-search" id="librarySearch" placeholder="Search 1000+ topics across all domains of human knowledge…" autocomplete="off" spellcheck="false">
     </div>
     <div class="library-tabs" id="libraryTabs"></div>
     <div class="lib-breadcrumb" id="libBreadcrumb">
@@ -1250,147 +1270,358 @@ Rules:
 
   // ── Topic Library ────────────────────────────────────────────────────────────
 
+  // ── Topic Library data: Domain → Field → Category → Topic (4 levels) ────────
   const TOPIC_LIBRARY = [
-    { name:'Mathematics', color:'#7c3aed', cats:[
-      { name:'Algebra', topics:['Abstract Algebra','Group Theory','Ring Theory','Field Theory','Galois Theory','Linear Algebra','Multilinear Algebra','Commutative Algebra','Homological Algebra','Universal Algebra','Representation Theory','Lie Algebras','Category Theory','K-Theory','Noncommutative Algebra','Hopf Algebras'] },
-      { name:'Analysis', topics:['Real Analysis','Complex Analysis','Functional Analysis','Harmonic Analysis','Fourier Analysis','Measure Theory','Numerical Analysis','Convex Analysis','Nonlinear Analysis','Microlocal Analysis','Operator Theory','Several Complex Variables'] },
-      { name:'Geometry & Topology', topics:['Topology','Point-Set Topology','Algebraic Topology','Differential Geometry','Riemannian Geometry','Algebraic Geometry','Symplectic Geometry','Contact Geometry','Low-Dimensional Topology','Knot Theory','Geometric Group Theory','Tropical Geometry','Noncommutative Geometry','Information Geometry'] },
-      { name:'Number Theory', topics:['Elementary Number Theory','Algebraic Number Theory','Analytic Number Theory','Arithmetic Geometry','Elliptic Curves','Modular Forms','p-adic Analysis','Diophantine Equations','Iwasawa Theory','Automorphic Forms'] },
-      { name:'Logic & Foundations', topics:['Mathematical Logic','Set Theory','Model Theory','Proof Theory','Recursion Theory','Descriptive Set Theory','Topos Theory','Reverse Mathematics','Constructive Mathematics','Finite Model Theory'] },
-      { name:'Probability & Stochastics', topics:['Probability Theory','Stochastic Processes','Markov Chains','Ergodic Theory','Random Matrix Theory','Stochastic Calculus','Stochastic Differential Equations','Brownian Motion','Percolation Theory','Random Graphs'] },
-      { name:'Applied Mathematics', topics:['Optimization Theory','Dynamical Systems','Partial Differential Equations','Ordinary Differential Equations','Numerical Methods','Mathematical Physics','Control Theory','Game Theory','Mathematical Biology','Fluid Dynamics'] },
-      { name:'Combinatorics', topics:['Combinatorics','Graph Theory','Extremal Combinatorics','Probabilistic Method','Ramsey Theory','Enumerative Combinatorics','Algebraic Combinatorics','Matroid Theory','Coding Theory','Additive Combinatorics'] }
+    { name:'Formal Sciences', color:'#7c3aed', fields:[
+      { name:'Mathematics', cats:[
+        { name:'Algebra', topics:['Abstract Algebra','Group Theory','Ring Theory','Field Theory','Galois Theory','Linear Algebra','Multilinear Algebra','Commutative Algebra','Homological Algebra','Universal Algebra','Representation Theory','Lie Algebras','Category Theory','K-Theory','Noncommutative Algebra','Hopf Algebras'] },
+        { name:'Analysis', topics:['Real Analysis','Complex Analysis','Functional Analysis','Harmonic Analysis','Fourier Analysis','Measure Theory','Numerical Analysis','Convex Analysis','Nonlinear Analysis','Microlocal Analysis','Operator Theory','Several Complex Variables','p-adic Analysis'] },
+        { name:'Geometry & Topology', topics:['Topology','Algebraic Topology','Differential Geometry','Riemannian Geometry','Algebraic Geometry','Symplectic Geometry','Low-Dimensional Topology','Knot Theory','Geometric Group Theory','Noncommutative Geometry','Information Geometry','Metric Geometry'] },
+        { name:'Number Theory', topics:['Elementary Number Theory','Algebraic Number Theory','Analytic Number Theory','Arithmetic Geometry','Elliptic Curves','Modular Forms','Diophantine Equations','Iwasawa Theory','Automorphic Forms','L-functions'] },
+        { name:'Logic & Foundations', topics:['Mathematical Logic','Set Theory','Model Theory','Proof Theory','Recursion Theory','Descriptive Set Theory','Topos Theory','Reverse Mathematics','Constructive Mathematics','Forcing Theory'] },
+        { name:'Probability & Stochastics', topics:['Probability Theory','Stochastic Processes','Markov Chains','Ergodic Theory','Random Matrix Theory','Stochastic Calculus','Stochastic Differential Equations','Brownian Motion','Percolation Theory','Random Graphs'] },
+        { name:'Applied Mathematics', topics:['Optimization Theory','Dynamical Systems','Partial Differential Equations','Ordinary Differential Equations','Mathematical Physics','Control Theory','Game Theory','Mathematical Biology','Fluid Dynamics','Mathematical Finance'] },
+        { name:'Combinatorics', topics:['Graph Theory','Extremal Combinatorics','Probabilistic Method','Ramsey Theory','Enumerative Combinatorics','Algebraic Combinatorics','Matroid Theory','Coding Theory','Additive Combinatorics'] }
+      ]},
+      { name:'Statistics', cats:[
+        { name:'Foundations', topics:['Bayesian Statistics','Frequentist Statistics','Statistical Decision Theory','Measure-Theoretic Probability','Likelihood Theory','Foundations of Probability','Fiducial Inference'] },
+        { name:'Inference', topics:['Hypothesis Testing','Estimation Theory','Confidence Intervals','Multiple Testing','Nonparametric Statistics','Robust Statistics','Empirical Processes','Bootstrap Methods','Bayesian Inference'] },
+        { name:'Models & Methods', topics:['Regression Analysis','Graphical Models','Time Series Analysis','Survival Analysis','Multivariate Statistics','Functional Data Analysis','Spatial Statistics','Mixture Models','Hierarchical Models'] },
+        { name:'Causal & Experimental', topics:['Causal Inference','Experimental Design','Randomized Controlled Trials','Observational Studies','Missing Data Methods','Survey Sampling','Adaptive Designs','Quasi-Experimental Methods'] },
+        { name:'Computational Statistics', topics:['Monte Carlo Methods','Markov Chain Monte Carlo','Variational Inference','Stochastic Optimization','High-Dimensional Statistics','Approximate Bayesian Computation'] },
+        { name:'Learning Theory', topics:['Statistical Learning Theory','PAC Learning','VC Theory','Concentration Inequalities','Online Learning','Bandit Problems','Information-Theoretic Statistics'] }
+      ]},
+      { name:'Logic', cats:[
+        { name:'Classical Logic', topics:['Propositional Logic','Predicate Logic','First-Order Logic','Second-Order Logic','Higher-Order Logic','Proof Theory','Natural Deduction','Sequent Calculus'] },
+        { name:'Non-Classical Logic', topics:['Modal Logic','Temporal Logic','Intuitionistic Logic','Relevance Logic','Paraconsistent Logic','Fuzzy Logic','Many-Valued Logic','Free Logic'] },
+        { name:'Applied Logic', topics:['Type Theory','Lambda Calculus','Linear Logic','Dynamic Logic','Description Logics','Deontic Logic','Epistemic Logic','Substructural Logic'] }
+      ]},
+      { name:'Theoretical Computer Science', cats:[
+        { name:'Computability', topics:['Computability Theory','Turing Machines','Recursive Functions','Decidability','Kolmogorov Complexity','Oracle Computation','Hypercomputation'] },
+        { name:'Complexity Theory', topics:['Computational Complexity','P vs NP','Circuit Complexity','Parameterized Complexity','Communication Complexity','Descriptive Complexity','Proof Complexity','Fine-Grained Complexity'] },
+        { name:'Algorithms', topics:['Algorithms & Data Structures','Randomized Algorithms','Approximation Algorithms','Online Algorithms','Streaming Algorithms','Algebraic Algorithms','Combinatorial Optimization'] },
+        { name:'Formal Languages', topics:['Automata Theory','Formal Languages','Regular Languages','Context-Free Grammars','Rewriting Systems','Tree Automata'] },
+        { name:'Semantics & Types', topics:['Programming Language Theory','Type Theory','Denotational Semantics','Operational Semantics','Lambda Calculus','Domain Theory','Dependent Types'] }
+      ]},
+      { name:'Information Theory', cats:[
+        { name:'Core Theory', topics:['Shannon Information Theory','Entropy','Channel Capacity','Source Coding','Data Compression','Error Correction','Kolmogorov Complexity','Algorithmic Information Theory'] },
+        { name:'Applications', topics:['Coding Theory','Network Information Theory','Quantum Information Theory','Multi-Terminal Information Theory','Rate-Distortion Theory','Information-Theoretic Security'] }
+      ]}
     ]},
-    { name:'Physics', color:'#1d4ed8', cats:[
-      { name:'Classical Physics', topics:['Classical Mechanics','Lagrangian Mechanics','Hamiltonian Mechanics','Electromagnetism','Optics','Wave Mechanics','Fluid Dynamics','Thermodynamics','Acoustics','Elasticity Theory','Plasma Physics'] },
-      { name:'Quantum Physics', topics:['Quantum Mechanics','Quantum Field Theory','Quantum Optics','Quantum Information','Quantum Computing','Quantum Thermodynamics','Quantum Chaos','Open Quantum Systems','Quantum Many-Body Physics','Quantum Entanglement'] },
-      { name:'Relativity & Cosmology', topics:['Special Relativity','General Relativity','Cosmology','Astrophysics','Gravitational Waves','Black Hole Physics','Dark Matter','Dark Energy','Inflation Theory','Gravitational Lensing','Large-Scale Structure'] },
-      { name:'Condensed Matter', topics:['Statistical Mechanics','Condensed Matter Physics','Solid State Physics','Superconductivity','Superfluidity','Topological Phases of Matter','Phase Transitions','Non-Equilibrium Statistical Mechanics','Strongly Correlated Systems','Nanophysics'] },
-      { name:'Particle & Nuclear', topics:['Particle Physics','The Standard Model','Nuclear Physics','Beyond the Standard Model','String Theory','Loop Quantum Gravity','Heavy Ion Physics','Neutrino Physics','Quantum Chromodynamics'] },
-      { name:'Interdisciplinary Physics', topics:['Biophysics','Computational Physics','Atomic Physics','Molecular Physics','Chaos Theory','Nonlinear Dynamics','Econophysics','Network Physics','Active Matter','Chemical Physics'] }
+    { name:'Natural Sciences', color:'#1d4ed8', fields:[
+      { name:'Physics', cats:[
+        { name:'Classical Physics', topics:['Classical Mechanics','Lagrangian Mechanics','Hamiltonian Mechanics','Electromagnetism','Optics','Wave Mechanics','Fluid Dynamics','Thermodynamics','Acoustics','Elasticity Theory','Plasma Physics'] },
+        { name:'Quantum Physics', topics:['Quantum Mechanics','Quantum Field Theory','Quantum Optics','Quantum Information','Quantum Computing','Quantum Thermodynamics','Open Quantum Systems','Quantum Many-Body Physics','Quantum Entanglement'] },
+        { name:'Relativity & Cosmology', topics:['Special Relativity','General Relativity','Cosmology','Astrophysics','Gravitational Waves','Black Hole Physics','Dark Matter','Dark Energy','Inflation Theory','Gravitational Lensing'] },
+        { name:'Condensed Matter', topics:['Statistical Mechanics','Condensed Matter Physics','Solid State Physics','Superconductivity','Superfluidity','Topological Phases','Phase Transitions','Non-Equilibrium Statistical Mechanics','Strongly Correlated Systems'] },
+        { name:'Particle & Nuclear', topics:['Particle Physics','The Standard Model','Nuclear Physics','Beyond the Standard Model','String Theory','Loop Quantum Gravity','Neutrino Physics','Quantum Chromodynamics'] },
+        { name:'Interdisciplinary Physics', topics:['Biophysics','Computational Physics','Atomic Physics','Molecular Physics','Chaos Theory','Nonlinear Dynamics','Econophysics','Active Matter','Chemical Physics'] }
+      ]},
+      { name:'Chemistry', cats:[
+        { name:'Organic Chemistry', topics:['Organic Chemistry','Stereochemistry','Natural Products Chemistry','Medicinal Chemistry','Organometallic Chemistry','Organic Synthesis','Photochemistry','Polymer Chemistry','Supramolecular Chemistry'] },
+        { name:'Physical Chemistry', topics:['Chemical Thermodynamics','Reaction Kinetics','Quantum Chemistry','Statistical Thermodynamics','Chemical Dynamics','Electrochemistry','Surface Chemistry','Spectroscopy','Molecular Simulation'] },
+        { name:'Inorganic Chemistry', topics:['Coordination Chemistry','Bioinorganic Chemistry','Nuclear Chemistry','Solid State Chemistry','Catalysis','Cluster Chemistry','Lanthanide Chemistry'] },
+        { name:'Analytical Chemistry', topics:['Mass Spectrometry','Chromatography','Electroanalytical Chemistry','Microscopy','Spectroscopic Analysis','Separation Science','Chemometrics'] },
+        { name:'Interdisciplinary Chemistry', topics:['Biochemistry','Chemical Biology','Nanochemistry','Green Chemistry','Computational Chemistry','Atmospheric Chemistry','Astrochemistry'] }
+      ]},
+      { name:'Earth & Atmospheric Sciences', cats:[
+        { name:'Geology & Geophysics', topics:['Geology','Mineralogy','Petrology','Seismology','Geophysics','Plate Tectonics','Volcanology','Hydrogeology','Geomorphology','Geochronology'] },
+        { name:'Atmospheric Science', topics:['Meteorology','Climatology','Atmospheric Chemistry','Atmospheric Dynamics','Tropical Meteorology','Boundary Layer Meteorology','Stratospheric Science'] },
+        { name:'Oceanography', topics:['Physical Oceanography','Chemical Oceanography','Biological Oceanography','Paleoceanography','Marine Geology','Ocean Circulation','Ocean-Atmosphere Interaction'] },
+        { name:'Climate Science', topics:['Climate Dynamics','Climate Modelling','Paleoclimatology','Climate Change Science','Carbon Cycle Science','Sea Level Change','Extreme Weather'] },
+        { name:'Environmental Earth Science', topics:['Environmental Geochemistry','Soil Science','Hydrology','Glaciology','Remote Sensing (Earth)','Quaternary Science'] }
+      ]},
+      { name:'Astronomy & Space Science', cats:[
+        { name:'Observational Astronomy', topics:['Optical Astronomy','Radio Astronomy','X-ray Astronomy','Infrared Astronomy','Gravitational Wave Astronomy','Multi-Messenger Astronomy','Astrometry','Time-Domain Astronomy'] },
+        { name:'Stellar Physics', topics:['Stellar Structure & Evolution','Stellar Nucleosynthesis','White Dwarfs & Neutron Stars','Black Holes','Supernovae','Variable Stars','Binary Stars','Star Formation'] },
+        { name:'Galactic & Extragalactic', topics:['Galactic Dynamics','Galaxy Formation','Active Galactic Nuclei','Galaxy Clusters','Intergalactic Medium','Large-Scale Structure','Dark Matter Observations'] },
+        { name:'Cosmology', topics:['Big Bang Theory','Cosmic Microwave Background','Inflation Theory','Dark Energy','Baryon Acoustic Oscillations','Quantum Cosmology','Cosmic Nucleosynthesis'] },
+        { name:'Planetary & Solar', topics:['Planetary Science','Solar Physics','Exoplanets','Planetary Formation','Astrobiology','Solar Wind','Magnetospheres'] }
+      ]}
     ]},
-    { name:'Computer Science', color:'#4338ca', cats:[
-      { name:'Algorithms & Complexity', topics:['Algorithms & Data Structures','Computational Complexity Theory','Randomized Algorithms','Approximation Algorithms','Online Algorithms','Parallel Algorithms','Algorithmic Game Theory','Computational Geometry','Parameterized Complexity','Communication Complexity','Circuit Complexity'] },
-      { name:'AI & Machine Learning', topics:['Machine Learning','Deep Learning','Reinforcement Learning','Natural Language Processing','Computer Vision','Generative Models','Representation Learning','Meta-Learning','Multiagent Systems','Automated Reasoning','Program Synthesis','Neuro-Symbolic AI','Federated Learning'] },
-      { name:'Systems', topics:['Operating Systems','Distributed Systems','Computer Networks','Computer Architecture','Database Theory','Parallel Computing','Cloud Computing','Storage Systems','Real-Time Systems','Embedded Systems','Compilers'] },
-      { name:'Theory of Computation', topics:['Computability Theory','Type Theory','Programming Language Theory','Logic in Computer Science','Information Theory','Formal Methods & Verification','Constraint Programming','Descriptive Complexity','Algebraic Complexity','Quantum Complexity'] },
-      { name:'Security & Privacy', topics:['Cryptography','Computer Security','Differential Privacy','Zero-Knowledge Proofs','Secure Multi-Party Computation','Blockchain & Distributed Ledgers','Side-Channel Attacks','Formal Security Analysis','Post-Quantum Cryptography'] },
-      { name:'Applied Computing', topics:['Human-Computer Interaction','Computer Graphics','Scientific Computing','Bioinformatics','Robotics & Motion Planning','Data Mining','Computational Biology','Computer Vision','Speech Recognition','Quantum Computing'] }
+    { name:'Life Sciences', color:'#15803d', fields:[
+      { name:'Biology', cats:[
+        { name:'Cell & Molecular', topics:['Cell Biology','Molecular Biology','Biochemistry','Structural Biology','Membrane Biology','Cell Signalling','Protein Biology','RNA Biology','Cell Division','Proteomics'] },
+        { name:'Genetics & Genomics', topics:['Genetics','Genomics','Epigenetics','Population Genetics','Functional Genomics','Single-Cell Biology','Phylogenetics','Metabolomics','Metagenomics','Comparative Genomics','Transcriptomics'] },
+        { name:'Microbiology & Immunology', topics:['Microbiology','Virology','Bacteriology','Immunology','Cancer Biology','Parasitology','Mycology','Infectious Disease','Vaccine Biology','Host-Pathogen Interactions'] },
+        { name:'Organismal Biology', topics:['Physiology','Endocrinology','Developmental Biology','Plant Biology','Reproductive Biology','Comparative Physiology','Ageing Biology','Stem Cell Biology'] },
+        { name:'Systems & Synthetic', topics:['Systems Biology','Synthetic Biology','Bioinformatics','Chronobiology','Network Biology','Metabolic Engineering','Optogenetics'] }
+      ]},
+      { name:'Ecology & Evolution', cats:[
+        { name:'Evolutionary Biology', topics:['Evolutionary Biology','Population Genetics','Evolutionary Genetics','Molecular Evolution','Phylogenetics','Speciation','Macroevolution','Coevolution','Evo-Devo'] },
+        { name:'Ecology', topics:['Community Ecology','Ecosystem Ecology','Landscape Ecology','Behavioural Ecology','Marine Ecology','Soil Ecology','Microbial Ecology','Urban Ecology','Restoration Ecology'] },
+        { name:'Conservation', topics:['Conservation Biology','Biodiversity Science','Biogeography','Island Biogeography','Wildlife Biology','Extinction Biology','Invasion Biology','Paleontology'] },
+        { name:'Ethology', topics:['Animal Behaviour','Ethology','Sociobiology','Comparative Psychology','Animal Cognition','Neurobiology of Behaviour'] }
+      ]},
+      { name:'Neuroscience', cats:[
+        { name:'Systems Neuroscience', topics:['Systems Neuroscience','Sensory Neuroscience','Motor Neuroscience','Circuits Neuroscience','Auditory Neuroscience','Visual Neuroscience','Neuroethology'] },
+        { name:'Cellular & Molecular', topics:['Cellular Neuroscience','Molecular Neuroscience','Neuropharmacology','Glial Biology','Synaptic Transmission','Ion Channels','Neuroplasticity'] },
+        { name:'Developmental & Structural', topics:['Developmental Neuroscience','Neuroanatomy','Connectomics','Adult Neurogenesis','Brain Evolution'] },
+        { name:'Cognitive & Computational', topics:['Cognitive Neuroscience','Computational Neuroscience','Theoretical Neuroscience','Neural Coding','Decision Neuroscience','Social Neuroscience'] },
+        { name:'Clinical Neuroscience', topics:['Clinical Neuroscience','Neuropsychology','Neuroimaging','Brain-Machine Interfaces','Psychiatric Neuroscience','Pain Science'] }
+      ]}
     ]},
-    { name:'Biology', color:'#15803d', cats:[
-      { name:'Cell & Molecular', topics:['Cell Biology','Molecular Biology','Biochemistry','Structural Biology','Membrane Biology','Cell Signalling','Protein Biology','RNA Biology','Cell Division','Organelle Biology','Proteomics'] },
-      { name:'Genetics & Genomics', topics:['Genetics','Genomics','Epigenetics','Population Genetics','Functional Genomics','Single-Cell Biology','Phylogenetics','Metabolomics','Metagenomics','Comparative Genomics','Transcriptomics'] },
-      { name:'Evolution & Ecology', topics:['Evolutionary Biology','Ecology','Animal Behaviour','Conservation Biology','Marine Biology','Astrobiology','Paleontology','Ethology','Community Ecology','Evolutionary Ecology','Biogeography'] },
-      { name:'Neuroscience', topics:['Neuroscience','Cognitive Neuroscience','Computational Neuroscience','Neuropharmacology','Systems Neuroscience','Molecular Neuroscience','Developmental Neuroscience','Connectomics','Glial Biology'] },
-      { name:'Microbiology & Immunology', topics:['Microbiology','Virology','Bacteriology','Immunology','Cancer Biology','Parasitology','Mycology','Infectious Disease','Vaccine Biology','Host-Pathogen Interactions'] },
-      { name:'Systems & Synthetic', topics:['Systems Biology','Synthetic Biology','Bioinformatics','Chronobiology','Network Biology','Metabolic Engineering','Optogenetics'] },
-      { name:'Organismal Biology', topics:['Physiology','Endocrinology','Stem Cell Biology','Developmental Biology','Plant Biology','Reproductive Biology','Comparative Physiology','Ageing Biology'] }
+    { name:'Social Sciences', color:'#b45309', fields:[
+      { name:'Economics', cats:[
+        { name:'Core Theory', topics:['Microeconomics','Macroeconomics','General Equilibrium Theory','Social Choice Theory','Decision Theory','Expected Utility Theory','Revealed Preference Theory'] },
+        { name:'Behavioural & Experimental', topics:['Behavioural Economics','Experimental Economics','Neuroeconomics','Prospect Theory','Bounded Rationality','Psychological Game Theory','Nudge Theory'] },
+        { name:'Econometrics', topics:['Econometrics','Causal Inference','Time Series Analysis','Computational Economics','Structural Estimation','Panel Data Methods','Bayesian Econometrics'] },
+        { name:'Applied Fields', topics:['Development Economics','Health Economics','Environmental Economics','Urban Economics','Labour Economics','Public Economics','Agricultural Economics','Education Economics','Law & Economics'] },
+        { name:'Advanced Theory', topics:['Game Theory','Mechanism Design','Auction Theory','Contract Theory','Information Economics','Market Design','Matching Theory','Search Theory'] },
+        { name:'Finance & Macro', topics:['Asset Pricing','Market Microstructure','Monetary Economics','Growth Theory','Business Cycle Theory','Financial Intermediation','International Finance','International Trade'] }
+      ]},
+      { name:'Psychology', cats:[
+        { name:'Cognitive Psychology', topics:['Attention','Memory','Perception','Language & Thought','Problem Solving','Decision Making','Mental Imagery','Cognitive Development'] },
+        { name:'Social Psychology', topics:['Social Influence','Attitudes & Persuasion','Group Dynamics','Intergroup Relations','Social Cognition','Theory of Mind','Prosocial Behaviour','Aggression'] },
+        { name:'Developmental Psychology', topics:['Cognitive Development','Moral Development','Language Acquisition','Attachment Theory','Adolescent Development','Lifespan Development','Developmental Psychopathology'] },
+        { name:'Clinical & Abnormal', topics:['Clinical Psychology','Psychopathology','Cognitive-Behavioural Therapy','Personality Disorders','Mood Disorders','Anxiety Disorders','Neuropsychology'] },
+        { name:'Biological & Health', topics:['Biological Psychology','Psychophysiology','Health Psychology','Stress & Coping','Psychoneuroimmunology','Evolutionary Psychology'] },
+        { name:'Personality & Individual', topics:['Personality Psychology','Intelligence','Psychometrics','Individual Differences','Motivation','Emotion Regulation','Positive Psychology'] }
+      ]},
+      { name:'Sociology', cats:[
+        { name:'Core Theory', topics:['Sociological Theory','Structural Functionalism','Conflict Theory','Symbolic Interactionism','Critical Theory','Postmodern Sociology','Social Systems Theory'] },
+        { name:'Social Structure', topics:['Social Stratification','Class & Inequality','Social Mobility','Institutions','Organisations','Bureaucracy','Social Networks'] },
+        { name:'Applied Sociology', topics:['Urban Sociology','Medical Sociology','Environmental Sociology','Economic Sociology','Political Sociology','Sociology of Education','Sociology of Religion'] },
+        { name:'Culture & Identity', topics:['Cultural Sociology','Sociology of Knowledge','Gender & Sexuality','Race & Ethnicity','Social Movements','Collective Behaviour'] }
+      ]},
+      { name:'Political Science', cats:[
+        { name:'Political Theory', topics:['Political Theory','Liberal Political Theory','Democratic Theory','Justice & Equality','Political Obligation','Sovereignty','Legitimacy'] },
+        { name:'Comparative Politics', topics:['Comparative Politics','Electoral Systems','Party Systems','Democratization','Authoritarianism','State Formation','Federalism','Coalition Politics'] },
+        { name:'International Relations', topics:['International Relations Theory','Realism','Liberalism (IR)','Constructivism','International Institutions','Geopolitics','Security Studies','Nuclear Strategy'] },
+        { name:'Public Policy', topics:['Public Administration','Public Policy Analysis','Regulatory Theory','Welfare State','Social Policy','Environmental Policy','Policy Evaluation'] }
+      ]},
+      { name:'Anthropology', cats:[
+        { name:'Social & Cultural', topics:['Social Anthropology','Cultural Anthropology','Kinship & Family','Political Anthropology','Economic Anthropology','Urban Anthropology','Digital Anthropology'] },
+        { name:'Biological & Evolutionary', topics:['Biological Anthropology','Primatology','Paleoanthropology','Human Evolutionary Biology','Forensic Anthropology'] },
+        { name:'Linguistic & Cognitive', topics:['Linguistic Anthropology','Cognitive Anthropology','Ethnolinguistics','Cross-Cultural Psychology'] },
+        { name:'Applied & Medical', topics:['Medical Anthropology','Applied Anthropology','Development Anthropology','Ecological Anthropology'] }
+      ]},
+      { name:'Law & Jurisprudence', cats:[
+        { name:'Legal Theory', topics:['Jurisprudence','Natural Law Theory','Legal Positivism','Critical Legal Studies','Law & Economics','Feminist Legal Theory','Comparative Law'] },
+        { name:'Public Law', topics:['Constitutional Law','Administrative Law','International Law','Human Rights Law','Environmental Law','Criminal Law'] },
+        { name:'Private Law', topics:['Contract Law','Tort Law','Property Law','Family Law','Commercial Law','Intellectual Property'] }
+      ]},
+      { name:'Geography & Demography', cats:[
+        { name:'Human Geography', topics:['Human Geography','Urban Geography','Economic Geography','Political Geography','Social Geography','Cultural Geography','Migration Studies','Geopolitics'] },
+        { name:'Physical Geography', topics:['Geomorphology','Biogeography','Climatology (Geog)','Soil Geography','Coastal Geography','Glacial Geography'] },
+        { name:'Demography', topics:['Demography','Population Dynamics','Fertility Theory','Mortality Analysis','Migration Theory','Urbanisation','Ageing Populations','Historical Demography'] }
+      ]}
     ]},
-    { name:'Economics', color:'#b45309', cats:[
-      { name:'Core Theory', topics:['Microeconomics','Macroeconomics','General Equilibrium Theory','Social Choice Theory','Decision Theory','Expected Utility Theory','Revealed Preference Theory'] },
-      { name:'Behavioural & Experimental', topics:['Behavioural Economics','Experimental Economics','Neuroeconomics','Prospect Theory','Bounded Rationality','Psychological Game Theory','Nudge Theory'] },
-      { name:'Econometrics & Methods', topics:['Econometrics','Causal Inference','Time Series Analysis','Computational Economics','Structural Estimation','Panel Data Methods','Bayesian Econometrics','Machine Learning in Economics'] },
-      { name:'Applied Fields', topics:['Development Economics','Health Economics','Environmental Economics','Urban Economics','Labour Economics','Public Economics','Financial Economics','Agricultural Economics','Education Economics','Law & Economics'] },
-      { name:'Advanced Theory', topics:['Game Theory','Mechanism Design','Auction Theory','Contract Theory','Information Economics','Market Design','Matching Theory','Search Theory'] },
-      { name:'Finance & Macro', topics:['International Trade','International Finance','Asset Pricing','Market Microstructure','Monetary Economics','Growth Theory','Business Cycle Theory','Financial Intermediation','Inequality & Redistribution'] }
+    { name:'Humanities', color:'#374151', fields:[
+      { name:'Philosophy', cats:[
+        { name:'Epistemology & Mind', topics:['Epistemology','Philosophy of Mind','Formal Epistemology','Social Epistemology','Consciousness','Extended Mind','Intentionality','Mental Content','Perception (Philosophy)'] },
+        { name:'Ethics', topics:['Ethics','Metaethics','Normative Ethics','Applied Ethics','Moral Psychology','Virtue Ethics','Consequentialism','Deontology','Bioethics','AI Ethics'] },
+        { name:'Metaphysics & Logic', topics:['Metaphysics','Ontology','Logic','Philosophy of Time','Free Will & Determinism','Personal Identity','Modality','Grounding','Mereology'] },
+        { name:'Philosophy of Science', topics:['Philosophy of Science','Philosophy of Physics','Philosophy of Biology','Philosophy of Cognitive Science','Philosophy of Mathematics','Scientific Realism','Philosophy of Causation'] },
+        { name:'Language & Action', topics:['Philosophy of Language','Speech Act Theory','Pragmatics (Philosophy)','Philosophy of Action','Practical Reason','Meaning & Reference','Vagueness'] },
+        { name:'Traditions & Political', topics:['Analytic Philosophy','Continental Philosophy','Phenomenology','Existentialism','Pragmatism','Critical Theory','Hermeneutics','Political Philosophy','Aesthetics','Philosophy of Technology'] }
+      ]},
+      { name:'History', cats:[
+        { name:'Ancient History', topics:['Ancient Near East','Classical Greece','Roman History','Ancient Egypt','Ancient India','Ancient China','Pre-Columbian Americas','Ancient Philosophy'] },
+        { name:'Medieval & Early Modern', topics:['Medieval Europe','Byzantine History','Islamic Golden Age','Renaissance','Reformation','Early Modern Europe','Medieval China','Ottoman History'] },
+        { name:'Modern History', topics:['Enlightenment History','Industrial Revolution','Age of Revolution','Colonialism & Imperialism','World War I & II','Cold War History','Decolonisation','Contemporary History'] },
+        { name:'Historiography & Method', topics:['Historiography','Philosophy of History','Quantitative History','Oral History','Environmental History','Global History','Microhistory','Digital Humanities'] },
+        { name:'Thematic History', topics:['Economic History','Social History','Cultural History','Intellectual History','Political History','Military History','Gender History','History of Science'] }
+      ]},
+      { name:'Linguistics', cats:[
+        { name:'Core Grammar', topics:['Syntax','Semantics','Phonology','Morphology','Pragmatics','Phonetics','Prosody','Lexicology','Discourse Analysis'] },
+        { name:'Formal Approaches', topics:['Formal Semantics','Minimalist Program','Optimality Theory','Construction Grammar','Generative Grammar','Dynamic Semantics','Type-Logical Grammar'] },
+        { name:'Language & Mind', topics:['Psycholinguistics','Cognitive Linguistics','Neurolinguistics','Language Acquisition','Bilingualism','Language Processing'] },
+        { name:'Language & Society', topics:['Sociolinguistics','Language Contact','Dialectology','Language Documentation','Sign Language','Language Policy','Code-Switching'] },
+        { name:'Computational', topics:['Computational Linguistics','Corpus Linguistics','Distributional Semantics','Parsing','Machine Translation','Information Extraction'] },
+        { name:'Historical', topics:['Historical Linguistics','Linguistic Typology','Language Change','Comparative Linguistics','Proto-Language Reconstruction','Grammaticalization'] }
+      ]},
+      { name:'Literature & Rhetoric', cats:[
+        { name:'Literary Theory', topics:['Literary Theory','New Criticism','Structuralism','Post-Structuralism','Deconstruction','Hermeneutics (Literary)','Reader-Response Theory','New Historicism','Postcolonial Literary Theory'] },
+        { name:'Rhetoric & Poetics', topics:['Rhetoric','Classical Rhetoric','Argumentation Theory','Narratology','Poetics','Genre Theory','Stylistics','Translation Studies'] },
+        { name:'Comparative Literature', topics:['Comparative Literature','World Literature','Intertextuality','Cultural Translation','Literature & Philosophy','Literature & Science'] }
+      ]},
+      { name:'Arts & Aesthetics', cats:[
+        { name:'Aesthetics', topics:['Aesthetics','Philosophy of Art','Beauty Theory','The Sublime','Expression Theory','Formalism','Institutional Theory of Art','Environmental Aesthetics'] },
+        { name:'Music Theory & Musicology', topics:['Music Theory','Harmony','Counterpoint','Rhythm & Meter','Form & Analysis','Ethnomusicology','History of Music','Music Psychology'] },
+        { name:'Art History', topics:['Art History','Iconography','Modernism','Contemporary Art','Renaissance Art','Baroque Art','Abstract Art','Postmodernism in Art'] },
+        { name:'Film & Media Theory', topics:['Film Theory','Semiotics of Film','Genre Studies','Media Studies','Visual Culture','Photography Theory','Feminist Film Theory'] },
+        { name:'Architecture & Design', topics:['Architectural Theory','Urban Design Theory','Design Theory','Phenomenology of Architecture','Sustainability in Architecture'] }
+      ]},
+      { name:'Religious Studies', cats:[
+        { name:'Comparative Religion', topics:['World Religions','Comparative Religion','Phenomenology of Religion','Ritual Studies','Sacred & Profane','Myth & Symbol','Religious Pluralism'] },
+        { name:'Theology', topics:['Christian Theology','Islamic Theology','Jewish Theology','Hindu Philosophy','Buddhist Philosophy','Philosophical Theology','Liberation Theology'] },
+        { name:'History & Society', topics:['History of Religions','Sociology of Religion','Psychology of Religion','Political Theology','Religion & Science','Secularisation Theory'] }
+      ]}
     ]},
-    { name:'Philosophy', color:'#374151', cats:[
-      { name:'Epistemology & Mind', topics:['Epistemology','Philosophy of Mind','Formal Epistemology','Social Epistemology','Consciousness','Extended Mind','Intentionality','Mental Content','Perception (Philosophy)','Self-Knowledge'] },
-      { name:'Ethics', topics:['Ethics','Metaethics','Normative Ethics','Applied Ethics','Moral Psychology','Virtue Ethics','Consequentialism','Deontology','Bioethics','Environmental Ethics','AI Ethics'] },
-      { name:'Metaphysics & Logic', topics:['Metaphysics','Ontology','Logic','Philosophy of Logic','Philosophy of Time','Free Will & Determinism','Personal Identity','Modality','Grounding','Mereology'] },
-      { name:'Philosophy of Science', topics:['Philosophy of Science','Philosophy of Physics','Philosophy of Biology','Philosophy of Cognitive Science','Philosophy of Mathematics','Philosophy of Probability','Scientific Realism','Philosophy of Causation'] },
-      { name:'Language & Action', topics:['Philosophy of Language','Speech Act Theory','Pragmatics (Philosophy)','Philosophy of Action','Practical Reason','Meaning & Reference','Vagueness'] },
-      { name:'Traditions & Applied', topics:['Analytic Philosophy','Continental Philosophy','Phenomenology','Existentialism','Pragmatism','Critical Theory','Hermeneutics','Philosophy of Technology','Aesthetics','Political Philosophy'] }
+    { name:'Engineering & Technology', color:'#b91c1c', fields:[
+      { name:'Computer Science (Applied)', cats:[
+        { name:'AI & Machine Learning', topics:['Machine Learning','Deep Learning','Reinforcement Learning','Natural Language Processing','Computer Vision','Generative Models','Representation Learning','Meta-Learning','Multiagent Systems','Program Synthesis','Neuro-Symbolic AI','Federated Learning'] },
+        { name:'Systems', topics:['Operating Systems','Distributed Systems','Computer Networks','Computer Architecture','Database Theory','Parallel Computing','Cloud Computing','Storage Systems','Real-Time Systems','Compilers'] },
+        { name:'Security & Privacy', topics:['Cryptography','Computer Security','Differential Privacy','Zero-Knowledge Proofs','Secure Multi-Party Computation','Blockchain','Post-Quantum Cryptography'] },
+        { name:'Software Engineering', topics:['Software Architecture','Software Testing','Programming Languages','Concurrency','Formal Verification','Agile Methods','DevOps','Software Design Patterns'] },
+        { name:'Human-Computer Interaction', topics:['Human-Computer Interaction','User Experience Design','Accessibility','Ubiquitous Computing','Augmented Reality','Virtual Reality','Social Computing'] },
+        { name:'Computational Science', topics:['Scientific Computing','Computational Fluid Dynamics','Numerical Methods','High-Performance Computing','Simulation Science','Bioinformatics'] }
+      ]},
+      { name:'Electrical Engineering', cats:[
+        { name:'Core EE', topics:['Electrical Circuits','Circuit Analysis','Semiconductor Devices','VLSI Design','Microelectronics','Power Systems','Power Electronics','Electric Machines'] },
+        { name:'Signals & Communications', topics:['Signal Processing','Digital Signal Processing','Communication Theory','Antenna Theory','RF Engineering','Wireless Communications','Optical Communications'] },
+        { name:'Control & Embedded', topics:['Control Theory','Feedback Systems','Optimal Control','Nonlinear Control','Embedded Systems','Digital Control Systems','Adaptive Control'] },
+        { name:'Photonics & Quantum EE', topics:['Photonics','Laser Engineering','Electromagnetics','Quantum Electronics','Optoelectronics','Microwave Engineering'] }
+      ]},
+      { name:'Mechanical Engineering', cats:[
+        { name:'Mechanics', topics:['Structural Mechanics','Solid Mechanics','Continuum Mechanics','Vibrations','Dynamics','Tribology','Elasticity','Plasticity'] },
+        { name:'Thermal & Fluid', topics:['Fluid Mechanics','Thermodynamics (Applied)','Heat Transfer','Combustion','Turbomachinery','Aerodynamics'] },
+        { name:'Design & Manufacturing', topics:['Mechanical Design','Manufacturing Engineering','Additive Manufacturing','Robotics','MEMS Technology','Product Design'] }
+      ]},
+      { name:'Civil Engineering', cats:[
+        { name:'Structural', topics:['Structural Engineering','Structural Analysis','Earthquake Engineering','Bridge Engineering','Concrete Structures','Steel Structures','Foundation Engineering'] },
+        { name:'Geotechnical & Environmental', topics:['Geotechnical Engineering','Environmental Engineering','Water Resources Engineering','Hydraulics','Soil Mechanics','Rock Mechanics'] },
+        { name:'Transport & Urban', topics:['Transportation Engineering','Urban Infrastructure','Construction Management','Smart Cities'] }
+      ]},
+      { name:'Chemical Engineering', cats:[
+        { name:'Core ChE', topics:['Transport Phenomena','Reaction Engineering','Separation Processes','Thermodynamics (ChE)','Process Dynamics & Control','Process Design'] },
+        { name:'Applied ChE', topics:['Pharmaceutical Engineering','Polymer Engineering','Food Engineering','Environmental Chemical Engineering','Catalytic Engineering','Electrochemical Engineering'] }
+      ]},
+      { name:'Biomedical Engineering', cats:[
+        { name:'Core BME', topics:['Medical Imaging','Biomechanics','Biosensors','Neural Engineering','Tissue Engineering','Drug Delivery Systems'] },
+        { name:'Applied BME', topics:['Clinical Engineering','Rehabilitation Engineering','Biophotonics','Computational Biomedicine'] }
+      ]},
+      { name:'Materials Science', cats:[
+        { name:'Fundamentals', topics:['Crystallography','Defect Physics','Phase Diagrams','Materials Characterization','Thermodynamics of Materials'] },
+        { name:'Material Classes', topics:['Metals & Alloys','Ceramics','Polymers','Semiconductors','Composite Materials','Biomaterials','Smart Materials','Nanomaterials'] },
+        { name:'Applied Materials', topics:['Surface Science','Failure Analysis','Computational Materials Science','Energy Materials','Electronic Materials','Magnetic Materials'] }
+      ]},
+      { name:'Aerospace Engineering', cats:[
+        { name:'Aeronautics', topics:['Aerodynamics','Flight Mechanics','Propulsion','Aeroelasticity','Structural Aerospace','Aircraft Design','Computational Aerodynamics'] },
+        { name:'Astronautics', topics:['Orbital Mechanics','Spacecraft Design','Rocket Propulsion','Spacecraft Structures','Re-entry Dynamics','Mission Design','Space Systems Engineering'] }
+      ]}
     ]},
-    { name:'Cognitive Science', color:'#be185d', cats:[
-      { name:'Perception & Attention', topics:['Perception','Attention','Psychophysics','Visual Perception','Auditory Processing','Multisensory Integration','Object Recognition','Scene Understanding','Temporal Perception'] },
-      { name:'Memory & Learning', topics:['Memory','Learning & Conditioning','Cognitive Development','Cognitive Aging','Sleep & Memory','Working Memory','Episodic Memory','Semantic Memory','Procedural Memory'] },
-      { name:'Reasoning & Decision', topics:['Decision Making','Analogy & Reasoning','Dual-Process Theory','Metacognition','Executive Function','Causal Reasoning','Probabilistic Reasoning','Judgment Under Uncertainty','Mental Simulation'] },
-      { name:'Language & Concepts', topics:['Psycholinguistics','Cognitive Linguistics','Categorization','Conceptual Structure','Mental Imagery','Word Learning','Sentence Processing','Bilingualism (Cog)'] },
-      { name:'Consciousness & Self', topics:['Consciousness Studies','Predictive Processing','Bayesian Brain','Embodied Cognition','Situated Cognition','Global Workspace Theory','Higher-Order Theories','Integrated Information Theory'] },
-      { name:'Social & Neural', topics:['Social Cognition','Cultural Cognition','Theory of Mind','Emotion & Cognition','Comparative Cognition','Computational Neuroscience','Cognitive Neuroscience','Cognitive Architecture','Cognitive Disorders'] }
+    { name:'Health & Medicine', color:'#be185d', fields:[
+      { name:'Basic Medical Sciences', cats:[
+        { name:'Anatomy & Physiology', topics:['Human Anatomy','Human Physiology','Histology','Embryology','Neuroanatomy','Cardiovascular Physiology','Respiratory Physiology','Renal Physiology'] },
+        { name:'Molecular & Cellular Medicine', topics:['Medical Biochemistry','Cell Biology (Medical)','Medical Genetics','Molecular Pathology','Epigenetics (Medical)'] },
+        { name:'Pharmacology', topics:['Pharmacokinetics','Pharmacodynamics','Drug Receptors','Neuropharmacology','Cardiovascular Pharmacology','Clinical Pharmacology','Toxicology'] },
+        { name:'Microbiology & Immunology (Med)', topics:['Medical Microbiology','Medical Immunology','Pathogenic Mechanisms','Antimicrobial Resistance','Vaccine Science','Allergy & Hypersensitivity'] },
+        { name:'Pathology', topics:['General Pathology','Systemic Pathology','Neuropathology','Oncological Pathology','Forensic Pathology','Molecular Diagnostics'] }
+      ]},
+      { name:'Clinical Medicine', cats:[
+        { name:'Internal Medicine', topics:['Cardiology','Pulmonology','Gastroenterology','Nephrology','Endocrinology','Rheumatology','Haematology','Infectious Disease Medicine'] },
+        { name:'Surgery', topics:['General Surgery','Neurosurgery','Orthopaedic Surgery','Cardiovascular Surgery','Transplant Surgery','Minimally Invasive Surgery'] },
+        { name:'Paediatrics & Reproduction', topics:['Paediatrics','Neonatology','Reproductive Medicine','Obstetrics & Gynaecology','Adolescent Medicine'] },
+        { name:'Oncology', topics:['Medical Oncology','Radiation Oncology','Tumour Biology','Cancer Immunotherapy','Haematological Oncology','Precision Oncology'] }
+      ]},
+      { name:'Mental Health', cats:[
+        { name:'Psychiatry', topics:['Mood Disorders','Schizophrenia Spectrum','Anxiety & Trauma','Personality Disorders','Eating Disorders','Substance Use Disorders','Child & Adolescent Psychiatry'] },
+        { name:'Psychotherapy', topics:['Cognitive-Behavioural Therapy','Psychoanalysis','Dialectical Behaviour Therapy','Mindfulness-Based Therapy','Family Therapy','Psychotherapy Research'] },
+        { name:'Neurobiological Psychiatry', topics:['Psychiatric Neuroscience','Psychopharmacology','Neuroimaging in Psychiatry','Genetics of Mental Illness','Neuromodulation'] }
+      ]},
+      { name:'Public Health', cats:[
+        { name:'Epidemiology', topics:['Epidemiology','Infectious Disease Epidemiology','Chronic Disease Epidemiology','Nutritional Epidemiology','Environmental Epidemiology','Social Epidemiology'] },
+        { name:'Public Health Science', topics:['Public Health Policy','Global Health','Health Systems','Maternal & Child Health','Health Promotion','Occupational Health'] },
+        { name:'Methods', topics:['Biostatistics','Clinical Trial Design','Evidence-Based Medicine','Health Technology Assessment','Systematic Review','Health Economics'] }
+      ]}
     ]},
-    { name:'Statistics', color:'#0f766e', cats:[
-      { name:'Foundations', topics:['Bayesian Statistics','Frequentist Statistics','Statistical Decision Theory','Foundations of Probability','Measure-Theoretic Probability','Likelihood Theory','Fiducial Inference'] },
-      { name:'Inference', topics:['Hypothesis Testing','Estimation Theory','Confidence Intervals','Multiple Testing','Nonparametric Statistics','Robust Statistics','Empirical Processes','Bootstrap Methods','Resampling Methods'] },
-      { name:'Models & Methods', topics:['Regression Analysis','Graphical Models','Time Series Analysis','Survival Analysis','Multivariate Statistics','Functional Data Analysis','Spatial Statistics','Mixture Models','Hierarchical Models'] },
-      { name:'Causal & Experimental', topics:['Causal Inference','Experimental Design','Randomized Controlled Trials','Observational Studies','Missing Data Methods','Survey Sampling','Adaptive Designs','Natural Experiments'] },
-      { name:'Computational', topics:['Monte Carlo Methods','Markov Chain Monte Carlo','Variational Inference','Stochastic Optimization','Computational Statistics','High-Dimensional Statistics','Approximate Bayesian Computation'] },
-      { name:'Learning Theory', topics:['Statistical Learning Theory','PAC Learning','VC Theory','Concentration Inequalities','Online Learning','Bandit Problems','Information-Theoretic Statistics','Algorithmic Statistics'] }
-    ]},
-    { name:'Linguistics', color:'#c2410c', cats:[
-      { name:'Core Grammar', topics:['Syntax','Semantics','Phonology','Morphology','Pragmatics','Phonetics','Prosody','Lexicology','Discourse Analysis'] },
-      { name:'Formal Approaches', topics:['Formal Semantics','Minimalist Program','Optimality Theory','Construction Grammar','Generative Grammar','Discourse Representation Theory','Dynamic Semantics','Type-Logical Grammar'] },
-      { name:'Language & Mind', topics:['Psycholinguistics','Cognitive Linguistics','Neurolinguistics','Language Acquisition','First Language Acquisition','Second Language Acquisition','Bilingualism','Language Processing'] },
-      { name:'Language & Society', topics:['Sociolinguistics','Language Contact','Dialectology','Language Documentation','Sign Language','Language Policy','Code-Switching','Language & Identity'] },
-      { name:'Computational', topics:['Computational Linguistics','Corpus Linguistics','Distributional Semantics','Parsing','Machine Translation','Information Extraction','Semantic Role Labelling'] },
-      { name:'Historical & Typological', topics:['Historical Linguistics','Linguistic Typology','Language Change','Comparative Linguistics','Proto-Language Reconstruction','Grammaticalization','Areal Linguistics'] }
-    ]},
-    { name:'Chemistry', color:'#0891b2', cats:[
-      { name:'Organic', topics:['Organic Chemistry','Stereochemistry','Natural Products Chemistry','Medicinal Chemistry','Organometallic Chemistry','Organic Synthesis','Photochemistry','Polymer Chemistry','Supramolecular Chemistry','Total Synthesis'] },
-      { name:'Physical', topics:['Physical Chemistry','Chemical Thermodynamics','Reaction Kinetics','Quantum Chemistry','Statistical Thermodynamics','Chemical Dynamics','Electrochemistry','Surface Chemistry','Spectroscopy'] },
-      { name:'Inorganic', topics:['Inorganic Chemistry','Coordination Chemistry','Bioinorganic Chemistry','Nuclear Chemistry','Solid State Chemistry','Materials Chemistry','Catalysis','Cluster Chemistry'] },
-      { name:'Analytical', topics:['Analytical Chemistry','Mass Spectrometry','Chromatography','Electroanalytical Chemistry','Microscopy','Spectroscopic Analysis','Separation Science'] },
-      { name:'Interdisciplinary', topics:['Biochemistry','Chemical Biology','Nanochemistry','Green Chemistry','Computational Chemistry','Atmospheric Chemistry','Astrochemistry','Theoretical Chemistry'] }
-    ]},
-    { name:'Engineering', color:'#b91c1c', cats:[
-      { name:'Electrical & Electronic', topics:['Electrical Circuits','VLSI Design','Digital Signal Processing','Microelectronics','Photonics','Power Systems','Antenna Theory','Semiconductor Devices','RF Engineering','Electromagnetics'] },
-      { name:'Mechanical & Civil', topics:['Structural Mechanics','Fluid Mechanics','Heat Transfer','Solid Mechanics','Structural Engineering','Mechanical Design','Aerospace Dynamics','Tribology','Acoustics & Vibration','Continuum Mechanics'] },
-      { name:'Systems & Control', topics:['Control Theory','Systems Engineering','Robotics','Signal Processing','Reliability Engineering','Optimal Control','Nonlinear Control','Feedback Systems','Adaptive Control'] },
-      { name:'Materials', topics:['Materials Science','Nanomaterials','Composite Materials','Biomaterials','Smart Materials','MEMS Technology','Additive Manufacturing','Failure Analysis'] },
-      { name:'Biomedical & Chemical', topics:['Biomedical Engineering','Medical Imaging','Biosensors','Chemical Engineering','Transport Phenomena','Reaction Engineering','Pharmaceutical Engineering'] },
-      { name:'Communication & Computing', topics:['Communication Theory','Information Theory','Computer Architecture','Image Processing','Scientific Computing','Computational Fluid Dynamics','Optimization in Engineering'] }
-    ]},
-    { name:'Social Sciences', color:'#6d28d9', cats:[
-      { name:'Sociology', topics:['Sociology','Urban Sociology','Social Stratification','Social Movements','Medical Sociology','Environmental Sociology','Economic Sociology','Political Sociology','Organizational Sociology','Sociology of Knowledge'] },
-      { name:'Anthropology', topics:['Social Anthropology','Cultural Anthropology','Cognitive Anthropology','Medical Anthropology','Economic Anthropology','Evolutionary Anthropology','Linguistic Anthropology','Digital Anthropology'] },
-      { name:'Political Science', topics:['Political Science','Comparative Politics','International Relations','Public Administration','Political Economy','Electoral Systems','Political Theory','Public Policy','Security Studies'] },
-      { name:'Social Psychology & Networks', topics:['Social Psychology','Network Science','Organization Theory','Institutional Theory','Collective Behaviour','Intergroup Relations','Attitude Change','Group Dynamics'] },
-      { name:'Methods & Meta-Science', topics:['Demography','Social Network Analysis','Science & Technology Studies','Science of Science','Computational Social Science','Mixed Methods Research','Research Design'] },
-      { name:'Culture & Identity', topics:['Cultural Studies','Gender Studies','Migration Studies','Postcolonial Studies','Human Geography','Urban Studies','Media Studies','Memory Studies'] }
+    { name:'Interdisciplinary', color:'#0f766e', fields:[
+      { name:'Cognitive Science', cats:[
+        { name:'Perception & Attention', topics:['Perception','Attention','Psychophysics','Visual Perception','Auditory Processing','Multisensory Integration','Object Recognition','Temporal Perception'] },
+        { name:'Memory & Learning', topics:['Memory','Learning & Conditioning','Working Memory','Episodic Memory','Semantic Memory','Procedural Memory','Sleep & Memory'] },
+        { name:'Reasoning & Decision', topics:['Decision Making','Analogy & Reasoning','Dual-Process Theory','Metacognition','Executive Function','Causal Reasoning','Probabilistic Reasoning'] },
+        { name:'Language & Concepts', topics:['Psycholinguistics','Cognitive Linguistics','Categorization','Conceptual Structure','Mental Imagery','Bilingualism (Cog)'] },
+        { name:'Consciousness & Self', topics:['Consciousness Studies','Predictive Processing','Bayesian Brain','Embodied Cognition','Global Workspace Theory','Integrated Information Theory'] },
+        { name:'Social & Cultural', topics:['Social Cognition','Cultural Cognition','Theory of Mind','Emotion & Cognition','Comparative Cognition','Cognitive Architecture'] }
+      ]},
+      { name:'Data Science & AI', cats:[
+        { name:'ML Foundations', topics:['Statistical Learning Theory','Neural Networks','Supervised Learning','Unsupervised Learning','Semi-Supervised Learning','Self-Supervised Learning','Transfer Learning'] },
+        { name:'Advanced AI', topics:['Large Language Models','Generative AI','Multimodal AI','AI Alignment','AI Safety','Interpretable Machine Learning','Causal AI','Continual Learning'] },
+        { name:'Data Engineering', topics:['Data Engineering','Database Systems','Data Warehousing','Stream Processing','Knowledge Graphs','Data Integration','Data Governance'] },
+        { name:'Applied Data Science', topics:['Recommender Systems','Time Series Forecasting','Graph Neural Networks','Geospatial Data Science','Drug Discovery AI','Financial Machine Learning'] }
+      ]},
+      { name:'Environmental Science', cats:[
+        { name:'Earth System Science', topics:['Earth System Science','Global Biogeochemical Cycles','Climate Change','Ecosystem Services','Planetary Boundaries','Earth Observation'] },
+        { name:'Sustainability Science', topics:['Sustainability Science','Ecological Economics','Industrial Ecology','Circular Economy','Sustainable Development','Environmental Policy'] },
+        { name:'Conservation & Ecology', topics:['Conservation Science','Restoration Ecology','Biodiversity Conservation','Wildlife Management','Marine Conservation','Forest Ecology'] },
+        { name:'Environmental Technology', topics:['Renewable Energy','Energy Systems','Carbon Capture','Environmental Remediation','Water Treatment','Waste Management'] }
+      ]},
+      { name:'Complex Systems & Networks', cats:[
+        { name:'Complexity Science', topics:['Complex Systems','Self-Organization','Emergence','Adaptive Systems','Non-equilibrium Systems','Agent-Based Modelling','Catastrophe Theory'] },
+        { name:'Network Science', topics:['Network Science','Social Networks','Biological Networks','Technological Networks','Multiplex Networks','Temporal Networks'] },
+        { name:'Nonlinear Dynamics', topics:['Dynamical Systems Theory','Chaos Theory','Bifurcation Theory','Synchronisation','Pattern Formation','Nonlinear Dynamics (Applied)'] }
+      ]},
+      { name:'Science & Technology Studies', cats:[
+        { name:'STS Core', topics:['Science & Technology Studies','Sociology of Scientific Knowledge','Laboratory Studies','Actor-Network Theory','Philosophy of Technology','Feminist Science Studies'] },
+        { name:'Policy & Ethics', topics:['Research Ethics','Technology Ethics','AI Ethics (Policy)','Bioethics (Policy)','Science Policy','Responsible Innovation','Technology Governance'] },
+        { name:'History & Philosophy', topics:['History of Science','Science Communication','Scientometrics','Open Science','Philosophy of Science (Applied)'] }
+      ]},
+      { name:'Global & Development Studies', cats:[
+        { name:'Development Studies', topics:['Development Studies','International Development','Poverty & Inequality','Health Development','Education Development','Microfinance'] },
+        { name:'Global Studies', topics:['Globalisation','International Political Economy','Global Governance','Transnational Social Movements','World Systems Theory'] },
+        { name:'Area Studies', topics:['African Studies','Asian Studies','Latin American Studies','Middle Eastern Studies','European Studies','Postcolonial Studies'] }
+      ]}
     ]}
   ];
 
-  let _libField = 0;
-  let _libCat   = -1;
+  let _libDomain = 0;
+  let _libField  = -1;
+  let _libCat    = -1;
   let _libInited = false;
 
   function initLibrary() {
     const tabs = $('libraryTabs');
-    TOPIC_LIBRARY.forEach((f, i) => {
+    TOPIC_LIBRARY.forEach((d, i) => {
       const t = document.createElement('button');
       t.className = 'library-tab' + (i === 0 ? ' lib-active' : '');
-      t.textContent = f.name;
-      t.style.setProperty('--lib-c', f.color);
+      t.textContent = d.name;
+      t.style.setProperty('--lib-c', d.color);
       t.addEventListener('click', () => {
-        _libField = i; _libCat = -1;
+        _libDomain = i; _libField = -1; _libCat = -1;
         $('librarySearch').value = '';
         tabs.querySelectorAll('.library-tab').forEach((el,j) => el.classList.toggle('lib-active', j === i));
         renderLibraryView('');
       });
       tabs.appendChild(t);
     });
-    $('libBack').addEventListener('click', () => { _libCat = -1; renderLibraryView(''); });
+    $('libBack').addEventListener('click', () => {
+      if (_libCat >= 0) { _libCat = -1; }
+      else if (_libField >= 0) { _libField = -1; }
+      $('librarySearch').value = '';
+      renderLibraryView('');
+    });
     $('librarySearch').addEventListener('input', e => renderLibraryView(e.target.value.trim().toLowerCase()));
     renderLibraryView('');
   }
 
   function renderLibraryView(query) {
     if (query) { renderSearchResults(query); return; }
-    _libCat >= 0 ? renderTopics() : renderCategories();
+    if (_libCat >= 0)        renderTopics();
+    else if (_libField >= 0) renderCategories();
+    else                     renderFields();
     updateBreadcrumb();
   }
 
+  function renderFields() {
+    const d = TOPIC_LIBRARY[_libDomain];
+    const grid = $('libraryGrid');
+    grid.className = 'library-grid lib-field-grid';
+    grid.style.setProperty('--lib-c', d.color);
+    grid.innerHTML = '';
+    d.fields.forEach((f, i) => {
+      const card = document.createElement('button');
+      card.className = 'lib-field-card';
+      card.style.setProperty('--lib-c', d.color);
+      const total = f.cats.reduce((s, c) => s + c.topics.length, 0);
+      card.innerHTML = `<div class="lib-field-name">${esc(f.name)}</div><div class="lib-field-meta">${f.cats.length} categories · ${total} topics</div>`;
+      card.addEventListener('click', () => { _libField = i; _libCat = -1; $('librarySearch').value=''; renderLibraryView(''); });
+      grid.appendChild(card);
+    });
+  }
+
   function renderCategories() {
-    const f = TOPIC_LIBRARY[_libField];
+    const d = TOPIC_LIBRARY[_libDomain];
+    const f = d.fields[_libField];
     const grid = $('libraryGrid');
     grid.className = 'library-grid lib-cat-grid';
-    grid.style.setProperty('--lib-c', f.color);
+    grid.style.setProperty('--lib-c', d.color);
     grid.innerHTML = '';
     f.cats.forEach((cat, i) => {
       const card = document.createElement('button');
       card.className = 'lib-cat-card';
-      card.style.setProperty('--lib-c', f.color);
+      card.style.setProperty('--lib-c', d.color);
       card.innerHTML = `<span class="lib-cat-name">${esc(cat.name)}</span><span class="lib-cat-count">${cat.topics.length}</span>`;
       card.addEventListener('click', () => { _libCat = i; $('librarySearch').value=''; renderLibraryView(''); });
       grid.appendChild(card);
@@ -1398,11 +1629,12 @@ Rules:
   }
 
   function renderTopics() {
-    const f = TOPIC_LIBRARY[_libField];
+    const d = TOPIC_LIBRARY[_libDomain];
+    const f = d.fields[_libField];
     const cat = f.cats[_libCat];
     const grid = $('libraryGrid');
     grid.className = 'library-grid';
-    grid.style.setProperty('--lib-c', f.color);
+    grid.style.setProperty('--lib-c', d.color);
     grid.innerHTML = '';
     cat.topics.forEach(t => {
       const chip = document.createElement('button');
@@ -1419,7 +1651,9 @@ Rules:
     grid.innerHTML = '';
     $('libBreadcrumb').style.display = 'none';
     const hits = [];
-    TOPIC_LIBRARY.forEach(f => f.cats.forEach(cat => cat.topics.filter(t => t.toLowerCase().includes(query)).forEach(t => hits.push({ t, color: f.color }))));
+    TOPIC_LIBRARY.forEach(d => d.fields.forEach(f => f.cats.forEach(cat =>
+      cat.topics.filter(t => t.toLowerCase().includes(query)).forEach(t => hits.push({ t, color: d.color }))
+    )));
     if (!hits.length) { grid.innerHTML = '<div class="lib-empty">No topics match.</div>'; return; }
     hits.forEach(({ t, color }) => {
       const chip = document.createElement('button');
@@ -1433,9 +1667,13 @@ Rules:
 
   function updateBreadcrumb() {
     const bc = $('libBreadcrumb');
+    const d = TOPIC_LIBRARY[_libDomain];
     if (_libCat >= 0) {
-      const f = TOPIC_LIBRARY[_libField];
-      $('libBreadcrumbPath').innerHTML = `${esc(f.name)} <strong>› ${esc(f.cats[_libCat].name)}</strong>`;
+      const f = d.fields[_libField];
+      $('libBreadcrumbPath').innerHTML = `${esc(d.name)} › ${esc(f.name)} <strong>› ${esc(f.cats[_libCat].name)}</strong>`;
+      bc.style.display = 'flex';
+    } else if (_libField >= 0) {
+      $('libBreadcrumbPath').innerHTML = `${esc(d.name)} <strong>› ${esc(d.fields[_libField].name)}</strong>`;
       bc.style.display = 'flex';
     } else {
       bc.style.display = 'none';
