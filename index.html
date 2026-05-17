@@ -172,16 +172,23 @@
     .step-btn:disabled::before { display:none; }
 
     .step1-btn {
+      background:linear-gradient(135deg,#f59e0b 0%,#d97706 50%,#b45309 100%);
+      box-shadow:0 4px 20px rgba(245,158,11,.35);
+    }
+    .step1-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(245,158,11,.5); }
+    .step1-btn.lib-open { box-shadow:0 0 0 3px rgba(245,158,11,.4), 0 4px 20px rgba(245,158,11,.3); }
+
+    .step2-btn {
       background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 45%,#2563eb 100%);
       box-shadow:0 4px 20px rgba(124,58,237,.35);
     }
-    .step1-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(124,58,237,.5); }
+    .step2-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(124,58,237,.5); }
 
-    .step2-btn {
+    .step3-btn {
       background:linear-gradient(135deg,#0f766e 0%,#0284c7 100%);
       box-shadow:0 4px 20px rgba(8,145,178,.3);
     }
-    .step2-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(8,145,178,.45); }
+    .step3-btn:hover:not(:disabled) { box-shadow:0 8px 32px rgba(8,145,178,.45); }
 
     .step-label {
       font-size:.6rem; font-weight:900; letter-spacing:.14em; text-transform:uppercase;
@@ -372,6 +379,55 @@
     @media(prefers-color-scheme:dark){ .section-error{background:#1c0606;color:#f87171;border-color:#450a0a;} }
 
     /* ── Optimal Reading Sequence ── */
+    /* ── Topic Library ── */
+    .library-panel {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:14px; margin-bottom:1rem; overflow:hidden;
+      animation:libIn .18s ease;
+    }
+    @keyframes libIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+
+    .library-search-wrap { padding:.75rem 1rem .5rem; }
+    .library-search {
+      width:100%; padding:.45rem .85rem; border:1px solid var(--border);
+      border-radius:8px; background:var(--surface2); color:var(--text);
+      font-size:.85rem; font-family:inherit; transition:border-color .15s;
+    }
+    .library-search:focus { outline:none; border-color:var(--core-header); box-shadow:0 0 0 3px color-mix(in srgb,var(--core-header) 15%,transparent); }
+
+    .library-tabs {
+      display:flex; gap:0; padding:0 .75rem;
+      border-bottom:1px solid var(--border);
+      overflow-x:auto; scrollbar-width:none;
+    }
+    .library-tabs::-webkit-scrollbar { display:none; }
+    .library-tab {
+      flex-shrink:0; padding:.5rem .8rem; font-size:.72rem; font-weight:700;
+      cursor:pointer; border:none; background:none; font-family:inherit;
+      color:var(--text-muted); border-bottom:2px solid transparent;
+      transition:color .13s, border-color .13s; white-space:nowrap;
+      margin-bottom:-1px; letter-spacing:.025em;
+    }
+    .library-tab:hover { color:var(--text); }
+    .library-tab.lib-active { color:var(--lib-c); border-bottom-color:var(--lib-c); }
+
+    .library-grid {
+      padding:.85rem 1rem 1.1rem;
+      display:flex; flex-wrap:wrap; gap:.38rem;
+      max-height:280px; overflow-y:auto;
+    }
+    .library-chip {
+      padding:.27rem .7rem; border:1px solid var(--border); border-radius:999px;
+      font-size:.76rem; font-family:inherit; cursor:pointer;
+      background:var(--surface2); color:var(--text);
+      transition:background .12s, border-color .12s, color .12s;
+    }
+    .library-chip:hover {
+      background:color-mix(in srgb,var(--lib-c) 13%,var(--surface2));
+      border-color:var(--lib-c); color:var(--lib-c);
+    }
+    .lib-empty { font-size:.82rem; color:var(--text-muted); padding:.25rem; width:100%; }
+
     .rs-section { margin-top:2rem; }
     .rs-loader { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin:.75rem 0 1.5rem; display:none; }
     .rs-loader.active { display:block; }
@@ -498,23 +554,41 @@
     <button class="step-btn step1-btn" id="step1Btn">
       <div class="step-label">Step 1</div>
       <div class="step-inner">
+        <span class="step-icon">⊞</span>
+        <div>
+          <div class="step-title">Browse Topics</div>
+          <span class="step-sub">500+ topics &bull; 12 fields &bull; All disciplines</span>
+        </div>
+      </div>
+    </button>
+    <button class="step-btn step2-btn" id="step2Btn">
+      <div class="step-label">Step 2</div>
+      <div class="step-inner">
         <span class="step-icon">⇅</span>
         <div>
-          <div class="step-title" id="step1BtnTitle">Learning Path</div>
+          <div class="step-title" id="step2BtnTitle">Learning Path</div>
           <span class="step-sub">Cold Start &bull; Cold Finish &bull; Specializations</span>
         </div>
       </div>
     </button>
-    <button class="step-btn step2-btn" id="step2Btn" disabled>
-      <div class="step-label">Step 2</div>
+    <button class="step-btn step3-btn" id="step3Btn" disabled>
+      <div class="step-label">Step 3</div>
       <div class="step-inner">
         <span class="step-icon">📖</span>
         <div>
-          <div class="step-title">Optimal Reading Sequence</div>
+          <div class="step-title">Reading Sequence</div>
           <span class="step-sub">All works &bull; Foundation to frontier</span>
         </div>
       </div>
     </button>
+  </div>
+
+  <div class="library-panel" id="libraryPanel" style="display:none">
+    <div class="library-search-wrap">
+      <input class="library-search" id="librarySearch" placeholder="Search 500+ topics across all fields…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="library-tabs" id="libraryTabs"></div>
+    <div class="library-grid" id="libraryGrid"></div>
   </div>
 
   <div class="loader-wrap" id="loaderWrap"><div class="loader-bar"></div></div>
@@ -596,9 +670,10 @@
   const loaderWrap    = $('loaderWrap');
   const errorBox      = $('errorBox');
   const output        = $('output');
-  const step1Btn      = $('step1Btn');
-  const step1BtnTitle = $('step1BtnTitle');
-  const step2Btn      = $('step2Btn');
+  const libBtn        = $('step1Btn');
+  const pathBtn       = $('step2Btn');
+  const pathBtnTitle  = $('step2BtnTitle');
+  const readBtn       = $('step3Btn');
   const pathsSection  = $('pathsSection');
   const pathsLoader   = $('pathsLoader');
   const intentModal   = $('intentModal');
@@ -631,7 +706,7 @@
   );
   mapBtn.addEventListener('click', triggerIntent);
   topicInput.addEventListener('keydown', e => { if (e.key === 'Enter') triggerIntent(); });
-  step1Btn.addEventListener('click', () => showModal(topicInput.value.trim() || $('sumTopic').textContent.trim()));
+  pathBtn.addEventListener('click', () => showModal(topicInput.value.trim() || $('sumTopic').textContent.trim()));
 
   // ── Modal ────────────────────────────────────────────────────────────────────
   function triggerIntent() {
@@ -847,8 +922,8 @@ Rules:
     topicInput.value = topic;
     output.classList.remove('visible', 'paths-only');
     pathsSection.style.display = 'none';
-    step1Btn.disabled = true;
-    step2Btn.disabled = true;
+    pathBtn.disabled = true;
+    readBtn.disabled = true;
 
     if      (choice === 'map')   await runConceptMap(topic);
     else if (choice === 'paths') await runPathsOnly(topic);
@@ -864,8 +939,8 @@ Rules:
       renderZone(data.core,        'coreGrid','coreMeta','core');
       renderZone(data.successors,  'succGrid','succMeta','succ');
       output.classList.add('visible');
-      step1Btn.disabled = false;
-      step1BtnTitle.textContent = 'Explore Learning Paths';
+      pathBtn.disabled = false;
+      pathBtnTitle.textContent = 'Explore Learning Paths';
       output.scrollIntoView({ behavior:'smooth', block:'start' });
     } catch(err) { showError(err.message); }
     finally { setLoading(false); }
@@ -884,9 +959,9 @@ Rules:
     ]);
     pathsLoader.classList.remove('active');
     renderPathResults(sr,fr,tr,topic);
-    step1Btn.disabled = false;
-    step1BtnTitle.textContent = 'Re-generate Path';
-    step2Btn.disabled = false;
+    pathBtn.disabled = false;
+    pathBtnTitle.textContent = 'Re-generate Path';
+    readBtn.disabled = false;
   }
 
   async function runBoth(topic) {
@@ -910,9 +985,9 @@ Rules:
     ]);
     pathsLoader.classList.remove('active');
     renderPathResults(sr,fr,tr,topic);
-    step1Btn.disabled = false;
-    step1BtnTitle.textContent = 'Re-generate Path';
-    step2Btn.disabled = false;
+    pathBtn.disabled = false;
+    pathBtnTitle.textContent = 'Re-generate Path';
+    readBtn.disabled = false;
   }
 
   function renderPathResults(sr,fr,tr,topic) {
@@ -927,7 +1002,7 @@ Rules:
     else $('tracksGrid').innerHTML=`<div class="section-error">Specializations failed: ${esc(tr.reason?.message)}</div>`;
     // Enable Step 2 once paths are loaded
     if (_lastStartData || _lastFinishData) {
-      step2Btn.disabled = false;
+      readBtn.disabled = false;
       $('rsSection').style.display = 'none';
       $('rsList').innerHTML = '';
       $('rsCount').textContent = '';
@@ -1133,6 +1208,225 @@ Rules:
     });
   }
 
+  // ── Topic Library ────────────────────────────────────────────────────────────
+
+  const TOPIC_LIBRARY = [
+    { name:'Mathematics', color:'#7c3aed', topics:[
+      'Real Analysis','Complex Analysis','Abstract Algebra','Linear Algebra',
+      'Topology','Point-Set Topology','Algebraic Topology','Differential Geometry',
+      'Riemannian Geometry','Algebraic Geometry','Number Theory','Algebraic Number Theory',
+      'Analytic Number Theory','Combinatorics','Graph Theory','Category Theory',
+      'Measure Theory','Functional Analysis','Harmonic Analysis','Fourier Analysis',
+      'Probability Theory','Stochastic Processes','Markov Chains','Dynamical Systems',
+      'Ergodic Theory','Numerical Analysis','Mathematical Logic','Set Theory',
+      'Model Theory','Proof Theory','Recursion Theory','Optimization Theory',
+      'Convex Analysis','Partial Differential Equations','Ordinary Differential Equations',
+      'Representation Theory','Homological Algebra','Symplectic Geometry',
+      'Noncommutative Geometry','Information Geometry','Geometric Group Theory',
+      'Low-Dimensional Topology','Knot Theory','Modular Forms','Elliptic Curves',
+      'Arithmetic Geometry','Tropical Geometry','K-Theory','Mathematical Physics'
+    ]},
+    { name:'Physics', color:'#1d4ed8', topics:[
+      'Classical Mechanics','Lagrangian Mechanics','Hamiltonian Mechanics',
+      'Electromagnetism','Quantum Mechanics','Statistical Mechanics','Thermodynamics',
+      'Special Relativity','General Relativity','Quantum Field Theory',
+      'Condensed Matter Physics','Solid State Physics','Superconductivity','Superfluidity',
+      'Fluid Dynamics','Optics','Quantum Optics','Nuclear Physics','Particle Physics',
+      'Astrophysics','Cosmology','Plasma Physics','String Theory','Loop Quantum Gravity',
+      'Quantum Information','Atomic Physics','Molecular Physics','Biophysics',
+      'Computational Physics','Non-Equilibrium Statistical Mechanics',
+      'Phase Transitions & Critical Phenomena','Chaos Theory','Topological Phases of Matter',
+      'Gravitational Waves','Dark Matter','Dark Energy','The Standard Model',
+      'Beyond the Standard Model','Quantum Gravity'
+    ]},
+    { name:'Computer Science', color:'#4338ca', topics:[
+      'Algorithms & Data Structures','Computational Complexity Theory',
+      'Machine Learning','Deep Learning','Reinforcement Learning',
+      'Natural Language Processing','Computer Vision','Information Theory',
+      'Cryptography','Distributed Systems','Operating Systems',
+      'Programming Language Theory','Type Theory','Compilers',
+      'Computer Networks','Database Theory','Formal Methods & Verification',
+      'Quantum Computing','Computer Graphics','Human-Computer Interaction',
+      'Computational Geometry','Randomized Algorithms','Approximation Algorithms',
+      'Online Algorithms','Parallel Computing','Computer Architecture',
+      'Software Engineering','Computability Theory','Algorithmic Game Theory',
+      'Robotics & Motion Planning','Computer Security','Bioinformatics',
+      'Data Mining','Speech Recognition','Multiagent Systems',
+      'Automated Reasoning','Scientific Computing','Constraint Programming',
+      'Program Synthesis','Differential Privacy','Computer Vision'
+    ]},
+    { name:'Biology', color:'#15803d', topics:[
+      'Cell Biology','Molecular Biology','Genetics','Evolutionary Biology',
+      'Ecology','Neuroscience','Biochemistry','Immunology','Developmental Biology',
+      'Systems Biology','Synthetic Biology','Bioinformatics','Microbiology',
+      'Physiology','Epigenetics','Structural Biology','Genomics','Proteomics',
+      'Metabolomics','Cancer Biology','Virology','Bacteriology','Parasitology',
+      'Marine Biology','Conservation Biology','Animal Behaviour','Ethology',
+      'Endocrinology','Stem Cell Biology','Chronobiology','Astrobiology',
+      'Paleontology','Population Genetics','Phylogenetics','Functional Genomics',
+      'Single-Cell Biology','Cell Signalling','Membrane Biology','Plant Biology',
+      'Mycology','Neuropharmacology','Cognitive Neuroscience'
+    ]},
+    { name:'Economics', color:'#b45309', topics:[
+      'Microeconomics','Macroeconomics','Game Theory','Behavioural Economics',
+      'Econometrics','Development Economics','International Trade',
+      'International Finance','Public Economics','Financial Economics',
+      'Labour Economics','Industrial Organization','Mechanism Design',
+      'Information Economics','Welfare Economics','Health Economics',
+      'Environmental Economics','Urban Economics','Political Economy',
+      'Auction Theory','Contract Theory','Social Choice Theory',
+      'Experimental Economics','Neuroeconomics','Computational Economics',
+      'Economic History','Monetary Economics','Growth Theory',
+      'Business Cycle Theory','Asset Pricing','Market Microstructure',
+      'Law & Economics','Network Economics','Inequality & Redistribution'
+    ]},
+    { name:'Philosophy', color:'#0f172a', topics:[
+      'Epistemology','Philosophy of Mind','Logic','Ethics','Metaethics',
+      'Normative Ethics','Applied Ethics','Metaphysics','Ontology',
+      'Philosophy of Science','Political Philosophy','Philosophy of Language',
+      'Philosophy of Mathematics','Phenomenology','Analytic Philosophy',
+      'Continental Philosophy','Philosophy of Physics','Philosophy of Biology',
+      'Philosophy of Cognitive Science','Moral Psychology','Social Philosophy',
+      'Philosophy of Action','Free Will & Determinism','Personal Identity',
+      'Philosophy of Time','Aesthetics','Philosophy of Religion','Existentialism',
+      'Pragmatism','Formal Epistemology','Social Epistemology',
+      'Virtue Ethics','Consequentialism','Deontology','Philosophy of Technology',
+      'Bioethics','Philosophy of Probability','Philosophy of Logic'
+    ]},
+    { name:'Cognitive Science', color:'#be185d', topics:[
+      'Cognitive Psychology','Perception','Memory & Learning','Decision Making',
+      'Consciousness Studies','Computational Neuroscience','Psycholinguistics',
+      'Attention','Cognitive Development','Social Cognition','Embodied Cognition',
+      'Emotion & Cognition','Executive Function','Mental Imagery',
+      'Categorization & Concept Formation','Analogy & Reasoning',
+      'Cognitive Linguistics','Cultural Cognition','Situated Cognition',
+      'Comparative Cognition','Animal Cognition','Cognitive Aging',
+      'Sleep & Cognition','Metacognition','Dual-Process Theory',
+      'Predictive Processing','Bayesian Brain','Cognitive Architecture',
+      'Cognitive Disorders','Psychophysics'
+    ]},
+    { name:'Statistics', color:'#0f766e', topics:[
+      'Bayesian Statistics','Frequentist Statistics','Causal Inference',
+      'Time Series Analysis','Statistical Learning Theory','Experimental Design',
+      'Survival Analysis','Multivariate Statistics','Nonparametric Statistics',
+      'Spatial Statistics','Robust Statistics','High-Dimensional Statistics',
+      'Bootstrap Methods','Monte Carlo Methods','Stochastic Optimization',
+      'Graphical Models','Extreme Value Theory','Empirical Processes',
+      'Statistical Decision Theory','Hypothesis Testing','Estimation Theory',
+      'Regression Analysis','Classification Theory','Density Estimation',
+      'Functional Data Analysis','Sequential Analysis','Missing Data Methods',
+      'Survey Sampling','Biostatistics','Computational Statistics'
+    ]},
+    { name:'Linguistics', color:'#c2410c', topics:[
+      'Syntax','Semantics','Phonology','Morphology','Pragmatics',
+      'Sociolinguistics','Historical Linguistics','Computational Linguistics',
+      'Psycholinguistics','Linguistic Typology','Discourse Analysis',
+      'Cognitive Linguistics','Neurolinguistics','Phonetics',
+      'Language Acquisition','Lexicology','Corpus Linguistics',
+      'Formal Semantics','Language Contact','Sign Language Linguistics',
+      'Language Documentation','Dialectology','Construction Grammar',
+      'Optimality Theory','Minimalist Program','Distributional Semantics',
+      'Lexical Semantics','Language Change','Pragmatic Inference'
+    ]},
+    { name:'Chemistry', color:'#0891b2', topics:[
+      'Organic Chemistry','Inorganic Chemistry','Physical Chemistry',
+      'Analytical Chemistry','Quantum Chemistry','Chemical Thermodynamics',
+      'Reaction Kinetics','Electrochemistry','Spectroscopy','Polymer Chemistry',
+      'Supramolecular Chemistry','Computational Chemistry','Green Chemistry',
+      'Medicinal Chemistry','Surface Chemistry','Photochemistry','Nuclear Chemistry',
+      'Materials Chemistry','Atmospheric Chemistry','Astrochemistry',
+      'Organometallic Chemistry','Coordination Chemistry','Stereochemistry',
+      'Natural Products Chemistry','Chemical Biology','Nanochemistry',
+      'Theoretical Chemistry','Biochemistry'
+    ]},
+    { name:'Engineering', color:'#b91c1c', topics:[
+      'Control Theory','Signal Processing','Communication Theory',
+      'Systems Engineering','Robotics','Structural Mechanics','Fluid Mechanics',
+      'Heat Transfer','Thermodynamics','Electrical Circuits','Power Systems',
+      'VLSI Design','Antenna Theory','Digital Signal Processing','Image Processing',
+      'Biomedical Engineering','Mechanical Design','Aerospace Dynamics',
+      'Materials Science','Solid Mechanics','Computational Fluid Dynamics',
+      'Electromagnetics','Microelectronics','Photonics','MEMS Technology',
+      'Manufacturing Systems','Reliability Engineering','Structural Engineering',
+      'Chemical Engineering Fundamentals','Optimization in Engineering'
+    ]},
+    { name:'Social Sciences', color:'#6d28d9', topics:[
+      'Sociology','Social Psychology','Anthropology','Political Science',
+      'Demography','Cultural Studies','Science & Technology Studies',
+      'Organization Theory','Network Science','Criminology',
+      'International Relations','Comparative Politics','Public Administration',
+      'Human Geography','Economic Sociology','Urban Sociology',
+      'Social Stratification','Social Movements','Political Sociology',
+      'Medical Sociology','Environmental Sociology','Gender Studies',
+      'Migration Studies','Social Network Analysis','Institutional Theory',
+      'Cultural Anthropology','Cognitive Anthropology','Science of Science'
+    ]}
+  ];
+
+  let _libField = 0;
+  let _libInited = false;
+
+  function initLibrary() {
+    const tabs = $('libraryTabs');
+    TOPIC_LIBRARY.forEach((f, i) => {
+      const t = document.createElement('button');
+      t.className = 'library-tab' + (i === 0 ? ' lib-active' : '');
+      t.textContent = f.name;
+      t.style.setProperty('--lib-c', f.color);
+      t.addEventListener('click', () => {
+        _libField = i;
+        $('librarySearch').value = '';
+        tabs.querySelectorAll('.library-tab').forEach((el,j) => {
+          el.classList.toggle('lib-active', j === i);
+        });
+        renderLibraryGrid('');
+      });
+      tabs.appendChild(t);
+    });
+    renderLibraryGrid('');
+    $('librarySearch').addEventListener('input', e => renderLibraryGrid(e.target.value.trim().toLowerCase()));
+  }
+
+  function renderLibraryGrid(query) {
+    const grid = $('libraryGrid');
+    grid.innerHTML = '';
+    let items;
+    if (query) {
+      items = [];
+      TOPIC_LIBRARY.forEach(f => f.topics.filter(t => t.toLowerCase().includes(query)).forEach(t => items.push({ t, color: f.color })));
+    } else {
+      const f = TOPIC_LIBRARY[_libField];
+      items = f.topics.map(t => ({ t, color: f.color }));
+    }
+    if (!items.length) {
+      grid.innerHTML = '<div class="lib-empty">No topics match.</div>';
+      return;
+    }
+    const color = query ? null : TOPIC_LIBRARY[_libField].color;
+    grid.style.setProperty('--lib-c', color || '#6b7280');
+    items.forEach(({ t, color: c }) => {
+      const chip = document.createElement('button');
+      chip.className = 'library-chip';
+      chip.textContent = t;
+      if (query) chip.style.setProperty('--lib-c', c);
+      chip.addEventListener('click', () => {
+        topicInput.value = t;
+        $('libraryPanel').style.display = 'none';
+        libBtn.classList.remove('lib-open');
+        showModal(t);
+      });
+      grid.appendChild(chip);
+    });
+  }
+
+  libBtn.addEventListener('click', () => {
+    const panel = $('libraryPanel');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    libBtn.classList.toggle('lib-open', !open);
+    if (!open && !_libInited) { initLibrary(); _libInited = true; }
+  });
+
   // ── Optimal Reading Sequence ─────────────────────────────────────────────────
 
   function collectAllRefs(startData, finishData) {
@@ -1202,10 +1496,10 @@ Return ONLY JSON.`;
     });
   }
 
-  step2Btn.addEventListener('click', async () => {
+  readBtn.addEventListener('click', async () => {
     const refs = collectAllRefs(_lastStartData, _lastFinishData);
     if (!refs.length) return;
-    step2Btn.disabled = true;
+    readBtn.disabled = true;
     $('rsSection').style.display = 'block';
     $('rsLoader').classList.add('active');
     $('rsList').innerHTML = '';
@@ -1217,7 +1511,7 @@ Return ONLY JSON.`;
       $('rsList').innerHTML = `<div class="section-error">${esc(err.message)}</div>`;
     } finally {
       $('rsLoader').classList.remove('active');
-      step2Btn.disabled = false;
+      readBtn.disabled = false;
     }
   });
 </script>
