@@ -2788,15 +2788,16 @@ async function fetchBooks(query){
       const title = esc(b.title||'Unknown title');
       const info = esc(b.publicationInfo||'');
       const snippet = esc((b.snippet||'').slice(0, 120));
-      const cites = b.inline_links?.cited_by?.total;
-      const citedUrl = b.inline_links?.cited_by?.link||'';
-      const versions = b.inline_links?.versions?.total;
-      const versionsUrl = b.inline_links?.versions?.link||'';
-      const pdfs = (b.resources||[]).filter(r => r.fileFormat==='PDF' || (r.title||'').toLowerCase().includes('pdf'));
+      // Handle both Serper.dev flat fields and SerpAPI nested fields
+      const cites      = b.citedBy       ?? b.inline_links?.cited_by?.total  ?? null;
+      const citedUrl   = b.citedByLink   || b.inline_links?.cited_by?.link   || '';
+      const versions   = b.versions      ?? b.inline_links?.versions?.total  ?? null;
+      const versionsUrl= b.versionsLink  || b.inline_links?.versions?.link   || '';
+      const pdfUrl     = b.pdfLink       || (b.resources||[]).find(r => r.fileFormat==='PDF' || (r.title||'').toLowerCase().includes('pdf'))?.link || '';
       const url = b.link||'#';
       const linksHtml = [
-        ...pdfs.slice(0,2).map(r => `<a class="books-card-link pdf" href="${esc(r.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PDF ↗</a>`),
-        versions ? `<a class="books-card-link versions" href="${esc(versionsUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${versions} versions</a>` : '',
+        pdfUrl ? `<a class="books-card-link pdf" href="${esc(pdfUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PDF ↗</a>` : '',
+        versions ? `<a class="books-card-link versions" href="${esc(versionsUrl)||'#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${versions} versions</a>` : '',
         cites!=null ? `<a class="books-card-link cited" href="${esc(citedUrl)||'#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cited by ${Number(cites).toLocaleString()}</a>` : '',
       ].filter(Boolean).join('');
       html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
