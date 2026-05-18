@@ -643,6 +643,11 @@
     .books-card-count { font-size:.69rem; font-weight:700; color:#b45309; }
     .books-empty { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
     .books-col-loading { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
+
+    /* ── Keyword optimisation status ── */
+    .lib-kw-status { padding:.32rem 1rem; font-size:.7rem; color:var(--text-muted); background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.65rem; }
+    .lib-kw-bar { flex:1; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+    .lib-kw-bar-fill { height:100%; background:var(--core-header); transition:width .25s; border-radius:2px; }
   </style>
 </head>
 <body>
@@ -800,6 +805,7 @@
     <div class="library-search-wrap">
       <input class="library-search" id="librarySearch" placeholder="Search research topics across all academic domains…" autocomplete="off" spellcheck="false">
     </div>
+    <div class="lib-kw-status" id="libKwStatus" style="display:none"></div>
     <div class="library-tabs" id="libraryTabs"></div>
     <div class="lib-breadcrumb" id="libBreadcrumb">
       <button class="lib-back-btn" id="libBack">← Back</button>
@@ -1060,6 +1066,21 @@
       try { const j = await res.json(); msg = j?.error?.message || msg; } catch(_) {}
       throw new Error(msg);
     }
+    return (await res.json())?.content?.[0]?.text || '';
+  }
+
+  async function callHaiku(prompt, maxTokens) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKeyInput.value.trim(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
+    });
+    if(!res.ok) throw new Error(`API ${res.status}`);
     return (await res.json())?.content?.[0]?.text || '';
   }
 
@@ -1724,6 +1745,19 @@ Rules:
   let _libTopicDetail = null;
   let _libInited = false;
 
+  const KW_CACHE_KEY = '_topicKw_v2';
+  let _kwMap = null; // null=unchecked; {}=loaded (value: string=keyword, null=deleted)
+  try { const c = localStorage.getItem(KW_CACHE_KEY); if(c) _kwMap = JSON.parse(c); } catch(_){}
+
+  function kwFor(name) {
+    if(!_kwMap || _kwMap[name] === undefined) return name;
+    return _kwMap[name] || name;
+  }
+  function kwVisible(name) {
+    if(!_kwMap || _kwMap[name] === undefined) return true;
+    return _kwMap[name] !== null;
+  }
+
   // ── Sheet CSV parsing ────────────────────────────────────────────────────────
   function parseCSV(text) {
     const rows = [];
@@ -1813,6 +1847,36 @@ Rules:
     }
   }
 
+  async function buildTopicKeywords(allNames) {
+    if(!_kwMap) _kwMap = {};
+    const todo = allNames.filter(n => _kwMap[n] === undefined);
+    if(!todo.length) return;
+    const batchSize = 80;
+    const batches = [];
+    for(let i = 0; i < todo.length; i += batchSize) batches.push(todo.slice(i, i + batchSize));
+    const statusEl = $('libKwStatus');
+    statusEl.style.display = 'flex';
+    let done = 0;
+    const total = batches.length;
+    const tick = () => {
+      statusEl.innerHTML = `<span>Optimising keywords — ${done}/${total}</span><div class="lib-kw-bar"><div class="lib-kw-bar-fill" style="width:${Math.round(done/total*100)}%"></div></div>`;
+    };
+    tick();
+    const SYS = `Convert each academic topic phrase to a precise 2-4 word search keyword. Rules: strip generic suffixes (Studies, Research, Techniques, Applications, Analysis when used as trailing filler); "X in/of/for Y" → extract core concept; "X and Y Research" → "X Y" or most specific; disease/method/theory names → keep or shorten; output null for phrases too vague to yield a useful keyword (e.g. "Diverse Aspects of X", "Advanced X Studies" where X is itself vague). Return ONLY a JSON object: {"original phrase": "keyword string" or null}`;
+    await Promise.all(batches.map(batch =>
+      callHaiku(`${SYS}\n\nTopics:\n${batch.join('\n')}`, 2048)
+        .then(text => {
+          const m = text.match(/\{[\s\S]*\}/);
+          if(m) try { Object.assign(_kwMap, JSON.parse(m[0])); } catch(_) {}
+        })
+        .catch(() => {})
+        .finally(() => { done++; tick(); })
+    ));
+    try { localStorage.setItem(KW_CACHE_KEY, JSON.stringify(_kwMap)); } catch(_) {}
+    statusEl.style.display = 'none';
+    renderLibraryView('');
+  }
+
   function initLibrary() {
     $('libBack').addEventListener('click', () => {
       if (_libTopicDetail)    { _libTopicDetail = null; }
@@ -1848,6 +1912,11 @@ Rules:
         tabs.appendChild(t);
       });
       renderLibraryView('');
+      if(apiKeyInput.value.trim() && (!_kwMap || !Object.keys(_kwMap).length)) {
+        const allNames = [];
+        domains.forEach(d => d.fields.forEach(f => f.subfields.forEach(sf => sf.topics.forEach(t => allNames.push(t.name)))));
+        buildTopicKeywords(allNames);
+      }
     });
   }
 
@@ -1904,10 +1973,11 @@ Rules:
     grid.style.setProperty('--lib-c', d.color);
     grid.innerHTML = '';
     sf.topics.forEach(topic => {
+      if(!kwVisible(topic.name)) return;
       const chip = document.createElement('button');
       chip.className = 'library-chip';
       chip.style.setProperty('--lib-c', d.color);
-      chip.textContent = topic.name;
+      chip.textContent = kwFor(topic.name);
       chip.addEventListener('click', () => { _libTopicDetail = topic; renderLibraryView(''); });
       grid.appendChild(chip);
     });
@@ -1925,7 +1995,7 @@ Rules:
     const detail = document.createElement('div');
     detail.className = 'lib-topic-detail';
     detail.innerHTML = `
-      <div class="lib-topic-detail-name" style="color:${d.color}">${esc(topic.name)}</div>
+      <div class="lib-topic-detail-name" style="color:${d.color}">${esc(kwFor(topic.name))}</div>
       ${topic.summary ? `<div class="lib-topic-detail-summary">${esc(topic.summary)}</div>` : ''}
       ${kwHtml ? `<div class="lib-topic-keywords">${kwHtml}</div>` : ''}
       <div class="lib-topic-actions">
@@ -1947,8 +2017,9 @@ Rules:
       bp.style.display = 'block';
       booksBtn.classList.add('books-open');
       const si = $('booksSearch');
-      si.value = topic.name;
-      fetchBooks(topic.name);
+      const kw = kwFor(topic.name);
+      si.value = kw;
+      fetchBooks(kw);
       bp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }
@@ -1961,14 +2032,18 @@ Rules:
     $('libBreadcrumb').style.display = 'none';
     const hits = [];
     _sheetDomains.forEach(d => d.fields.forEach(f => f.subfields.forEach(sf =>
-      sf.topics.filter(t => t.name.toLowerCase().includes(query)).forEach(t => hits.push({ t, color: d.color, domain: d }))
+      sf.topics.filter(t => {
+        if(!kwVisible(t.name)) return false;
+        const kw = kwFor(t.name).toLowerCase();
+        return kw.includes(query) || t.name.toLowerCase().includes(query);
+      }).forEach(t => hits.push({ t, color: d.color, domain: d }))
     )));
     if (!hits.length) { grid.innerHTML = '<div class="lib-empty">No topics match.</div>'; return; }
     hits.slice(0, 200).forEach(({ t, color, domain }) => {
       const chip = document.createElement('button');
       chip.className = 'library-chip';
       chip.style.setProperty('--lib-c', color);
-      chip.textContent = t.name;
+      chip.textContent = kwFor(t.name);
       chip.addEventListener('click', () => {
         _libTopicDetail = t;
         $('librarySearch').value = '';
