@@ -2800,11 +2800,12 @@ async function fetchBooks(query){
       const linksHtml = [
         pdfUrl ? `<a class="books-card-link pdf" href="${esc(pdfUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PDF ↗</a>` : '',
         versions ? `<a class="books-card-link versions" href="${esc(versionsUrl)||'#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${versions} versions</a>` : '',
-        cites!=null ? `<a class="books-card-link cited" href="${esc(citedUrl)||'#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cited by ${Number(cites).toLocaleString()}</a>` : '',
+        citedUrl ? `<a class="books-card-link cited" href="${esc(citedUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cited by →</a>` : '',
       ].filter(Boolean).join('');
       html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${info ? `<div class="books-card-meta">${info}</div>` : ''}
+        ${cites!=null ? `<div class="books-card-count">🔢 ${Number(cites).toLocaleString()} citations</div>` : ''}
         ${snippet ? `<div class="books-card-snippet">${snippet}…</div>` : ''}
         ${linksHtml ? `<div class="books-card-links">${linksHtml}</div>` : ''}
       </a>`;
