@@ -2758,7 +2758,7 @@ async function fetchBooks(query){
   }
   // Strip breadcrumb context (e.g. "Real Analysis › Measure Theory" → "Measure Theory") for API calls
   const rawQuery = query.trim();
-  const coreQuery = rawQuery.includes('›') ? rawQuery.split('›').pop().trim() : rawQuery;
+  const coreQuery = rawQuery.replace(/\s*›\s*/g, ' ').trim();
   const qCore = encodeURIComponent(coreQuery);
   const serperKey = serperKeyInput.value.trim();
   resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching OpenAlex…</div></div><div class="books-col"><div class="books-col-loading">Searching Internet Archive…</div></div></div>';
