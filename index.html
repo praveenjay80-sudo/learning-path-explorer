@@ -2299,7 +2299,7 @@ async function fetchBooks(query){
 
   const [olRes, crRes, iaRes] = await Promise.allSettled([
     scholarFetch,
-    fetch(`https://api.openalex.org/works?search=${qCore}&sort=cited_by_count:desc&per-page=8&select=title,authorships,publication_year,cited_by_count,doi,open_access`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
+    fetch(`https://api.openalex.org/works?filter=title_and_abstract.search:${qCore}&sort=cited_by_count:desc&per-page=8&select=title,authorships,publication_year,cited_by_count,doi,open_access`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
     fetch(`https://openlibrary.org/search.json?q=${qCore}&limit=8&fields=title,author_name,first_publish_year,key,cover_i,number_of_pages_median,edition_count`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
   ]);
 
