@@ -2287,7 +2287,7 @@ async function fetchBooks(query){
   const coreQuery = rawQuery.includes('›') ? rawQuery.split('›').pop().trim() : rawQuery;
   const qCore = encodeURIComponent(coreQuery);
   const serperKey = serperKeyInput.value.trim();
-  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div><div class="books-col"><div class="books-col-loading">Searching Google Books…</div></div></div>';
+  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div><div class="books-col"><div class="books-col-loading">Searching Open Library subjects…</div></div></div>';
 
   const scholarFetch = serperKey
     ? fetch('https://google.serper.dev/scholar', {
@@ -2300,7 +2300,7 @@ async function fetchBooks(query){
   const [olRes, crRes, iaRes] = await Promise.allSettled([
     scholarFetch,
     fetch(`https://api.crossref.org/works?query.title=${qCore}&rows=8&sort=is-referenced-by-count&order=desc&select=title,author,published,is-referenced-by-count,DOI,link`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
-    fetch(`https://www.googleapis.com/books/v1/volumes?q=${qCore}&maxResults=8&orderBy=relevance&langRestrict=en`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
+    fetch(`https://openlibrary.org/subjects/${encodeURIComponent(coreQuery.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''))}.json?limit=10`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
   ]);
 
   let html = '<div class="books-cols">';
@@ -2367,23 +2367,19 @@ async function fetchBooks(query){
   html += '</div>';
 
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">📖 Books <span class="books-col-src">(Google Books)</span></div>';
-  if(iaRes.status==='fulfilled' && iaRes.value.items?.length){
-    iaRes.value.items.forEach(b=>{
-      const v = b.volumeInfo||{};
-      const title = esc(v.title||'Unknown title');
-      const authors = esc((v.authors||[]).slice(0,2).join(', '));
-      const year = (v.publishedDate||'').slice(0,4);
-      const pages = v.pageCount ? `${v.pageCount} pages` : '';
-      const view = b.accessInfo?.viewability||'';
-      const url = b.accessInfo?.webReaderLink || v.previewLink || `https://books.google.com/books?id=${b.id}`;
-      const accessLabel = view==='ALL_PAGES' ? 'Full book ↗' : view==='PARTIAL' ? 'Preview ↗' : 'Info ↗';
-      const accessClass = view==='ALL_PAGES' ? 'pdf' : 'versions';
+  html += '<div class="books-col-title">📚 Textbooks <span class="books-col-src">(Open Library subjects)</span></div>';
+  if(iaRes.status==='fulfilled' && iaRes.value.works?.length){
+    iaRes.value.works.forEach(b=>{
+      const title = esc(b.title||'Unknown title');
+      const authors = esc((b.authors||[]).slice(0,2).map(a=>a.name||'').filter(Boolean).join(', '));
+      const year = b.first_publish_year||'';
+      const editions = b.edition_count ? `${b.edition_count} editions` : '';
+      const url = b.key ? `https://openlibrary.org${b.key}` : '#';
       html += `<a class="books-card" href="${esc(url)}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
-        ${pages ? `<div class="books-card-count">📄 ${pages}</div>` : ''}
-        <div class="books-card-links"><span class="books-card-link ${accessClass}">${accessLabel}</span></div>
+        ${editions ? `<div class="books-card-count">📖 ${editions}</div>` : ''}
+        <div class="books-card-links"><span class="books-card-link versions">Open Library ↗</span></div>
       </a>`;
     });
   } else {
