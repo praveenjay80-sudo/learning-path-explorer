@@ -1611,62 +1611,19 @@ Rules:
   let _kwMap = null; // null=unchecked; {}=loaded (value: string=keyword, null=deleted)
   try { const c = localStorage.getItem(KW_CACHE_KEY); if(c) _kwMap = JSON.parse(c); } catch(_){}
 
-  const _gndCache = {}; // subfield name → string[] of related terms (English)
+  const _oaTopicCache = {}; // subfield name → string[] of related topic names
 
-  async function fetchGndRelated(name) {
-    if (_gndCache[name]) return _gndCache[name];
+  async function fetchRelatedTopics(name) {
+    if (_oaTopicCache[name]) return _oaTopicCache[name];
     try {
-      // 1. Search GND directly with English name (GND indexes English variantNames)
-      //    Also try quoted exact phrase for better precision
-      const searchRes = await fetch(
-        `https://lobid.org/gnd/search?q=${encodeURIComponent('"'+name+'"')}&filter=type:SubjectHeading&format=json&size=8`
-      ).then(r => r.json());
-
-      // Fallback: unquoted search if quoted returns nothing
-      let members = searchRes.member || [];
-      if (!members.length) {
-        const r2 = await fetch(
-          `https://lobid.org/gnd/search?q=${encodeURIComponent(name)}&filter=type:SubjectHeading&format=json&size=8`
-        ).then(r => r.json());
-        members = r2.member || [];
-      }
-      if (!members.length) return (_gndCache[name] = []);
-
-      // Prefer record where preferredName or variantName matches exactly
-      let best = members[0];
-      const nameLower = name.toLowerCase();
-      for (const m of members) {
-        const allNames = [m.preferredName, ...(m.variantName||[])].map(n => n.toLowerCase());
-        if (allNames.some(n => n === nameLower)) { best = m; break; }
-      }
-      const gndId = best.id; // "https://d-nb.info/gnd/4060425-1"
-
-      // 2. Find narrower terms: all concepts that list this as their broaderTermGeneral
-      const narrowRes = await fetch(
-        `https://lobid.org/gnd/search?q=broaderTermGeneral.id:${encodeURIComponent('"'+gndId+'"')}&filter=type:SubjectHeading&format=json&size=20`
-      ).then(r => r.json());
-      if (!narrowRes.member?.length) return (_gndCache[name] = []);
-
-      // Prefer English variant names (no German umlauts), else keep German preferredName
-      const terms = narrowRes.member.map(m => {
-        const en = (m.variantName||[]).find(v => !/[äöüÄÖÜß]/.test(v) && /[a-zA-Z]{3}/.test(v));
-        return en || m.preferredName;
-      }).filter(Boolean);
-
-      // 3. Translate any remaining German terms → English via Haiku
-      const apiKey = apiKeyInput.value.trim();
-      if (apiKey) {
-        try {
-          const out = await callHaiku(
-            `Translate these German academic subject terms to English. Return ONLY a JSON array of English strings, same order, no explanations:\n${JSON.stringify(terms)}`,
-            600
-          );
-          const mx = out.match(/\[[\s\S]*?\]/);
-          if (mx) return (_gndCache[name] = JSON.parse(mx[0]).filter(Boolean));
-        } catch(_) {}
-      }
-      return (_gndCache[name] = terms);
-    } catch(_) { return (_gndCache[name] = []); }
+      const res = await fetch(
+        `https://api.openalex.org/topics?search=${encodeURIComponent(name)}&per-page=1&select=display_name,siblings,subfield`
+      ).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); });
+      const topic = res.results?.[0];
+      if (!topic) return (_oaTopicCache[name] = []);
+      const terms = (topic.siblings || []).map(s => s.display_name).filter(Boolean);
+      return (_oaTopicCache[name] = terms);
+    } catch(_) { return (_oaTopicCache[name] = []); }
   }
 
   function kwFor(name) {
@@ -1889,7 +1846,7 @@ Rules:
         <button class="lib-wiki-btn" id="libBooksBtn">📖 Find Books</button>
       </div>`;
     grid.appendChild(detail);
-    fetchGndRelated(topic.name).then(terms => {
+    fetchRelatedTopics(topic.name).then(terms => {
       const el = document.getElementById('libLcshChips');
       if (!el) return;
       if (!terms.length) { el.innerHTML = '<span style="font-size:.7rem;color:var(--text-muted)">No related terms found</span>'; return; }
