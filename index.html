@@ -642,6 +642,11 @@
     .books-card-meta { font-size:.71rem; color:var(--text-muted); margin-bottom:.18rem; }
     .books-card-snippet { font-size:.7rem; color:var(--text-muted); line-height:1.4; margin-bottom:.18rem; font-style:italic; }
     .books-card-count { font-size:.69rem; font-weight:700; color:#b45309; }
+    .books-card-links { display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.3rem; }
+    .books-card-link { font-size:.66rem; font-weight:600; padding:.15rem .45rem; border-radius:4px; text-decoration:none; }
+    .books-card-link.pdf { background:rgba(220,38,38,.1); color:#dc2626; }
+    .books-card-link.versions { background:rgba(30,64,175,.1); color:#1e40af; }
+    .books-card-link.cited { background:rgba(180,83,9,.1); color:#b45309; }
     .books-empty { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
     .books-col-loading { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
 
@@ -2784,12 +2789,21 @@ async function fetchBooks(query){
       const info = esc(b.publicationInfo||'');
       const snippet = esc((b.snippet||'').slice(0, 120));
       const cites = b.inline_links?.cited_by?.total;
+      const citedUrl = b.inline_links?.cited_by?.link||'';
+      const versions = b.inline_links?.versions?.total;
+      const versionsUrl = b.inline_links?.versions?.link||'';
+      const pdfs = (b.resources||[]).filter(r => r.fileFormat==='PDF' || (r.title||'').toLowerCase().includes('pdf'));
       const url = b.link||'#';
+      const linksHtml = [
+        ...pdfs.slice(0,2).map(r => `<a class="books-card-link pdf" href="${esc(r.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PDF ↗</a>`),
+        versions ? `<a class="books-card-link versions" href="${esc(versionsUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${versions} versions</a>` : '',
+        cites!=null ? `<a class="books-card-link cited" href="${esc(citedUrl)||'#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Cited by ${Number(cites).toLocaleString()}</a>` : '',
+      ].filter(Boolean).join('');
       html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${info ? `<div class="books-card-meta">${info}</div>` : ''}
         ${snippet ? `<div class="books-card-snippet">${snippet}…</div>` : ''}
-        ${cites!=null ? `<div class="books-card-count">${Number(cites).toLocaleString()} citations</div>` : ''}
+        ${linksHtml ? `<div class="books-card-links">${linksHtml}</div>` : ''}
       </a>`;
     });
   } else {
