@@ -2282,12 +2282,12 @@ async function fetchBooks(query){
     resultsEl.innerHTML = '<div class="books-hint">Type a topic to find relevant, cited, and freely available books</div>';
     return;
   }
-  // Strip breadcrumb context (e.g. "Real Analysis › Measure Theory" → "Measure Theory") for API calls
   const rawQuery = query.trim();
-  const coreQuery = rawQuery.replace(/\s*›\s*/g, ' ').trim();
+  // Use only the leaf term after › so APIs get "Complex Analysis" not "Analysis Complex Analysis"
+  const coreQuery = rawQuery.includes('›') ? rawQuery.split('›').pop().trim() : rawQuery;
   const qCore = encodeURIComponent(coreQuery);
   const serperKey = serperKeyInput.value.trim();
-  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching OpenAlex…</div></div><div class="books-col"><div class="books-col-loading">Searching Open Library…</div></div></div>';
+  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div><div class="books-col"><div class="books-col-loading">Searching Google Books…</div></div></div>';
 
   const scholarFetch = serperKey
     ? fetch('https://google.serper.dev/scholar', {
@@ -2299,8 +2299,8 @@ async function fetchBooks(query){
 
   const [olRes, crRes, iaRes] = await Promise.allSettled([
     scholarFetch,
-    fetch(`https://api.openalex.org/works?filter=title_and_abstract.search:${qCore}&sort=cited_by_count:desc&per-page=8&select=title,authorships,publication_year,cited_by_count,doi,open_access`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
-    fetch(`https://openlibrary.org/search.json?q=${qCore}&limit=8&fields=title,author_name,first_publish_year,key,cover_i,number_of_pages_median,edition_count`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
+    fetch(`https://api.crossref.org/works?query.title=${qCore}&rows=8&sort=is-referenced-by-count&order=desc&select=title,author,published,is-referenced-by-count,DOI,link`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${qCore}&maxResults=8&orderBy=relevance&langRestrict=en`).then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); }),
   ]);
 
   let html = '<div class="books-cols">';
@@ -2342,16 +2342,16 @@ async function fetchBooks(query){
   html += '</div>';
 
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">📊 Most Cited <span class="books-col-src">(OpenAlex)</span></div>';
-  if(crRes.status==='fulfilled' && crRes.value.results?.length){
-    crRes.value.results.forEach(b=>{
-      const title = esc(b.title||'Unknown title');
-      const authors = esc((b.authorships||[]).slice(0,2).map(a=>a.author?.display_name||'').filter(Boolean).join(', '));
-      const year = b.publication_year||'';
-      const cites = b.cited_by_count;
-      const doi = b.doi ? b.doi.replace('https://doi.org/','') : '';
-      const pdfUrl = b.open_access?.oa_url||'';
-      const url = b.doi || (doi ? `https://doi.org/${doi}` : '#');
+  html += '<div class="books-col-title">📊 Most Cited <span class="books-col-src">(CrossRef)</span></div>';
+  if(crRes.status==='fulfilled' && crRes.value.message?.items?.length){
+    crRes.value.message.items.forEach(b=>{
+      const title = esc((b.title||[])[0]||'Unknown title');
+      const authors = esc((b.author||[]).slice(0,2).map(a=>[a.given,a.family].filter(Boolean).join(' ')).join(', '));
+      const year = (b.published?.['date-parts']?.[0]?.[0])||'';
+      const cites = b['is-referenced-by-count'];
+      const doi = b.DOI||'';
+      const pdfUrl = (b.link||[]).find(l=>l['content-type']==='application/pdf')?.URL||'';
+      const url = doi ? `https://doi.org/${doi}` : '#';
       html += `<a class="books-card" href="${esc(url)}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
@@ -2367,20 +2367,23 @@ async function fetchBooks(query){
   html += '</div>';
 
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">📖 Books <span class="books-col-src">(Open Library)</span></div>';
-  if(iaRes.status==='fulfilled' && iaRes.value.docs?.length){
-    iaRes.value.docs.forEach(b=>{
-      const title = esc(b.title||'Unknown title');
-      const authors = esc((b.author_name||[]).slice(0,2).join(', '));
-      const year = b.first_publish_year||'';
-      const editions = b.edition_count ? `${b.edition_count} editions` : '';
-      const pages = b.number_of_pages_median ? `${b.number_of_pages_median} pages` : '';
-      const url = b.key ? `https://openlibrary.org${b.key}` : `https://openlibrary.org/search?q=${qCore}`;
+  html += '<div class="books-col-title">📖 Books <span class="books-col-src">(Google Books)</span></div>';
+  if(iaRes.status==='fulfilled' && iaRes.value.items?.length){
+    iaRes.value.items.forEach(b=>{
+      const v = b.volumeInfo||{};
+      const title = esc(v.title||'Unknown title');
+      const authors = esc((v.authors||[]).slice(0,2).join(', '));
+      const year = (v.publishedDate||'').slice(0,4);
+      const pages = v.pageCount ? `${v.pageCount} pages` : '';
+      const view = b.accessInfo?.viewability||'';
+      const url = b.accessInfo?.webReaderLink || v.previewLink || `https://books.google.com/books?id=${b.id}`;
+      const accessLabel = view==='ALL_PAGES' ? 'Full book ↗' : view==='PARTIAL' ? 'Preview ↗' : 'Info ↗';
+      const accessClass = view==='ALL_PAGES' ? 'pdf' : 'versions';
       html += `<a class="books-card" href="${esc(url)}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
-        ${editions||pages ? `<div class="books-card-count">📄 ${[editions,pages].filter(Boolean).join(' · ')}</div>` : ''}
-        <div class="books-card-links"><span class="books-card-link versions">Open Library ↗</span></div>
+        ${pages ? `<div class="books-card-count">📄 ${pages}</div>` : ''}
+        <div class="books-card-links"><span class="books-card-link ${accessClass}">${accessLabel}</span></div>
       </a>`;
     });
   } else {
