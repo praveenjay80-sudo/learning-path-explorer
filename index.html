@@ -647,6 +647,7 @@
     .books-card-link.pdf { background:rgba(220,38,38,.1); color:#dc2626; }
     .books-card-link.versions { background:rgba(30,64,175,.1); color:#1e40af; }
     .books-card-link.cited { background:rgba(180,83,9,.1); color:#b45309; }
+    .books-card-link.altmetric { background:rgba(255,103,31,.15); color:#e05a00; }
     .books-empty { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
     .books-col-loading { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
 
@@ -2761,7 +2762,7 @@ async function fetchBooks(query){
   const coreQuery = rawQuery.replace(/\s*›\s*/g, ' ').trim();
   const qCore = encodeURIComponent(coreQuery);
   const serperKey = serperKeyInput.value.trim();
-  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching OpenAlex…</div></div><div class="books-col"><div class="books-col-loading">Searching Internet Archive…</div></div></div>';
+  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching Semantic Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching Google Books…</div></div></div>';
 
   const scholarFetch = serperKey
     ? fetch('https://google.serper.dev/scholar', {
@@ -2773,8 +2774,8 @@ async function fetchBooks(query){
 
   const [olRes, crRes, iaRes] = await Promise.allSettled([
     scholarFetch,
-    fetch(`https://api.openalex.org/works?search=${qCore}&filter=type:book&sort=cited_by_count:desc&per_page=8&select=title,authorships,publication_year,cited_by_count,doi`).then(r=>r.json()),
-    fetch(`https://archive.org/advancedsearch.php?q=${encodeURIComponent('"' + coreQuery + '" AND mediatype:texts')}&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=year&fl[]=downloads&sort[]=downloads+desc&rows=8&output=json`).then(r=>r.json()),
+    fetch(`https://api.semanticscholar.org/graph/v1/paper/search?query=${qCore}&fields=title,authors,year,citationCount,openAccessPdf,externalIds&limit=8`).then(r=>r.json()),
+    fetch(`https://www.googleapis.com/books/v1/volumes?q=${qCore}&maxResults=8&filter=free-ebooks&orderBy=relevance&langRestrict=en`).then(r=>r.json()),
   ]);
 
   let html = '<div class="books-cols">';
@@ -2815,19 +2816,28 @@ async function fetchBooks(query){
   }
   html += '</div>';
 
+  const ssAltmetricDois = [];
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">🔬 Most Cited <span class="books-col-src">(OpenAlex)</span></div>';
-  if(crRes.status==='fulfilled' && crRes.value.results?.length){
-    crRes.value.results.forEach(b=>{
+  html += '<div class="books-col-title">📊 Most Cited <span class="books-col-src">(Semantic Scholar)</span></div>';
+  if(crRes.status==='fulfilled' && crRes.value.data?.length){
+    const ssPapers = [...crRes.value.data].sort((a,b)=>(b.citationCount||0)-(a.citationCount||0));
+    ssPapers.forEach((b,i)=>{
       const title = esc(b.title||'Unknown title');
-      const authors = esc((b.authorships||[]).slice(0,2).map(a=>a.author?.display_name||'').filter(Boolean).join(', '));
-      const year = b.publication_year||'';
-      const cites = b.cited_by_count;
-      const url = b.doi||'#';
-      html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
+      const authors = esc((b.authors||[]).slice(0,2).map(a=>a.name||'').filter(Boolean).join(', '));
+      const year = b.year||'';
+      const cites = b.citationCount;
+      const doi = b.externalIds?.DOI||'';
+      const pdfUrl = b.openAccessPdf?.url||'';
+      const url = doi ? `https://doi.org/${doi}` : `https://www.semanticscholar.org/paper/${b.paperId}`;
+      if(doi) ssAltmetricDois.push({i, doi});
+      html += `<a class="books-card" href="${esc(url)}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
-        ${cites!=null ? `<div class="books-card-count">${cites.toLocaleString()} citations</div>` : ''}
+        ${cites!=null ? `<div class="books-card-count">📊 ${cites.toLocaleString()} citations</div>` : ''}
+        <div class="books-card-links">
+          ${pdfUrl ? `<a class="books-card-link pdf" href="${esc(pdfUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">PDF ↗</a>` : ''}
+          <span id="ss-am-${i}"></span>
+        </div>
       </a>`;
     });
   } else {
@@ -2836,27 +2846,42 @@ async function fetchBooks(query){
   html += '</div>';
 
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">📂 Free to Read <span class="books-col-src">(Internet Archive)</span></div>';
-  if(iaRes.status==='fulfilled' && iaRes.value.response?.docs?.length){
-    iaRes.value.response.docs.forEach(b=>{
-      const title = esc(b.title||'Unknown title');
-      const rawCreator = Array.isArray(b.creator) ? b.creator.slice(0,2).join(', ') : (b.creator||'');
-      const authors = esc(rawCreator);
-      const year = b.year||'';
-      const dl = b.downloads ? `${Number(b.downloads).toLocaleString()} downloads` : '';
-      const url = `https://archive.org/details/${b.identifier}`;
-      html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
+  html += '<div class="books-col-title">📖 Free to Read <span class="books-col-src">(Google Books)</span></div>';
+  if(iaRes.status==='fulfilled' && iaRes.value.items?.length){
+    iaRes.value.items.forEach(b=>{
+      const v = b.volumeInfo||{};
+      const title = esc(v.title||'Unknown title');
+      const authors = esc((v.authors||[]).slice(0,2).join(', '));
+      const year = (v.publishedDate||'').slice(0,4);
+      const pages = v.pageCount ? `${v.pageCount} pages` : '';
+      const url = b.accessInfo?.webReaderLink || v.previewLink || '#';
+      html += `<a class="books-card" href="${esc(url)}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
         ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
-        ${dl ? `<div class="books-card-count">${dl}</div>` : ''}
+        ${pages ? `<div class="books-card-count">📄 ${pages}</div>` : ''}
+        <div class="books-card-links"><span class="books-card-link pdf">Free ↗</span></div>
       </a>`;
     });
   } else {
-    html += '<div class="books-empty">No results found</div>';
+    html += '<div class="books-empty">No free ebooks found</div>';
   }
   html += '</div></div>';
 
   resultsEl.innerHTML = html;
+
+  // Fetch Altmetric scores async and inject into rendered cards
+  ssAltmetricDois.forEach(({i, doi})=>{
+    fetch(`https://api.altmetric.com/v1/doi/${encodeURIComponent(doi)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const el = $('ss-am-'+i);
+        if(!el || !data?.score) return;
+        const score = Math.round(data.score);
+        const detailsUrl = data.details_url || '#';
+        el.outerHTML = `<a class="books-card-link altmetric" href="${esc(detailsUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Altmetric ${score}</a>`;
+      })
+      .catch(()=>{});
+  });
 }
 
 const booksBtn = $('booksBtn');
