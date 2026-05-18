@@ -600,6 +600,42 @@
     .rs-connector { display:flex; flex-direction:column; align-items:center; padding:.25rem 0; gap:0; }
     .rs-connector-line { width:2px; height:1.2rem; background:linear-gradient(to bottom,#0f766e,#0891b2); opacity:.4; }
     .rs-connector-dot { width:6px; height:6px; border-radius:50%; background:#0891b2; opacity:.5; }
+
+    /* ── Books Explorer ── */
+    .msc-books-row { display:flex; gap:.75rem; margin-bottom:1rem; }
+    @media(max-width:600px){ .msc-books-row { flex-direction:column; } }
+    .msc-books-row .msc-btn { flex:1; width:auto; margin-bottom:0; }
+    .books-btn {
+      flex:1; border:none; border-radius:14px; cursor:pointer; font-family:inherit;
+      padding:1rem 1.4rem; text-align:left; position:relative; overflow:hidden;
+      background:linear-gradient(135deg,#78350f 0%,#b45309 55%,#d97706 100%);
+      color:#fff; margin-bottom:0;
+      box-shadow:0 4px 20px rgba(180,83,9,.3);
+      transition:transform .15s, box-shadow .2s;
+    }
+    .books-btn::before { content:''; position:absolute; top:0; left:-75%; width:50%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent); transform:skewX(-20deg); animation:btnShimmer 2.8s ease-in-out infinite; }
+    .books-btn:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(180,83,9,.45); }
+    .books-btn.books-open { box-shadow:0 0 0 3px rgba(180,83,9,.4),0 4px 20px rgba(180,83,9,.3); }
+    .books-btn-label { font-size:.6rem; font-weight:900; letter-spacing:.14em; text-transform:uppercase; opacity:.72; margin-bottom:.3rem; position:relative; z-index:1; }
+    .books-btn-inner { display:flex; align-items:center; gap:.75rem; position:relative; z-index:1; }
+    .books-btn-icon { font-size:1.6rem; flex-shrink:0; }
+    .books-btn-title { font-size:.98rem; font-weight:800; color:#fff; margin-bottom:.12rem; }
+    .books-btn-sub { font-size:.7rem; font-weight:500; opacity:.8; display:block; letter-spacing:.02em; }
+    .books-panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:1rem; overflow:hidden; animation:libIn .18s ease; }
+    .books-search-wrap { padding:.65rem .85rem; border-bottom:1px solid var(--border); }
+    .books-hint { font-size:.85rem; color:var(--text-muted); text-align:center; padding:2rem; }
+    .books-cols { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; padding:.85rem 1rem 1rem; }
+    @media(max-width:580px){ .books-cols { grid-template-columns:1fr; } }
+    .books-col-title { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); padding-bottom:.45rem; margin-bottom:.65rem; border-bottom:1px solid var(--border); }
+    .books-col-src { font-weight:400; text-transform:none; letter-spacing:0; font-size:.68rem; }
+    .books-card { display:block; padding:.65rem .85rem; background:var(--surface2); border:1px solid var(--border); border-radius:10px; text-decoration:none; color:var(--text); transition:border-color .15s, transform .1s; margin-bottom:.45rem; }
+    .books-card:last-child { margin-bottom:0; }
+    .books-card:hover { border-color:#b45309; transform:translateY(-1px); }
+    .books-card-title { font-size:.84rem; font-weight:700; line-height:1.3; margin-bottom:.22rem; }
+    .books-card-meta { font-size:.71rem; color:var(--text-muted); margin-bottom:.18rem; }
+    .books-card-count { font-size:.69rem; font-weight:700; color:#b45309; }
+    .books-empty { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
+    .books-col-loading { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
   </style>
 </head>
 <body>
@@ -713,13 +749,22 @@
     </button>
   </div>
 
-  <button class="msc-btn" id="mscBtn">
-    <div class="msc-label">Mathematics</div>
-    <div class="msc-inner">
-      <span class="msc-icon">∑</span>
-      <div><div class="msc-title">MSC 2020 Classification</div><span class="msc-sub">63 primary areas &bull; 450+ subcategories &bull; 6,000+ topics &bull; 7 search links per topic</span></div>
-    </div>
-  </button>
+  <div class="msc-books-row">
+    <button class="msc-btn" id="mscBtn">
+      <div class="msc-label">Mathematics</div>
+      <div class="msc-inner">
+        <span class="msc-icon">∑</span>
+        <div><div class="msc-title">MSC 2020 Classification</div><span class="msc-sub">63 primary areas &bull; 450+ subcategories &bull; 7 search links each</span></div>
+      </div>
+    </button>
+    <button class="books-btn" id="booksBtn">
+      <div class="books-btn-label">Academic Books</div>
+      <div class="books-btn-inner">
+        <span class="books-btn-icon">📖</span>
+        <div><div class="books-btn-title">Books Explorer</div><span class="books-btn-sub">Most held worldwide &bull; Most cited</span></div>
+      </div>
+    </button>
+  </div>
   <div class="msc-panel" id="mscPanel" style="display:none">
     <div class="library-search-wrap">
       <input class="library-search" id="mscSearch" placeholder="Search MSC 2020 — e.g. Riemann, stochastic, algebraic geometry…" autocomplete="off" spellcheck="false">
@@ -730,6 +775,13 @@
       <span class="lib-breadcrumb-path" id="mscBreadcrumbPath"></span>
     </div>
     <div class="msc-grid" id="mscGrid"></div>
+  </div>
+
+  <div class="books-panel" id="booksPanel" style="display:none">
+    <div class="books-search-wrap">
+      <input class="library-search" id="booksSearch" placeholder="Search for books on any academic topic…" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="booksResults"><div class="books-hint">Type a topic to find the most widely-held and most-cited books</div></div>
   </div>
 
   <div class="library-panel" id="libraryPanel" style="display:none">
@@ -2280,6 +2332,8 @@ mscBtn.addEventListener('click', () => {
   if(!isOpen){
     lib.style.display = 'none';
     libBtn.classList.remove('lib-open');
+    $('booksPanel').style.display = 'none';
+    $('booksBtn').classList.remove('books-open');
     initMSC();
   }
 });
@@ -2291,6 +2345,88 @@ $('mscBack').addEventListener('click', () => {
 });
 
 $('mscSearch').addEventListener('input', e => renderMSCSearch(e.target.value));
+
+// ── Books Explorer ─────────────────────────────────────────────────────────────
+let _booksTimer = null;
+
+async function fetchBooks(query){
+  const resultsEl = $('booksResults');
+  if(!query.trim()){
+    resultsEl.innerHTML = '<div class="books-hint">Type a topic to find the most widely-held and most-cited books</div>';
+    return;
+  }
+  const q = encodeURIComponent(query.trim());
+  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Open Library…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div></div>';
+
+  const [olRes, crRes] = await Promise.allSettled([
+    fetch(`https://openlibrary.org/search.json?q=${q}&sort=editions&fields=title,author_name,edition_count,first_publish_year,key&limit=8`).then(r=>r.json()),
+    fetch(`https://api.crossref.org/works?query.bibliographic=${q}&filter=type:book&sort=is-referenced-by-count&order=desc&rows=8&select=title,author,published,is-referenced-by-count,URL`).then(r=>r.json()),
+  ]);
+
+  let html = '<div class="books-cols">';
+
+  html += '<div class="books-col">';
+  html += '<div class="books-col-title">📚 Most Widely Held <span class="books-col-src">(Open Library)</span></div>';
+  if(olRes.status==='fulfilled' && olRes.value.docs?.length){
+    olRes.value.docs.forEach(b=>{
+      const title = esc(b.title||'Unknown title');
+      const authors = esc((b.author_name||[]).slice(0,2).join(', '));
+      const year = b.first_publish_year||'';
+      const count = b.edition_count ? `${b.edition_count} editions` : '';
+      const url = b.key ? `https://openlibrary.org${b.key}` : '#';
+      html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
+        <div class="books-card-title">${title}</div>
+        ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
+        ${count ? `<div class="books-card-count">${count}</div>` : ''}
+      </a>`;
+    });
+  } else {
+    html += '<div class="books-empty">No results found</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="books-col">';
+  html += '<div class="books-col-title">🔬 Most Cited <span class="books-col-src">(CrossRef)</span></div>';
+  if(crRes.status==='fulfilled' && crRes.value.message?.items?.length){
+    crRes.value.message.items.forEach(b=>{
+      const title = esc((b.title||['Unknown title'])[0]);
+      const authors = esc((b.author||[]).slice(0,2).map(a=>`${a.given||''} ${a.family||''}`.trim()).filter(Boolean).join(', '));
+      const year = b.published?.['date-parts']?.[0]?.[0]||'';
+      const cites = b['is-referenced-by-count'];
+      const url = b.URL||'#';
+      html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
+        <div class="books-card-title">${title}</div>
+        ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
+        ${cites!=null ? `<div class="books-card-count">${cites.toLocaleString()} citations</div>` : ''}
+      </a>`;
+    });
+  } else {
+    html += '<div class="books-empty">No results found</div>';
+  }
+  html += '</div></div>';
+
+  resultsEl.innerHTML = html;
+}
+
+const booksBtn = $('booksBtn');
+booksBtn.addEventListener('click', ()=>{
+  const panel = $('booksPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  booksBtn.classList.toggle('books-open', !isOpen);
+  if(!isOpen){
+    $('mscPanel').style.display = 'none';
+    mscBtn.classList.remove('msc-open');
+    $('libraryPanel').style.display = 'none';
+    libBtn.classList.remove('lib-open');
+    setTimeout(()=>$('booksSearch').focus(), 50);
+  }
+});
+
+$('booksSearch').addEventListener('input', e=>{
+  clearTimeout(_booksTimer);
+  _booksTimer = setTimeout(()=>fetchBooks(e.target.value), 400);
+});
 
 </script>
 </body>
