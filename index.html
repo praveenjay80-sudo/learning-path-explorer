@@ -2295,7 +2295,19 @@ Rules:
       bp.style.display = 'block';
       booksBtn.classList.add('books-open');
       const si = $('booksSearch');
-      const kw = kwFor(topic.name);
+      let sfName = null;
+      if (_libField >= 0 && _libCat >= 0) {
+        sfName = d.fields[_libField].subfields[_libCat].name;
+      } else {
+        outer: for (const dom of _sheetDomains) {
+          for (const f of dom.fields) {
+            for (const sf of f.subfields) {
+              if (sf.topics.some(t => t.name === topic.name)) { sfName = sf.name; break outer; }
+            }
+          }
+        }
+      }
+      const kw = (sfName ? sfName + ' › ' : '') + kwFor(topic.name);
       si.value = kw;
       fetchBooks(kw);
       bp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
