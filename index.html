@@ -624,8 +624,9 @@
     .books-panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:1rem; overflow:hidden; animation:libIn .18s ease; }
     .books-search-wrap { padding:.65rem .85rem; border-bottom:1px solid var(--border); }
     .books-hint { font-size:.85rem; color:var(--text-muted); text-align:center; padding:2rem; }
-    .books-cols { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; padding:.85rem 1rem 1rem; }
-    @media(max-width:580px){ .books-cols { grid-template-columns:1fr; } }
+    .books-cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.75rem; padding:.85rem 1rem 1rem; }
+    @media(max-width:760px){ .books-cols { grid-template-columns:1fr 1fr; } }
+    @media(max-width:500px){ .books-cols { grid-template-columns:1fr; } }
     .books-col-title { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); padding-bottom:.45rem; margin-bottom:.65rem; border-bottom:1px solid var(--border); }
     .books-col-src { font-weight:400; text-transform:none; letter-spacing:0; font-size:.68rem; }
     .books-card { display:block; padding:.65rem .85rem; background:var(--surface2); border:1px solid var(--border); border-radius:10px; text-decoration:none; color:var(--text); transition:border-color .15s, transform .1s; margin-bottom:.45rem; }
@@ -761,7 +762,7 @@
       <div class="books-btn-label">Academic Books</div>
       <div class="books-btn-inner">
         <span class="books-btn-icon">📖</span>
-        <div><div class="books-btn-title">Books Explorer</div><span class="books-btn-sub">Most relevant &bull; Most cited</span></div>
+        <div><div class="books-btn-title">Books Explorer</div><span class="books-btn-sub">Most relevant &bull; Most cited &bull; Free to read</span></div>
       </div>
     </button>
   </div>
@@ -1918,6 +1919,7 @@ Rules:
       ${kwHtml ? `<div class="lib-topic-keywords">${kwHtml}</div>` : ''}
       <div class="lib-topic-actions">
         <button class="lib-gen-btn" id="libGenBtn">Generate Learning Path →</button>
+        <button class="lib-wiki-btn" id="libBooksBtn">📖 Find Books</button>
         ${topic.wikiUrl ? `<a class="lib-wiki-btn" href="${esc(topic.wikiUrl)}" target="_blank" rel="noopener">Wikipedia ↗</a>` : ''}
       </div>`;
     grid.appendChild(detail);
@@ -1926,6 +1928,17 @@ Rules:
       $('libraryPanel').style.display = 'none';
       libBtn.classList.remove('lib-open');
       showModal(topic.name);
+    });
+    document.getElementById('libBooksBtn').addEventListener('click', () => {
+      $('libraryPanel').style.display = 'none';
+      libBtn.classList.remove('lib-open');
+      const bp = $('booksPanel');
+      bp.style.display = 'block';
+      booksBtn.classList.add('books-open');
+      const si = $('booksSearch');
+      si.value = topic.name;
+      fetchBooks(topic.name);
+      bp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   }
 
@@ -2352,21 +2365,22 @@ let _booksTimer = null;
 async function fetchBooks(query){
   const resultsEl = $('booksResults');
   if(!query.trim()){
-    resultsEl.innerHTML = '<div class="books-hint">Type a topic to find the most widely-held and most-cited books</div>';
+    resultsEl.innerHTML = '<div class="books-hint">Type a topic to find relevant, cited, and freely available books</div>';
     return;
   }
   const q = encodeURIComponent(query.trim());
-  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Open Library…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div></div>';
+  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Open Library…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div><div class="books-col"><div class="books-col-loading">Searching Internet Archive…</div></div></div>';
 
-  const [olRes, crRes] = await Promise.allSettled([
+  const [olRes, crRes, iaRes] = await Promise.allSettled([
     fetch(`https://openlibrary.org/search.json?q=${q}&fields=title,author_name,edition_count,first_publish_year,key&limit=8`).then(r=>r.json()),
     fetch(`https://api.crossref.org/works?query.bibliographic=${q}&filter=type:book&sort=is-referenced-by-count&order=desc&rows=8&select=title,author,published,is-referenced-by-count,URL`).then(r=>r.json()),
+    fetch(`https://archive.org/advancedsearch.php?q=${q}+mediatype:texts&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=year&fl[]=downloads&sort[]=downloads+desc&rows=8&output=json`).then(r=>r.json()),
   ]);
 
   let html = '<div class="books-cols">';
 
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">📚 Most Relevant Books <span class="books-col-src">(Open Library)</span></div>';
+  html += '<div class="books-col-title">📚 Most Relevant <span class="books-col-src">(Open Library)</span></div>';
   if(olRes.status==='fulfilled' && olRes.value.docs?.length){
     olRes.value.docs.forEach(b=>{
       const title = esc(b.title||'Unknown title');
@@ -2398,6 +2412,27 @@ async function fetchBooks(query){
         <div class="books-card-title">${title}</div>
         ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
         ${cites!=null ? `<div class="books-card-count">${cites.toLocaleString()} citations</div>` : ''}
+      </a>`;
+    });
+  } else {
+    html += '<div class="books-empty">No results found</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="books-col">';
+  html += '<div class="books-col-title">📂 Free to Read <span class="books-col-src">(Internet Archive)</span></div>';
+  if(iaRes.status==='fulfilled' && iaRes.value.response?.docs?.length){
+    iaRes.value.response.docs.forEach(b=>{
+      const title = esc(b.title||'Unknown title');
+      const rawCreator = Array.isArray(b.creator) ? b.creator.slice(0,2).join(', ') : (b.creator||'');
+      const authors = esc(rawCreator);
+      const year = b.year||'';
+      const dl = b.downloads ? `${Number(b.downloads).toLocaleString()} downloads` : '';
+      const url = `https://archive.org/details/${b.identifier}`;
+      html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
+        <div class="books-card-title">${title}</div>
+        ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
+        ${dl ? `<div class="books-card-count">${dl}</div>` : ''}
       </a>`;
     });
   } else {
