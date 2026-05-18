@@ -54,6 +54,7 @@
     }
 
     .app-header p { color: var(--text-muted); font-size: 0.92rem; }
+    .header-features { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; opacity: .8; }
 
     .header-tags {
       display: flex; justify-content: center; gap: 0.5rem;
@@ -65,6 +66,11 @@
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
       border: 1px solid var(--border); color: var(--text-muted); background: var(--surface2);
     }
+    .tag-ai     { background:rgba(124,58,237,.1);  color:#7c3aed; border-color:rgba(124,58,237,.3); }
+    .tag-topics { background:rgba(21,128,61,.1);   color:#15803d; border-color:rgba(21,128,61,.3); }
+    .tag-msc    { background:rgba(29,78,216,.1);   color:#1d4ed8; border-color:rgba(29,78,216,.3); }
+    .tag-books  { background:rgba(180,83,9,.1);    color:#b45309; border-color:rgba(180,83,9,.3); }
+    .tag-read   { background:rgba(8,145,178,.1);   color:#0891b2; border-color:rgba(8,145,178,.3); }
 
     /* ── Controls ── */
     .controls {
@@ -687,12 +693,17 @@
 
   <header class="app-header">
     <h1>Learning Path Explorer</h1>
-    <p>Navigate any academic topic from absolute zero to the research frontier</p>
+    <p>Your AI-powered research companion &mdash; from absolute zero to the frontier of any field</p>
+    <p class="header-features">AI learning paths &nbsp;&middot;&nbsp; concept maps &nbsp;&middot;&nbsp; 4,516 curated topics &nbsp;&middot;&nbsp; MSC 2020 mathematics &nbsp;&middot;&nbsp; book discovery across 3 sources</p>
     <div class="header-tags">
-      <span class="header-tag">Cold Start</span>
-      <span class="header-tag">Cold Finish</span>
-      <span class="header-tag">Specializations</span>
-      <span class="header-tag">Concept Maps</span>
+      <span class="header-tag tag-ai">✦ Cold Start</span>
+      <span class="header-tag tag-ai">✦ Cold Finish</span>
+      <span class="header-tag tag-ai">✦ Specializations</span>
+      <span class="header-tag tag-ai">◎ Concept Maps</span>
+      <span class="header-tag tag-topics">⊞ 4,516 Topics</span>
+      <span class="header-tag tag-msc">∑ MSC 2020</span>
+      <span class="header-tag tag-books">📖 Books Explorer</span>
+      <span class="header-tag tag-read">⇅ Reading Sequence</span>
     </div>
   </header>
 
