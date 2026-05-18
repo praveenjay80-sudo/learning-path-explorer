@@ -1611,49 +1611,57 @@ Rules:
   let _kwMap = null; // null=unchecked; {}=loaded (value: string=keyword, null=deleted)
   try { const c = localStorage.getItem(KW_CACHE_KEY); if(c) _kwMap = JSON.parse(c); } catch(_){}
 
-  const _bnfCache = {}; // subfield name → string[] of related terms (English)
+  const _gndCache = {}; // subfield name → string[] of related terms (English)
 
-  async function fetchBnfRelated(name) {
-    if (_bnfCache[name]) return _bnfCache[name];
+  async function fetchGndRelated(name) {
+    if (_gndCache[name]) return _gndCache[name];
     try {
-      // 1. Translate English subfield name → French via MyMemory
+      // 1. Translate English → German via MyMemory
       const mmRes = await fetch(
-        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(name)}&langpair=en|fr`
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(name)}&langpair=en|de`
       ).then(r => r.json()).catch(() => null);
-      const frName = mmRes?.responseData?.translatedText || name;
+      const deName = mmRes?.responseData?.translatedText || name;
 
-      // 2. Search BNF SRU catalogue for RAMEAU subject heading
-      const sruUrl = `https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve` +
-        `&recordSchema=unimarcxchange&maximumRecords=5` +
-        `&query=aut.accessPoint+all+${encodeURIComponent('"' + frName + '"')}`;
-      const xml = await fetch(sruUrl).then(r => r.text()).catch(() => '');
-      const arkMatch = xml.match(/ark:\/12148\/cb[\w]+/);
-      if (!arkMatch) return (_bnfCache[name] = []);
+      // 2. Find GND subject heading record
+      const searchRes = await fetch(
+        `https://lobid.org/gnd/search?q=${encodeURIComponent(deName)}&filter=type:SubjectHeading&format=json&size=5`
+      ).then(r => r.json());
+      if (!searchRes.member?.length) return (_gndCache[name] = []);
 
-      // 3. Fetch BNF JSON record for narrower + related terms
-      const json = await fetch(`https://data.bnf.fr/${arkMatch[0]}.json`).then(r => r.json()).catch(() => null);
-      if (!json) return (_bnfCache[name] = []);
-      const frTerms = [
-        ...(json.narrower || []).map(t => t.title),
-        ...(json.related  || []).map(t => t.title),
-      ].filter(Boolean).slice(0, 24);
-      if (!frTerms.length) return (_bnfCache[name] = []);
+      // Prefer exact match on preferredName or variantName, else first result
+      let best = searchRes.member[0];
+      for (const m of searchRes.member) {
+        const allNames = [m.preferredName, ...(m.variantName||[])].map(n=>n.toLowerCase());
+        if (allNames.some(n => n === deName.toLowerCase() || n === name.toLowerCase())) { best = m; break; }
+      }
+      const gndId = best.id; // "https://d-nb.info/gnd/4060425-1"
 
-      // 4. Translate French terms → English using Haiku (requires API key)
+      // 3. Find narrower terms via inverse query (things that list this as broaderTermGeneral)
+      const narrowRes = await fetch(
+        `https://lobid.org/gnd/search?q=broaderTermGeneral.id:${encodeURIComponent('"'+gndId+'"')}&filter=type:SubjectHeading&format=json&size=20`
+      ).then(r => r.json());
+      if (!narrowRes.member?.length) return (_gndCache[name] = []);
+
+      // Prefer English-looking variant names (no German umlauts), else German preferred name
+      const terms = narrowRes.member.map(m => {
+        const en = (m.variantName||[]).find(v => !/[äöüÄÖÜß]/.test(v) && /[a-zA-Z]{3}/.test(v));
+        return en || m.preferredName;
+      }).filter(Boolean);
+
+      // 4. Translate German terms → English via Haiku
       const apiKey = apiKeyInput.value.trim();
       if (apiKey) {
         try {
           const out = await callHaiku(
-            `Translate these French academic subject terms to English. Return ONLY a JSON array of English strings in the same order, no extra text:\n${JSON.stringify(frTerms)}`,
+            `Translate these German academic subject terms to English. Return ONLY a JSON array of English strings, same order, no explanations:\n${JSON.stringify(terms)}`,
             600
           );
-          const m = out.match(/\[[\s\S]*?\]/);
-          if (m) return (_bnfCache[name] = JSON.parse(m[0]).filter(Boolean));
+          const mx = out.match(/\[[\s\S]*?\]/);
+          if (mx) return (_gndCache[name] = JSON.parse(mx[0]).filter(Boolean));
         } catch(_) {}
       }
-      // Fallback: show French terms if no API key
-      return (_bnfCache[name] = frTerms);
-    } catch(_) { return (_bnfCache[name] = []); }
+      return (_gndCache[name] = terms); // fallback: show German/partial-English terms
+    } catch(_) { return (_gndCache[name] = []); }
   }
 
   function kwFor(name) {
@@ -1876,7 +1884,7 @@ Rules:
         <button class="lib-wiki-btn" id="libBooksBtn">📖 Find Books</button>
       </div>`;
     grid.appendChild(detail);
-    fetchBnfRelated(topic.name).then(terms => {
+    fetchGndRelated(topic.name).then(terms => {
       const el = document.getElementById('libLcshChips');
       if (!el) return;
       if (!terms.length) { el.innerHTML = '<span style="font-size:.7rem;color:var(--text-muted)">No related terms found</span>'; return; }
