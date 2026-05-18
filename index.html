@@ -640,6 +640,7 @@
     .books-card:hover { border-color:#b45309; transform:translateY(-1px); }
     .books-card-title { font-size:.84rem; font-weight:700; line-height:1.3; margin-bottom:.22rem; }
     .books-card-meta { font-size:.71rem; color:var(--text-muted); margin-bottom:.18rem; }
+    .books-card-snippet { font-size:.7rem; color:var(--text-muted); line-height:1.4; margin-bottom:.18rem; font-style:italic; }
     .books-card-count { font-size:.69rem; font-weight:700; color:#b45309; }
     .books-empty { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
     .books-col-loading { font-size:.82rem; color:var(--text-muted); padding:1rem; text-align:center; }
@@ -716,6 +717,10 @@
     <div class="field-row">
       <span class="field-label">API Key</span>
       <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="field-row">
+      <span class="field-label">Serper Key</span>
+      <input type="password" id="serperKeyInput" placeholder="Serper.dev API key (for Scholar search)" autocomplete="off" spellcheck="false">
     </div>
     <div class="field-row">
       <span class="field-label">Topic</span>
@@ -887,7 +892,9 @@
 <script>
   const $ = id => document.getElementById(id);
 
-  const apiKeyInput   = $('apiKeyInput');
+  const apiKeyInput    = $('apiKeyInput');
+  const serperKeyInput = $('serperKeyInput');
+  // API key is intentionally never stored — user enters it fresh each session
   const topicInput    = $('topicInput');
   const mapBtn        = $('mapBtn');
   const loaderWrap    = $('loaderWrap');
@@ -2748,10 +2755,19 @@ async function fetchBooks(query){
   const rawQuery = query.trim();
   const coreQuery = rawQuery.includes('›') ? rawQuery.split('›').pop().trim() : rawQuery;
   const qCore = encodeURIComponent(coreQuery);
-  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Open Library…</div></div><div class="books-col"><div class="books-col-loading">Searching OpenAlex…</div></div><div class="books-col"><div class="books-col-loading">Searching Internet Archive…</div></div></div>';
+  const serperKey = serperKeyInput.value.trim();
+  resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Google Scholar…</div></div><div class="books-col"><div class="books-col-loading">Searching OpenAlex…</div></div><div class="books-col"><div class="books-col-loading">Searching Internet Archive…</div></div></div>';
+
+  const scholarFetch = serperKey
+    ? fetch('https://google.serper.dev/scholar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-KEY': serperKey },
+        body: JSON.stringify({ q: coreQuery, num: 8 })
+      }).then(r => r.json())
+    : Promise.resolve(null);
 
   const [olRes, crRes, iaRes] = await Promise.allSettled([
-    fetch(`https://openlibrary.org/search.json?q=${qCore}&fields=title,author_name,edition_count,first_publish_year,key&limit=8`).then(r=>r.json()),
+    scholarFetch,
     fetch(`https://api.openalex.org/works?search=${qCore}&filter=type:book&sort=cited_by_count:desc&per_page=8&select=title,authorships,publication_year,cited_by_count,doi`).then(r=>r.json()),
     fetch(`https://archive.org/advancedsearch.php?q=${encodeURIComponent('"' + coreQuery + '" AND mediatype:texts')}&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=year&fl[]=downloads&sort[]=downloads+desc&rows=8&output=json`).then(r=>r.json()),
   ]);
@@ -2759,18 +2775,21 @@ async function fetchBooks(query){
   let html = '<div class="books-cols">';
 
   html += '<div class="books-col">';
-  html += '<div class="books-col-title">📚 Most Relevant <span class="books-col-src">(Open Library)</span></div>';
-  if(olRes.status==='fulfilled' && olRes.value.docs?.length){
-    olRes.value.docs.forEach(b=>{
+  html += '<div class="books-col-title">🎓 Google Scholar <span class="books-col-src">(Serper.dev)</span></div>';
+  if(!serperKey){
+    html += '<div class="books-empty">Enter your Serper.dev key above to enable Scholar search</div>';
+  } else if(olRes.status==='fulfilled' && olRes.value?.organic?.length){
+    olRes.value.organic.forEach(b=>{
       const title = esc(b.title||'Unknown title');
-      const authors = esc((b.author_name||[]).slice(0,2).join(', '));
-      const year = b.first_publish_year||'';
-      const count = b.edition_count ? `${b.edition_count} editions` : '';
-      const url = b.key ? `https://openlibrary.org${b.key}` : '#';
+      const info = esc(b.publicationInfo||'');
+      const snippet = esc((b.snippet||'').slice(0, 120));
+      const cites = b.inline_links?.cited_by?.total;
+      const url = b.link||'#';
       html += `<a class="books-card" href="${url}" target="_blank" rel="noopener">
         <div class="books-card-title">${title}</div>
-        ${authors||year ? `<div class="books-card-meta">${authors}${year?` &middot; ${year}`:''}</div>` : ''}
-        ${count ? `<div class="books-card-count">${count}</div>` : ''}
+        ${info ? `<div class="books-card-meta">${info}</div>` : ''}
+        ${snippet ? `<div class="books-card-snippet">${snippet}…</div>` : ''}
+        ${cites!=null ? `<div class="books-card-count">${Number(cites).toLocaleString()} citations</div>` : ''}
       </a>`;
     });
   } else {
