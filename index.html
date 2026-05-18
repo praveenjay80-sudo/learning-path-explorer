@@ -2744,13 +2744,16 @@ async function fetchBooks(query){
     resultsEl.innerHTML = '<div class="books-hint">Type a topic to find relevant, cited, and freely available books</div>';
     return;
   }
-  const q = encodeURIComponent(query.trim());
+  // Strip breadcrumb context (e.g. "Real Analysis › Measure Theory" → "Measure Theory") for API calls
+  const rawQuery = query.trim();
+  const coreQuery = rawQuery.includes('›') ? rawQuery.split('›').pop().trim() : rawQuery;
+  const qCore = encodeURIComponent(coreQuery);
   resultsEl.innerHTML = '<div class="books-cols"><div class="books-col"><div class="books-col-loading">Searching Open Library…</div></div><div class="books-col"><div class="books-col-loading">Searching CrossRef…</div></div><div class="books-col"><div class="books-col-loading">Searching Internet Archive…</div></div></div>';
 
   const [olRes, crRes, iaRes] = await Promise.allSettled([
-    fetch(`https://openlibrary.org/search.json?q=${q}&fields=title,author_name,edition_count,first_publish_year,key&limit=8`).then(r=>r.json()),
-    fetch(`https://api.crossref.org/works?query.bibliographic=${q}&filter=type:book&sort=is-referenced-by-count&order=desc&rows=8&select=title,author,published,is-referenced-by-count,URL`).then(r=>r.json()),
-    fetch(`https://archive.org/advancedsearch.php?q=${q}+mediatype:texts&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=year&fl[]=downloads&sort[]=downloads+desc&rows=8&output=json`).then(r=>r.json()),
+    fetch(`https://openlibrary.org/search.json?q=${qCore}&fields=title,author_name,edition_count,first_publish_year,key&limit=8`).then(r=>r.json()),
+    fetch(`https://api.crossref.org/works?query.title=${qCore}&filter=type:book&sort=is-referenced-by-count&order=desc&rows=8&select=title,author,published,is-referenced-by-count,URL`).then(r=>r.json()),
+    fetch(`https://archive.org/advancedsearch.php?q=${encodeURIComponent('title:(' + coreQuery + ') AND mediatype:texts')}&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=year&fl[]=downloads&sort[]=downloads+desc&rows=8&output=json`).then(r=>r.json()),
   ]);
 
   let html = '<div class="books-cols">';
