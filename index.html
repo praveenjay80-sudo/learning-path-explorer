@@ -2784,7 +2784,9 @@ async function fetchBooks(query){
   if(!serperKey){
     html += '<div class="books-empty">Enter your Serper.dev key above to enable Scholar search</div>';
   } else if(olRes.status==='fulfilled' && olRes.value?.organic?.length){
-    olRes.value.organic.forEach(b=>{
+    const scholarResults = [...olRes.value.organic].sort((a,b) =>
+      ((b.citedBy ?? b.inline_links?.cited_by?.total ?? 0) - (a.citedBy ?? a.inline_links?.cited_by?.total ?? 0)));
+    scholarResults.forEach(b=>{
       const title = esc(b.title||'Unknown title');
       const info = esc(b.publicationInfo||'');
       const snippet = esc((b.snippet||'').slice(0, 120));
