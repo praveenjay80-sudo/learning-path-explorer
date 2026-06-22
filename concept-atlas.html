@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept Atlas</title>
+<style>
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --surface2:#eef0f3; --text:#1a1d23; --muted:#6b7280;
+  --border:#e2e5ea; --pred:#15803d; --core:#6d28d9; --succ:#1d4ed8;
+  --badge-seminal:#15803d; --badge-breakthrough:#1d4ed8; --badge-pedagogical:#6d28d9;
+  --amber:#b45309; --danger:#b42318;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --text:#e6edf3; --muted:#8b949e;
+    --border:#30363d; --pred:#16a34a; --core:#7c3aed; --succ:#2563eb;
+    --badge-seminal:#16a34a; --badge-breakthrough:#2563eb; --badge-pedagogical:#7c3aed;
+    --amber:#d97706; --danger:#dea6a4;
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+}
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:1rem 1.5rem;position:sticky;top:0;z-index:10;
+}
+header h1{
+  font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:0.5rem;
+}
+.subheader{
+  font-size:0.82rem;color:var(--muted);line-height:1.5;margin-bottom:0.75rem;max-width:900px;
+}
+.subheader strong{color:var(--text);font-weight:600;}
+.controls{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;}
+.controls input,.controls select{
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  padding:0.5rem 0.75rem;border-radius:6px;font-size:0.9rem;
+}
+.controls input[type=text],.controls input[type=password]{flex:1;min-width:200px;}
+.controls input[type=password]{max-width:280px;}
+.controls button{
+  background:#7c3aed;color:white;border:none;padding:0.5rem 1rem;border-radius:6px;
+  font-size:0.9rem;font-weight:600;cursor:pointer;
+}
+.controls button:hover{background:#6d28d9;}
+.controls button:disabled{opacity:0.5;cursor:not-allowed;}
+.controls .secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.controls .secondary:hover{background:var(--border);}
+#status{font-size:0.85rem;color:var(--muted);margin-top:0.5rem;}
+#status.error{color:var(--danger);}
+#status.info{color:var(--core);}
+.cache-hint{font-size:0.75rem;color:var(--muted);margin-left:0.5rem;}
+.cache-hint.hit{color:var(--pred);}
+.stream-log{
+  display:none;margin-top:0.5rem;padding:0.6rem 0.75rem;background:var(--surface2);
+  border:1px solid var(--border);border-radius:5px;font-family:'SF Mono',Consolas,monospace;
+  font-size:0.72rem;line-height:1.4;color:var(--muted);max-height:180px;overflow-y:auto;
+  white-space:pre-wrap;word-break:break-word;
+}
+.stream-log.visible{display:block;}
+.stream-log .token{color:var(--text);}
+.stream-log .pulse{color:var(--core);font-weight:700;}
+
+main{
+  display:grid;grid-template-columns:280px 1fr 380px;gap:1rem;padding:1rem;
+  min-height:calc(100vh - 120px);
+}
+@media (max-width:1100px){main{grid-template-columns:1fr;}}
+.pane{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:1rem;overflow-y:auto;max-height:calc(100vh - 140px);
+}
+.pane h2{font-size:0.95rem;color:var(--muted);margin-bottom:0.75rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:0.05em;}
+.pane h3{font-size:0.85rem;color:var(--text);margin:0.75rem 0 0.5rem;font-weight:700;}
+
+.empty{color:var(--muted);font-size:0.9rem;text-align:center;padding:2rem 1rem;}
+
+/* Concept graph */
+.zone{margin-bottom:1rem;}
+.zone-label{
+  font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;
+  padding:0.25rem 0.5rem;border-radius:4px;display:inline-block;margin-bottom:0.5rem;
+}
+.zone-label.pred{background:rgba(21,128,61,0.15);color:var(--pred);}
+.zone-label.core{background:rgba(109,40,213,0.15);color:var(--core);}
+.zone-label.succ{background:rgba(29,78,216,0.15);color:var(--succ);}
+.concept-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:0.6rem 0.75rem;margin-bottom:0.4rem;cursor:pointer;transition:border-color 0.15s;
+}
+.concept-card:hover{border-color:var(--core);}
+.concept-card.selected{border-color:var(--core);background:rgba(124,58,237,0.1);}
+.concept-name{font-weight:600;font-size:0.9rem;margin-bottom:0.15rem;}
+.concept-link{color:inherit;text-decoration:none;}
+.concept-link:hover{color:var(--succ);text-decoration:underline;}
+.concept-oa-link{font-size:0.68rem;margin-bottom:0.2rem;}
+.concept-oa-link a{color:var(--succ);text-decoration:none;font-weight:600;}
+.concept-oa-link a:hover{text-decoration:underline;}
+.concept-desc{font-size:0.8rem;color:var(--muted);line-height:1.35;}
+.concept-meta{font-size:0.7rem;color:var(--muted);margin-top:0.25rem;}
+.concept-tags{display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.35rem;}
+.oa-tag{
+  font-size:0.65rem;padding:0.1rem 0.35rem;border-radius:3px;
+  background:rgba(29,78,216,0.1);color:var(--succ);
+  text-decoration:none;border:1px solid rgba(29,78,216,0.2);
+}
+.oa-tag:hover{background:rgba(29,78,216,0.2);}
+.coupling{font-size:0.7rem;padding:0.1rem 0.4rem;border-radius:3px;margin-right:0.25rem;}
+.coupling.direct{background:rgba(180,35,24,0.15);color:var(--danger);}
+.coupling.contextual{background:rgba(180,83,9,0.15);color:var(--amber);}
+.concept-actions{display:flex;gap:0.25rem;margin-top:0.4rem;flex-wrap:wrap;}
+.concept-actions button{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-size:0.7rem;padding:0.15rem 0.4rem;border-radius:3px;cursor:pointer;
+}
+.concept-actions button:hover{color:var(--text);border-color:var(--muted);}
+
+/* Works pane */
+.works-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);
+}
+.works-header .concept-title{font-size:1.05rem;font-weight:700;color:var(--core);}
+.work-sort{font-size:0.75rem;color:var(--muted);cursor:pointer;}
+.work-sort:hover{color:var(--text);}
+.work-row{
+  padding:0.65rem 0;border-bottom:1px solid var(--border);
+}
+.work-row:last-child{border-bottom:none;}
+.work-title{font-weight:600;font-size:0.9rem;line-height:1.35;}
+.work-title a{color:var(--core);text-decoration:none;}
+.work-title a:hover{text-decoration:underline;}
+.work-meta{font-size:0.78rem;color:var(--muted);margin-top:0.2rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;}
+.work-authors{font-style:italic;}
+.work-citations{font-weight:600;color:var(--pred);}
+.badge{font-size:0.65rem;padding:0.1rem 0.35rem;border-radius:3px;text-transform:uppercase;font-weight:700;letter-spacing:0.04em;}
+.badge.seminal{background:rgba(21,128,61,0.15);color:var(--badge-seminal);}
+.badge.breakthrough{background:rgba(29,78,216,0.15);color:var(--badge-breakthrough);}
+.badge.pedagogical{background:rgba(109,40,213,0.15);color:var(--badge-pedagogical);}
+.badge.book{background:rgba(180,83,9,0.15);color:var(--amber);}
+.badge.article{background:rgba(107,114,128,0.15);color:var(--muted);}
+.work-note{font-size:0.8rem;color:var(--text);margin-top:0.25rem;line-height:1.4;}
+.work-actions{margin-top:0.35rem;}
+.work-actions button{
+  background:transparent;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;
+  padding:0;text-decoration:underline;
+}
+.work-actions button:hover{color:var(--danger);}
+.work-link{
+  color:var(--succ);font-size:0.7rem;text-decoration:none;margin-right:0.5rem;
+}
+.work-link:hover{text-decoration:underline;}
+.scholar-btn{
+  display:inline-block;background:rgba(29,78,216,0.12);color:var(--succ);
+  font-size:0.7rem;font-weight:700;padding:0.2rem 0.55rem;border-radius:4px;
+  text-decoration:none;border:1px solid rgba(29,78,216,0.25);margin-left:0.4rem;
+  white-space:nowrap;
+}
+.scholar-btn:hover{background:rgba(29,78,216,0.22);text-decoration:none;}
+
+/* Reading sequence — staged, parallel within stage */
+.stage{
+  margin-bottom:0.5rem;padding:0.75rem;border-radius:6px;
+  background:var(--surface2);border-left:3px solid var(--core);
+}
+.stage-header{
+  display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;
+  font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;
+}
+.stage-num{
+  background:var(--core);color:white;border-radius:50%;width:1.5rem;height:1.5rem;
+  display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;
+}
+.stage-label{font-weight:600;color:var(--text);}
+.stage-parallel-hint{
+  color:var(--pred);font-size:0.7rem;font-weight:600;
+  background:rgba(21,128,61,0.12);padding:0.15rem 0.4rem;border-radius:3px;
+  margin-left:auto;
+}
+.stage-items{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.5rem;
+}
+.stage-items.single{grid-template-columns:1fr;}
+.seq-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:5px;
+  padding:0.55rem 0.65rem;
+}
+.seq-title{font-weight:600;font-size:0.88rem;line-height:1.3;}
+.seq-meta{font-size:0.72rem;color:var(--muted);margin-top:0.15rem;}
+.seq-bridge{
+  font-size:0.78rem;color:var(--text);margin-top:0.35rem;padding-left:0.85rem;
+  border-left:2px solid var(--border);line-height:1.4;
+}
+.seq-bridge::before{content:"→ ";color:var(--core);font-weight:700;}
+.seq-parallel-marker{
+  display:flex;align-items:center;justify-content:center;gap:0.4rem;
+  color:var(--pred);font-size:0.7rem;font-weight:600;
+  padding:0.25rem 0;margin:0.5rem 0;
+  border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);
+}
+.seq-then-marker{
+  display:flex;align-items:center;justify-content:center;
+  color:var(--core);font-size:0.75rem;font-weight:700;
+  padding:0.4rem 0;margin:0.5rem 0;
+}
+.seq-then-marker::before{content:"↓ THEN ↓";letter-spacing:0.1em;}
+
+/* Modal for corrections */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;
+  align-items:center;justify-content:center;z-index:100;
+}
+.modal-backdrop.visible{display:flex;}
+.modal{
+  background:var(--surface);border-radius:8px;padding:1.5rem;max-width:500px;width:90%;
+  box-shadow:0 10px 40px rgba(0,0,0,0.3);
+}
+.modal h3{margin-bottom:0.5rem;font-size:1rem;}
+.modal p{font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem;}
+.modal input,.modal textarea{
+  width:100%;padding:0.5rem 0.75rem;background:var(--surface2);
+  border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:0.9rem;
+  margin-bottom:0.5rem;font-family:inherit;
+}
+.modal .actions{display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.75rem;}
+.modal .actions button{
+  padding:0.4rem 0.9rem;border-radius:5px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);cursor:pointer;font-size:0.85rem;
+}
+.modal .actions button.primary{background:var(--core);color:white;border-color:var(--core);}
+
+.loader{
+  display:inline-block;width:1rem;height:1rem;border:2px solid var(--border);
+  border-top-color:var(--core);border-radius:50%;animation:spin 0.8s linear infinite;
+  vertical-align:middle;margin-right:0.4rem;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Concept Atlas</h1>
+  <p class="subheader">Enter any academic topic → get a <strong>concept graph</strong> (prerequisites, core, next level), <strong>canonical works</strong> per concept (seminal / breakthrough / pedagogical, with Google Scholar links), and a <strong>staged reading order</strong> (parallel within stage, sequential between stages). Concepts link to OpenAlex; works link to Google Scholar. Everything is cached locally and curatable via corrections.</p>
+  <div class="controls">
+    <input id="topicInput" type="text" placeholder="Topic: e.g. Machine Learning">
+    <input id="apiKeyInput" type="password" placeholder="Anthropic API key" autocomplete="off">
+    <input id="openalexKeyInput" type="password" placeholder="OpenAlex API key (for concept tags)" autocomplete="off">
+    <input id="modelInput" type="text" placeholder="Model (e.g. claude-sonnet-4-6)" value="claude-sonnet-4-6">
+    <button id="generateBtn">Generate</button>
+    <button id="testBtn" class="secondary">Test connection</button>
+    <button id="clearBtn" class="secondary">Clear cache</button>
+    <span id="cacheHint" class="cache-hint"></span>
+  </div>
+  <div id="status">Ready. Pick a provider, enter your API key + model, and a topic.</div>
+  <pre id="streamLog" class="stream-log"></pre>
+</header>
+
+<main>
+  <section class="pane" id="graphPane">
+    <h2>Concept Graph</h2>
+    <div id="graphView"><div class="empty">Generate a topic to see the concept map.</div></div>
+  </section>
+
+  <section class="pane" id="worksPane">
+    <h2>Works</h2>
+    <div id="worksView"><div class="empty">Click a concept to see its works.</div></div>
+  </section>
+
+  <section class="pane" id="sequencePane">
+    <h2>Reading Sequence</h2>
+    <div id="sequenceView"><div class="empty">Generate to see the staged reading order.</div></div>
+  </section>
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal">
+    <h3 id="modalTitle"></h3>
+    <p id="modalDesc"></p>
+    <div id="modalFields"></div>
+    <div class="actions">
+      <button id="modalCancel">Cancel</button>
+      <button id="modalSubmit" class="primary">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Concept Atlas — single-file static app
+// Concept graph + canonical works + staged reading order, all from Claude.
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('[Concept Atlas] JS loaded — version 2026-06-22 — if you see this, the script is running');
+
+const OPENALEX_BASE = 'https://api.openalex.org';
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const STORAGE_KEY = 'concept-atlas-settings';
+const DB_NAME = 'concept-atlas';
+const DB_VERSION = 1;
+
+const els = {
+  topic: document.getElementById('topicInput'),
+  apiKey: document.getElementById('apiKeyInput'),
+  openalexKey: document.getElementById('openalexKeyInput'),
+  model: document.getElementById('modelInput'),
+  generateBtn: document.getElementById('generateBtn'),
+  testBtn: document.getElementById('testBtn'),
+  clearBtn: document.getElementById('clearBtn'),
+  cacheHint: document.getElementById('cacheHint'),
+  status: document.getElementById('status'),
+  streamLog: document.getElementById('streamLog'),
+  graphView: document.getElementById('graphView'),
+  worksView: document.getElementById('worksView'),
+  sequenceView: document.getElementById('sequenceView'),
+  modalBackdrop: document.getElementById('modalBackdrop'),
+  modal: document.getElementById('modal'),
+  modalTitle: document.getElementById('modalTitle'),
+  modalDesc: document.getElementById('modalDesc'),
+  modalFields: document.getElementById('modalFields'),
+  modalCancel: document.getElementById('modalCancel'),
+  modalSubmit: document.getElementById('modalSubmit'),
+};
+
+// State for the currently displayed topic
+let state = null; // {topic, summary, predecessors, core, successors, worksByConcept, sequence, corrections}
+let focusedConcept = null;
+let worksSortMode = 'citations'; // 'citations' | 'year'
+
+// ── Settings persistence (localStorage) ──────────────────────────────────────
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    els.apiKey.value = s.apiKey || '';
+    els.openalexKey.value = s.openalexKey || '';
+    els.model.value = s.model || 'claude-sonnet-4-6';
+  }catch(e){ console.warn('settings load failed', e); }
+}
+function saveSettings(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    apiKey: els.apiKey.value.trim(),
+    openalexKey: els.openalexKey.value.trim(),
+    model: els.model.value.trim(),
+  }));
+}
+
+// ── IndexedDB ────────────────────────────────────────────────────────────────
+let db = null;
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains('topics')){
+        d.createObjectStore('topics', {keyPath: 'topic'});
+      }
+      if(!d.objectStoreNames.contains('corrections')){
+        d.createObjectStore('corrections', {keyPath: 'id', autoIncrement: true});
+      }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbGet(store, key){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly').objectStore(store).get(key);
+    tx.onsuccess = () => resolve(tx.result);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+function dbPut(store, value){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite').objectStore(store).put(value);
+    tx.onsuccess = () => resolve(tx.result);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+function dbAll(store){
+  return new Promise((resolve, reject) => {
+    const result = [];
+    const req = db.transaction(store, 'readonly').objectStore(store).openCursor();
+    req.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if(cursor){ result.push(cursor.value); cursor.continue(); }
+      else resolve(result);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbClear(store){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite').objectStore(store).clear();
+    tx.onsuccess = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ── Claude API ───────────────────────────────────────────────────────────────
+function repairJSON(text){
+  // strip code fences
+  let s = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+  // find the outermost JSON object
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if(start >= 0 && end > start) s = s.slice(start, end + 1);
+  // strip BOM / zero-width
+  s = s.replace(/\uFEFF/g, '').replace(/[\u200B-\u200D\u00A0]/g, '');
+  // strip line + block comments
+  s = s.replace(/\/\/[^\n\r]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  // trailing commas
+  s = s.replace(/,(\s*[}\]])/g, '$1');
+  // unquoted keys
+  s = s.replace(/([{,]\s*)([a-zA-Z_$][\w$]*)(\s*:)/g, '$1"$2"$3');
+  // single-quoted strings
+  s = s.replace(/'([^'\\]*)'/g, '"$1"');
+  // escape unescaped internal quotes + control chars inside string literals
+  s = escapeStringContents(s);
+  return s;
+}
+
+function escapeStringContents(s){
+  let out = '';
+  let inStr = false;
+  for(let i = 0; i < s.length; i++){
+    const c = s[i];
+    if(c === '\\' && inStr){
+      out += c + (s[i+1] || '');
+      i++;
+      continue;
+    }
+    if(c === '"'){
+      if(!inStr){
+        inStr = true;
+        out += c;
+      } else {
+        // peek ahead past whitespace
+        let j = i + 1;
+        while(j < s.length && /\s/.test(s[j])) j++;
+        const next = s[j];
+        if(next === ',' || next === '}' || next === ']' || next === ':'){
+          inStr = false;
+          out += c;
+        } else {
+          out += '\\"'; // unescaped internal quote
+        }
+      }
+    } else if(inStr && c === '\n'){
+      out += '\\n';
+    } else if(inStr && c === '\r'){
+      out += '\\r';
+    } else if(inStr && c === '\t'){
+      out += '\\t';
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
+function parseJSONRobust(text){
+  const repaired = repairJSON(text);
+  try{ return JSON.parse(repaired); }
+  catch(e1){
+    // Retry 1: strip any remaining control chars
+    try{ return JSON.parse(repaired.replace(/[\u0000-\u001f]/g, '')); }
+    catch(e2){
+      // Retry 2: regex-extract the stages array as a last resort (for sequence responses)
+      const stagesMatch = repaired.match(/"stages"\s*:\s*(\[[\s\S]*\])\s*\}?\s*$/);
+      if(stagesMatch){
+        try{
+          const stages = JSON.parse(stagesMatch[1]);
+          return { stages };
+        }catch(_){}
+      }
+      // Retry 3: extract individual stage objects and rebuild
+      const stageObjs = [];
+      const stageRe = /\{\s*"stage"\s*:\s*(\d+)\s*,\s*"label"\s*:\s*"([^"]*)"[^}]*?"items"\s*:\s*\[([\s\S]*?)\]\s*\}/g;
+      let m;
+      while((m = stageRe.exec(repaired)) !== null){
+        const itemsRaw = m[3];
+        const items = [];
+        const itemRe = /\{\s*"id"\s*:\s*"([^"]*)"\s*,\s*"bridge"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+        let im;
+        while((im = itemRe.exec(itemsRaw)) !== null){
+          items.push({ id: im[1], bridge: im[2].replace(/\\"/g, '"').replace(/\\n/g, '\n') });
+        }
+        if(items.length) stageObjs.push({ stage: parseInt(m[1], 10), label: m[2], parallel_hint: '', items });
+      }
+      if(stageObjs.length){
+        return { stages: stageObjs };
+      }
+      // All retries failed — surface a useful error with context around the parse position
+      const posMatch = e1.message.match(/position (\d+)/);
+      const pos = posMatch ? parseInt(posMatch[1], 10) : 0;
+      const ctx = pos ? repaired.slice(Math.max(0, pos - 80), pos + 80) : repaired.slice(0, 200);
+      throw new Error(`JSON parse failed at position ${pos}: ${e1.message}. Context around error: ${JSON.stringify(ctx)}`);
+    }
+  }
+}
+
+async function callClaude(prompt, maxTokens = 16000){
+  const apiKey = els.apiKey.value.trim();
+  if(!apiKey) throw new Error('Anthropic API key required.');
+  const model = els.model.value.trim();
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      messages: [{role: 'user', content: prompt}],
+    }),
+  });
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(`Claude API ${res.status}: ${txt.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const text = data?.content?.[0]?.text;
+  if(!text) throw new Error('Empty Claude response.');
+  return text;
+}
+
+// Streaming version — uses Anthropic SSE. Calls onChunk(text, fullText) for each delta.
+async function callClaudeStream(prompt, maxTokens, onChunk){
+  const apiKey = els.apiKey.value.trim();
+  if(!apiKey) throw new Error('Anthropic API key required.');
+  const model = els.model.value.trim();
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      stream: true,
+      messages: [{role: 'user', content: prompt}],
+    }),
+  });
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(`Claude API ${res.status}: ${txt.slice(0, 300)}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let full = '';
+  while(true){
+    const { done, value } = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, { stream: true });
+    // SSE events are separated by blank lines (\n\n)
+    const events = buffer.split('\n\n');
+    buffer = events.pop(); // keep incomplete event in buffer
+    for(const evt of events){
+      // Each event has lines like "event: ..." and "data: {...}"
+      const lines = evt.split('\n');
+      for(const line of lines){
+        if(!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        try{
+          const parsed = JSON.parse(data);
+          if(parsed.type === 'content_block_delta' && parsed.delta?.text){
+            full += parsed.delta.text;
+            onChunk(parsed.delta.text, full);
+          }
+        }catch(_){ /* incomplete JSON in chunk, wait for more */ }
+      }
+    }
+  }
+  if(!full) throw new Error('Empty Claude streaming response.');
+  return full;
+}
+
+
+// Requires an API key (Bearer header) — paid credit system as of 2025.
+// Returns works with citation counts, OpenAlex IDs, and DOIs.
+
+function openalexHeaders(){
+  const key = els.openalexKey.value.trim();
+  const headers = {};
+  if(key) headers['Authorization'] = `Bearer ${key}`;
+  return headers;
+}
+
+// Fetch OpenAlex concept tags for a concept name — returns top 3 matching OpenAlex concepts.
+// Used to tag each concept in the graph with its OpenAlex concept IDs (clickable links).
+async function fetchOpenAlexConceptTags(conceptName){
+  const key = els.openalexKey.value.trim();
+  if(!key) return []; // no key — skip
+  try{
+    const url = `${OPENALEX_BASE}/concepts?search=${encodeURIComponent(conceptName)}&per-page=3`;
+    const res = await fetch(url, {headers: openalexHeaders()});
+    if(!res.ok) return [];
+    const data = await res.json();
+    return (data.results || []).slice(0, 3).map(c => ({
+      id: c.id,
+      name: c.display_name,
+      works_count: c.works_count || 0,
+      url: c.id,
+    }));
+  }catch(_){ return []; }
+}
+
+// Build a Google Scholar search URL for a work title
+function scholarUrl(title){
+  return `https://scholar.google.com/scholar?q=${encodeURIComponent(title)}`;
+}
+
+function openalexMap(w){
+  return {
+    id: w.id,
+    title: w.title || '(untitled)',
+    authors: (w.authorships || []).slice(0, 4)
+      .map(a => a.author?.display_name || '').filter(Boolean).join(', '),
+    year: w.publication_year,
+    citations: w.cited_by_count || 0,
+    type: w.type || 'work',
+    doi: w.doi || '',
+    landing: w.primary_location?.landing_page_url || w.doi || w.id,
+    venue: w.primary_location?.source?.display_name || '',
+    // Field-normalized impact signals (better than raw citations for "main"-ness)
+    fwci: w.fwci || 0,                                       // Field-Weighted Citation Impact (1.0 = field average)
+    percentile: w.citation_normalized_percentile?.value || 0, // 0-1, top fraction in field
+    top_1_pct: !!w.citation_normalized_percentile?.is_in_top_1_percent,
+    recent_cites: (w.counts_by_year || []).slice(0, 3).reduce((s, c) => s + (c.cited_by_count || 0), 0),
+  };
+}
+
+// Types we keep — actual primary works, not derivatives or paratext.
+const KEEP_TYPES = new Set(['book', 'monograph', 'book-chapter', 'article', 'proceedings-article', 'report']);
+// Types we drop — reviews of others' work, corrections, front/back matter, etc.
+// Note: "review-article" (literature reviews like LeCun et al. 2015 "Deep learning") is KEPT
+// because some review-articles are landmark syntheses. "review" (book reviews) is dropped.
+const DROP_TYPES = new Set(['editorial', 'erratum', 'letter', 'paratext', 'peer-review', 'reference-entry', 'supplementary-materials', 'review', 'dataset', 'dissertation']);
+
+// Sanitize a concept name for OpenAlex's title.search filter.
+// Commas break the filter parser (they separate filters, and even %2C gets
+// decoded before the filter parser sees it). Strip them — the looser search
+// still finds the right works. Also strip apostrophes/quotes/backslashes as a
+// safety measure against other parser edge cases.
+function sanitizeForOpenAlex(name){
+  return (name || '')
+    .replace(/[,]/g, ' ')                                  // commas → space (would break filter parser)
+    .replace(/['’‘‚‛′]/g, '')   // strip apostrophes (ASCII + smart)
+    .replace(/["“”„″]/g, '')         // strip double quotes (ASCII + smart)
+    .replace(/[\\]/g, '')                                // strip backslashes
+    .replace(/\s+/g, ' ')                                // collapse whitespace
+    .trim();
+}
+
+async function openalexWorksForConcept(conceptName, perPage = 25){
+  const sanitized = sanitizeForOpenAlex(conceptName);
+  // title.search is title-only — far more precise than default `search` (full-text).
+  // The sanitized name strips apostrophes/quotes that break OpenAlex's filter parser.
+  const url = `${OPENALEX_BASE}/works?filter=title.search:${encodeURIComponent(sanitized)},` +
+              `type:book%7Carticle%7Cbook-chapter%7Cproceedings-article%7Cmonograph%7Creport%7Creview-article` +
+              `&sort=cited_by_count:desc&per-page=${perPage}`;
+  const res = await fetch(url, {headers: openalexHeaders()});
+  if(!res.ok){
+    // Fallback: if title.search fails (e.g. special character still causing issues),
+    // retry with the broader `search=` parameter which is more forgiving.
+    if(res.status === 400){
+      const fallbackUrl = `${OPENALEX_BASE}/works?search=${encodeURIComponent(sanitized)}&` +
+                          `filter=type:book%7Carticle%7Cbook-chapter%7Cproceedings-article%7Cmonograph%7Creport%7Creview-article` +
+                          `&sort=cited_by_count:desc&per-page=${perPage}`;
+      const fallbackRes = await fetch(fallbackUrl, {headers: openalexHeaders()});
+      if(fallbackRes.ok){
+        const data = await fallbackRes.json();
+        const all = (data.results || []).map(openalexMap).filter(w => !DROP_TYPES.has(w.type));
+        if(!all.length) return all;
+        const topCites = all[0].citations || 0;
+        const floor = Math.max(10, Math.round(topCites * 0.05));
+        return all.filter(w => (w.citations || 0) >= floor);
+      }
+    }
+    const body = await res.text();
+    let msg = `OpenAlex ${res.status}`;
+    try{
+      const j = JSON.parse(body);
+      if(j.error) msg += `: ${j.error}${j.message ? ` — ${j.message}` : ''}`;
+    }catch(_){ msg += `: ${body.slice(0, 200)}`; }
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  // Filter paratext/noise types that slipped through, then drop works with very low citations
+  // relative to the top of the pool (keeps the genuinely canonical, drops the long tail).
+  const all = (data.results || []).map(openalexMap).filter(w => !DROP_TYPES.has(w.type));
+  if(!all.length) return all;
+  // Citation floor: keep works with at least 5% of the top work's citation count,
+  // AND at least 10 citations absolute. This drops the long tail without an arbitrary cap.
+  const topCites = all[0].citations || 0;
+  const floor = Math.max(10, Math.round(topCites * 0.05));
+  return all.filter(w => (w.citations || 0) >= floor);
+}
+
+async function openalexWorkByDOI(doi){
+  let d = doi.trim();
+  if(d.startsWith('https://doi.org/')) d = d.slice('https://doi.org/'.length);
+  if(d.startsWith('doi.org/')) d = d.slice('doi.org/'.length);
+  const url = `${OPENALEX_BASE}/works/doi:${encodeURIComponent(d)}`;
+  const res = await fetch(url, {headers: openalexHeaders()});
+  if(!res.ok) return null;
+  const w = await res.json();
+  return openalexMap(w);
+}
+
+// ── Prompts ──────────────────────────────────────────────────────────────────
+function conceptGraphPrompt(topic){
+  return `You are an expert academic librarian mapping the concept graph for: "${topic}".
+
+Return ONLY raw valid JSON — no markdown, no code fences, no commentary. Shape:
+{
+  "topic": "${topic}",
+  "summary": "2-sentence explanation of what this topic actually is.",
+  "predecessors": [
+    {"name": "concept name", "description": "one phrase", "relation": "how it feeds into ${topic}", "coupling": "direct|contextual"}
+  ],
+  "core": [
+    {"name": "concept name", "description": "one phrase", "relation": "how it sits inside ${topic}"}
+  ],
+  "successors": [
+    {"name": "concept name", "description": "one phrase", "relation": "what it unlocks beyond ${topic}", "coupling": "direct|contextual"}
+  ]
+}
+
+Rules:
+- coupling "direct" = hard prerequisite / strict unlock; "contextual" = enriching but optional
+- List ONLY the genuinely load-bearing concepts — the ones a learner MUST understand to grasp ${topic}. Omit peripheral, merely-enriching, fringe, or optional ones.
+- NO NUMERICAL CAP. The count is whatever the topic genuinely requires. If 3 concepts are load-bearing, list 3. If 10, list 10.
+- DO NOT pad. A concept must be truly load-bearing to make the list. If you're unsure whether a concept is load-bearing, omit it.
+- predecessors: the genuinely required prereqs — list independent prereqs as SEPARATE items (they will be read in parallel)
+- core: the major sub-ideas inside ${topic} — the handful that define the field
+- successors: ACADEMIC subfields or disciplines that ${topic} unlocks (e.g. "Deep Learning", "Reinforcement Learning", "Natural Language Processing"). NOT application domains (e.g. NOT "medical diagnosis", "cancer research", "finance applications", "clinical statistics"). Application domains are uses, not academic successors.
+- Names must be the standard subject-level term (e.g. "Linear Algebra", "Probability Theory", "Reinforcement Learning"), not chapter-level sub-topics
+- Keep concepts at the academic discipline level. If a concept would only be relevant to one applied industry (medicine, finance, law), omit it.
+- No works, no refs — only concepts. Works will be generated by Claude in the next stage.
+- Quality over quantity. If you're unsure whether a concept is load-bearing, leave it out.
+Return ONLY JSON.`;
+}
+
+function sequencePrompt(topic, worksList){
+  // Use numeric indices instead of OpenAlex URLs in the prompt and response.
+  // Long URLs were causing Claude to truncate mid-URL and break the JSON.
+  // Numeric indices are short, can't be truncated, and we map back to IDs after parsing.
+  const items = worksList.map((w, i) =>
+    `${i + 1}. "${w.title}" — ${w.authors} (${w.year}) [${w.type}] [${w.citations} citations] [concept: ${w._concept}]`
+  ).join('\n');
+  return `You are a master academic librarian arranging the canonical reading journey for "${topic}".
+
+The works below are the ${worksList.length} core works from OpenAlex across all concepts in the graph, selected by field-weighted citation impact. They ARE the spine. Your job is to arrange ALL of them into STAGES of reading, with a real bridge sentence for each.
+
+Works to arrange (refer to each by its number):
+${items}
+
+Return ONLY raw valid JSON — no markdown, no code fences:
+{
+  "stages": [
+    {
+      "stage": 1,
+      "label": "short stage name (e.g. 'Foundations', 'Core theory', 'Frontier')",
+      "parallel_hint": "one phrase: why these works can be read in parallel, or 'single-threaded' if only one",
+      "items": [
+        {"work": 1, "bridge": "one vivid sentence: what capability this work deposits in the reader, and how it hands off to the next stage"}
+      ]
+    }
+  ]
+}
+
+Rules:
+- Include EVERY work from the list above. Do not omit any. Do not add works not in the list.
+- The "work" field is the NUMBER (1 to ${worksList.length}) from the list above. Just the number, not the title, not the URL.
+- Stage 1 = the absolute foundation (works with no prereqs inside this list)
+- Each subsequent stage depends on the previous one
+- Works in the same stage are either alternatives (read any one) or complementary (read in parallel, both needed) — say which in parallel_hint
+- bridge faces forward: describe the handoff to the next stage, not a summary of this work. Each bridge must be SPECIFIC to that work — reference the actual content, method, or idea of the paper/book.
+- ABSOLUTELY NO PLACEHOLDERS. Never write "Placeholder removed", "placeholder", "[bridge]", or any filler. Every bridge must be a real, specific sentence about that work.
+- Each work appears exactly once in the entire sequence. Do not repeat work numbers.
+Return ONLY JSON.`;
+}
+
+function worksForConceptPrompt(conceptName, conceptDescription, topic){
+  return `You are an expert academic librarian. For the concept "${conceptName}" — which is part of the concept graph for "${topic}" — list the CANONICAL works a learner should read.
+
+${conceptDescription ? `Concept context: ${conceptDescription}` : ''}
+
+For each work, provide:
+- authors: real author name(s), "Last, F." format, comma-separated for multiple
+- title: the full real title of the work
+- year: publication year (integer)
+- publisher: publisher for books, journal/conference name for articles
+- type: "book" | "article" | "proceedings-article" | "monograph" | "book-chapter"
+- category: "seminal" (founding/field-shaping, typically older) | "breakthrough" (paradigm-shifting advance, typically recent) | "pedagogical" (textbook/survey/introductory)
+- why_it_matters: one specific sentence about what THIS work contributes to understanding ${conceptName}
+
+Rules:
+- ONLY include works you are confident actually exist. Do NOT invent works. If unsure, omit.
+- NO NUMERICAL CAP. Include ONLY the genuinely canonical works for this concept — the small set that defines the field. If that's 2 works, list 2. If it's 8, list 8. The count is whatever the canon actually requires.
+- DO NOT pad. A work must be truly canonical to make the list. If you're unsure whether a work is canonical, omit it.
+- The canonical texts are the ones everyone in the field has read or should read — the small handful that any practitioner would name without hesitation.
+- Mix categories: at least one seminal, at least one pedagogical (if a textbook exists), and breakthroughs if applicable.
+- Use real author names and real titles. No approximations.
+
+Return ONLY raw valid JSON:
+{"works":[
+  {"authors":"Strang, G.", "title":"Introduction to Linear Algebra", "year":2016, "publisher":"Wellesley-Cambridge Press", "type":"book", "category":"pedagogical", "why_it_matters":"The default undergraduate entry point — builds computational intuition for vectors, matrices, and the operations that underlie all of ML."}
+]}
+Return ONLY JSON.`;
+}
+
+
+
+// ── Orchestration ────────────────────────────────────────────────────────────
+function setStatus(msg, kind = ''){
+  els.status.textContent = msg;
+  els.status.className = kind;
+}
+function setCacheHit(hit){
+  els.cacheHint.textContent = hit ? 'loaded from cache' : '';
+  els.cacheHint.classList.toggle('hit', hit);
+}
+function streamLogShow(){
+  els.streamLog.classList.add('visible');
+  els.streamLog.textContent = '';
+}
+function streamLogHide(){
+  els.streamLog.classList.remove('visible');
+  els.streamLog.textContent = '';
+}
+function streamLogAppend(chunk){
+  // append chunk to the log; auto-scroll to bottom
+  els.streamLog.appendChild(document.createTextNode(chunk));
+  els.streamLog.scrollTop = els.streamLog.scrollHeight;
+}
+function streamLogSet(text){
+  els.streamLog.textContent = text;
+  els.streamLog.scrollTop = els.streamLog.scrollHeight;
+}
+
+async function generate(){
+  console.log('[Concept Atlas] Generate button clicked');
+  // Immediate visible feedback so the user knows the click registered
+  els.generateBtn.disabled = true;
+  setStatus('Starting generation...');
+  streamLogShow();
+  streamLogSet('— Click registered, starting —\n');
+
+  const topic = els.topic.value.trim();
+  console.log('[Concept Atlas] topic:', JSON.stringify(topic));
+  if(!topic){
+    setStatus('Enter a topic first.', 'error');
+    els.topic.focus();
+    els.generateBtn.disabled = false;
+    streamLogHide();
+    return;
+  }
+  if(!els.apiKey.value.trim()){
+    setStatus('Enter your Anthropic API key.', 'error');
+    els.apiKey.focus();
+    els.generateBtn.disabled = false;
+    streamLogHide();
+    return;
+  }
+  const modelVal = els.model.value.trim();
+  console.log('[Concept Atlas] model:', JSON.stringify(modelVal));
+  if(!modelVal){
+    setStatus('Enter a model name.', 'error');
+    els.model.focus();
+    els.generateBtn.disabled = false;
+    streamLogHide();
+    return;
+  }
+
+  saveSettings();
+
+  try{
+    // 1. Check IndexedDB cache
+    const cached = await dbGet('topics', topic);
+    if(cached){
+      state = cached.data;
+      setCacheHit(true);
+      setStatus(`Loaded "${topic}" from cache.`);
+      streamLogHide();
+      renderAll();
+      els.generateBtn.disabled = false;
+      return;
+    }
+    setCacheHit(false);
+
+    // 2. Claude → concept graph (streamed)
+    setStatus('Stage 1/3: mapping concept graph...');
+    streamLogSet('— Stage 1: mapping concept graph —\n\n');
+    const graphText = await callClaudeStream(conceptGraphPrompt(topic), 12000, (chunk) => {
+      streamLogAppend(chunk);
+    });
+    streamLogAppend('\n\n— Stage 1 done —\n');
+    const graph = parseJSONRobust(graphText);
+
+    // 2b. Fetch OpenAlex concept tags for each concept (parallel, if key present)
+    const allConcepts = [
+      ...graph.predecessors.map(c => ({...c, zone: 'predecessor'})),
+      ...graph.core.map(c => ({...c, zone: 'core'})),
+      ...graph.successors.map(c => ({...c, zone: 'successor'})),
+    ];
+    if(els.openalexKey.value.trim()){
+      streamLogAppend(`\n— Fetching OpenAlex concept tags for ${allConcepts.length} concepts —\n`);
+      setStatus(`Stage 1b/3: fetching OpenAlex concept tags...`);
+      await Promise.all(allConcepts.map(async (c) => {
+        c.openalexTags = await fetchOpenAlexConceptTags(c.name);
+        if(c.openalexTags.length) streamLogAppend(`  ✓ ${c.name} → ${c.openalexTags.length} tags\n`);
+        else streamLogAppend(`  · ${c.name} → no tags\n`);
+      }));
+    }
+    streamLogAppend(`\n— Stage 2: generating canonical works for ${allConcepts.length} concepts (Claude, parallel) —\n\n`);
+    setStatus(`Stage 2/3: generating works for ${allConcepts.length} concepts...`);
+    setStatus(`Stage 2/3: generating works for ${allConcepts.length} concepts...`);
+    const worksByConcept = {};
+    const allWorks = [];
+    const seenTitles = new Set();
+    let worksDone = 0;
+    const workPromises = allConcepts.map(async (c) => {
+      try{
+        const t = await callClaudeStream(worksForConceptPrompt(c.name, c.description, topic), 4000, () => {});
+        const parsed = parseJSONRobust(t);
+        const works = (parsed.works || []).map(w => ({
+          id: 'claude-' + Math.random().toString(36).slice(2, 10),
+          title: w.title || '(untitled)',
+          authors: w.authors || '',
+          year: w.year || null,
+          publisher: w.publisher || '',
+          type: w.type || 'article',
+          category: w.category || 'article',
+          citations: 0,
+          venue: w.publisher || '',
+          doi: '',
+          landing: '',
+          note: w.why_it_matters || '',
+          _concept: c.name,
+        }));
+        // Deduplicate by normalized title across all concepts
+        const unique = [];
+        for(const w of works){
+          const key = (w.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if(!seenTitles.has(key)){
+            seenTitles.add(key);
+            unique.push(w);
+            allWorks.push(w);
+          }else{
+            // Even if duplicate globally, keep it for this concept
+            unique.push(w);
+          }
+        }
+        worksByConcept[c.name] = unique;
+        worksDone++;
+        setStatus(`Stage 2/3: generating works — ${worksDone}/${allConcepts.length} concepts done`);
+        streamLogAppend(`✓ ${c.name} — ${unique.length} works\n`);
+      }catch(e){
+        worksDone++;
+        streamLogAppend(`✗ ${c.name} failed: ${e.message.slice(0, 80)}\n`);
+      }
+    });
+    await Promise.all(workPromises);
+
+    // 4. Claude → staged reading sequence (streamed)
+    // No composite score filter — Claude already curated the canon per concept.
+    // Just dedupe allWorks by title for the sequence.
+    const seenSeqTitles = new Set();
+    const topForSequence = allWorks.filter(w => {
+      const key = (w.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if(seenSeqTitles.has(key)) return false;
+      seenSeqTitles.add(key);
+      return true;
+    });
+    streamLogAppend(`\n— Stage 3: building staged reading sequence over ${topForSequence.length} canonical works —\n\n`);
+    setStatus(`Stage 3/3: building staged reading sequence...`);
+    const seqText = await callClaudeStream(sequencePrompt(topic, topForSequence), 32000, (chunk) => {
+      streamLogAppend(chunk);
+    });
+    streamLogAppend('\n\n— Stage 3 done —\n');
+    const seqParsed = parseJSONRobust(seqText);
+    let sequence = seqParsed.stages || [];
+
+    // Map work numbers back to work IDs, filter placeholders and duplicates
+    const workByIdx = {};
+    topForSequence.forEach((w, i) => { workByIdx[i + 1] = w; });
+    const seenIds = new Set();
+    for(const stage of sequence){
+      if(!stage.items) continue;
+      stage.items = stage.items.map(it => {
+        const workNum = it.work ?? (typeof it.id === 'number' ? it.id : null);
+        const w = workByIdx[workNum];
+        if(!w) return null;
+        return { id: w.id, bridge: it.bridge || '' };
+      }).filter(it => {
+        if(!it || !it.id) return false;
+        const b = (it.bridge || '').toLowerCase();
+        if(b.includes('placeholder') || b.includes('[bridge]') || b.includes('filler') || b.trim() === '') return false;
+        if(seenIds.has(it.id)) return false;
+        seenIds.add(it.id);
+        return true;
+      });
+    }
+    // Drop empty stages
+    sequence = sequence.filter(s => s.items && s.items.length);
+
+    state = {
+      topic,
+      summary: graph.summary,
+      predecessors: graph.predecessors || [],
+      core: graph.core || [],
+      successors: graph.successors || [],
+      worksByConcept,
+      sequence,
+      allWorks,
+      corrections: [],
+      ts: Date.now(),
+    };
+    focusedConcept = state.core[0]?.name || null;
+
+    await dbPut('topics', {topic, data: state, ts: Date.now()});
+    setStatus(`Generated "${topic}" — ${allConcepts.length} concepts, ${allWorks.length} real works, ${sequence.length} stages.`);
+    streamLogHide();
+    renderAll();
+
+  }catch(e){
+    console.error(e);
+    setStatus(`Error: ${e.message}`, 'error');
+    streamLogAppend(`\n\n— ERROR: ${e.message} —\n`);
+  }finally{
+    els.generateBtn.disabled = false;
+  }
+}
+
+// ── Rendering ────────────────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function fmtCites(n){ return Number(n||0).toLocaleString(); }
+function typeBadge(type){
+  const t = (type||'').toLowerCase();
+  const cls = t.includes('book') ? 'book' : (t.includes('article') ? 'pedagogical' : 'pedagogical');
+  return `<span class="badge ${cls}">${esc(type || 'work')}</span>`;
+}
+
+// Categorize a work as seminal / breakthrough / pedagogical / article.
+// Uses type, title keywords, year, fwci, and citation count.
+function categorizeWork(w){
+  const type = (w.type || '').toLowerCase();
+  const title = (w.title || '').toLowerCase();
+  const year = w.year || 0;
+  const fwci = w.fwci || 0;
+  const cites = w.citations || 0;
+  // Pedagogical: textbook or survey-style title
+  if(['book', 'monograph', 'book-chapter'].includes(type)) return 'pedagogical';
+  if(/\b(introduction|foundations|elements|course|textbook|primer|guide|handbook|comprehensive|overview|survey)\b/.test(title)) return 'pedagogical';
+  // Seminal: old + field-shaping (high fwci for its era)
+  if(year > 0 && year < 2000 && fwci > 5 && cites > 500) return 'seminal';
+  if(year > 0 && year < 2010 && fwci > 20 && cites > 2000) return 'seminal';
+  // Breakthrough: recent + extremely high field-weighted impact
+  if(year >= 2015 && fwci > 50) return 'breakthrough';
+  if(year >= 2005 && fwci > 200) return 'breakthrough';
+  // Highly-cited older work that doesn't fit above
+  if(fwci > 30 && cites > 5000) return 'seminal';
+  return 'article';
+}
+function categoryBadge(w){
+  const cat = categorizeWork(w);
+  return `<span class="badge ${cat}">${cat}</span>`;
+}
+
+function renderAll(){
+  renderGraph();
+  renderWorks();
+  renderSequence();
+}
+
+function renderGraph(){
+  if(!state){ els.graphView.innerHTML = '<div class="empty">Generate a topic to see the concept map.</div>'; return; }
+  const zones = [
+    {key: 'predecessors', label: 'Prerequisites · learn these first', cls: 'pred'},
+    {key: 'core', label: 'Core · the topic itself', cls: 'core'},
+    {key: 'successors', label: 'Next Level · what this unlocks', cls: 'succ'},
+  ];
+  let html = '';
+  if(state.summary){
+    html += `<div style="margin-bottom:1rem;padding:0.6rem;background:var(--surface2);border-radius:5px;font-size:0.85rem;line-height:1.45;">${esc(state.summary)}</div>`;
+  }
+  for(const z of zones){
+    const items = state[z.key] || [];
+    if(!items.length) continue;
+    html += `<div class="zone"><span class="zone-label ${z.cls}">${z.label}</span>`;
+    for(const c of items){
+      const sel = focusedConcept === c.name ? ' selected' : '';
+      const coupling = c.coupling ? `<span class="coupling ${c.coupling}">${c.coupling}</span>` : '';
+      const worksCount = (state.worksByConcept[c.name] || []).length;
+      // Concept name links to OpenAlex concept search (always works, no key needed)
+      const oaSearchUrl = `https://openalex.org/concepts?search=${encodeURIComponent(c.name)}`;
+      // Tags (specific OpenAlex concept matches — only if key was provided)
+      const tags = (c.openalexTags || []).map(t =>
+        `<a class="oa-tag" href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(t.name)} · ${fmtCites(t.works_count)} works on OpenAlex">${esc(t.name)}</a>`
+      ).join('');
+      html += `<div class="concept-card${sel}" data-concept="${esc(c.name)}">
+        <div class="concept-oa-link"><a href="${oaSearchUrl}" target="_blank" rel="noopener" title="Search OpenAlex for this concept">OpenAlex ↗</a></div>
+        <div class="concept-name">${coupling}<a class="concept-link" href="${oaSearchUrl}" target="_blank" rel="noopener" title="Search OpenAlex for this concept">${esc(c.name)}</a></div>
+        <div class="concept-desc">${esc(c.description || '')}</div>
+        ${tags ? `<div class="concept-tags">${tags}</div>` : ''}
+        <div class="concept-meta">${worksCount} works · ${esc(c.relation || '')}</div>
+        <div class="concept-actions">
+          <button data-action="add-work" data-concept="${esc(c.name)}">+ Add work</button>
+          <button data-action="missing-concept" data-zone="${z.key}">+ Missing concept</button>
+          ${z.key === 'predecessors' || z.key === 'successors' ? `<button data-action="wrong-edge" data-concept="${esc(c.name)}" data-zone="${z.key}">Wrong edge</button>` : ''}
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  els.graphView.innerHTML = html;
+  els.graphView.querySelectorAll('.concept-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if(e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+      focusedConcept = card.dataset.concept;
+      renderGraph();
+      renderWorks();
+    });
+  });
+  els.graphView.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleCorrectionAction(btn.dataset.action, btn.dataset);
+    });
+  });
+}
+
+function renderWorks(){
+  if(!state || !focusedConcept){
+    els.worksView.innerHTML = '<div class="empty">Click a concept to see its works.</div>';
+    return;
+  }
+  let works = (state.worksByConcept[focusedConcept] || []).slice();
+  if(worksSortMode === 'citations') works.sort((a,b) => (b.citations||0) - (a.citations||0));
+  else if(worksSortMode === 'year') works.sort((a,b) => (b.year||0) - (a.year||0));
+
+  const sortLabel = worksSortMode === 'citations' ? 'sorted by citations' : 'sorted by year';
+  const nextSort = worksSortMode === 'citations' ? 'year' : 'citations';
+  let html = `<div class="works-header">
+    <span class="concept-title">${esc(focusedConcept)}</span>
+    <span class="work-sort" data-sort="${nextSort}">${sortLabel} (click to toggle)</span>
+  </div>`;
+  if(!works.length){
+    html += '<div class="empty">No works fetched for this concept.</div>';
+  }else{
+    for(const w of works){
+      // Title links to landing page if available, otherwise to Google Scholar search
+      const titleHref = w.landing || scholarUrl(w.title);
+      const link = `<a href="${esc(titleHref)}" target="_blank" rel="noopener">${esc(w.title)}</a>`;
+      const scholarLink = `<a class="scholar-btn" href="${scholarUrl(w.title)}" target="_blank" rel="noopener" title="Search Google Scholar for this work">Scholar ↗</a>`;
+      const top1 = w.top_1_pct ? `<span class="badge" style="background:rgba(21,128,61,0.2);color:var(--pred);">Top 1% in field</span>` : '';
+      const fwciStr = w.fwci ? `<span title="Field-Weighted Citation Impact (1.0 = field average)">fwci ${w.fwci.toFixed(1)}</span>` : '';
+      const pctStr = w.percentile ? `<span title="Citation percentile within field">top ${(100 - w.percentile * 100).toFixed(1)}%</span>` : '';
+      html += `<div class="work-row">
+        <div class="work-title">${link}</div>
+        <div class="work-meta">
+          ${categoryBadge(w)}
+          ${top1}
+          <span class="work-authors">${esc(w.authors)}</span>
+          ${w.year ? `<span>${esc(w.year)}</span>` : ''}
+          <span class="work-citations">${fmtCites(w.citations)} citations</span>
+          ${fwciStr}
+          ${pctStr}
+          ${w.venue ? `<span>· ${esc(w.venue)}</span>` : ''}
+          ${scholarLink}
+        </div>
+        ${w.note ? `<div class="work-note">${esc(w.note)}</div>` : ''}
+        <div class="work-actions">
+          <a class="work-link" href="${scholarUrl(w.title)}" target="_blank" rel="noopener">Search on Google Scholar ↗</a>
+          <button data-action="remove-work" data-id="${esc(w.id)}" data-concept="${esc(focusedConcept)}">Remove from this concept</button>
+        </div>
+      </div>`;
+    }
+  }
+  els.worksView.innerHTML = html;
+  els.worksView.querySelector('.work-sort')?.addEventListener('click', (e) => {
+    worksSortMode = e.target.dataset.sort;
+    renderWorks();
+  });
+  els.worksView.querySelectorAll('button[data-action="remove-work"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const concept = btn.dataset.concept;
+      state.worksByConcept[concept] = (state.worksByConcept[concept] || []).filter(w => w.id !== id);
+      state.allWorks = state.allWorks.filter(w => w.id !== id);
+      // also remove from sequence
+      for(const stage of state.sequence){
+        stage.items = (stage.items || []).filter(it => it.id !== id);
+      }
+      dbPut('topics', {topic: state.topic, data: state, ts: Date.now()});
+      addCorrection({type: 'remove_work', concept, workId: id});
+      renderWorks();
+      renderSequence();
+      setStatus(`Removed work from "${concept}".`);
+    });
+  });
+}
+
+function renderSequence(){
+  if(!state || !state.sequence?.length){
+    els.sequenceView.innerHTML = '<div class="empty">Generate to see the staged reading order.</div>';
+    return;
+  }
+  const workMap = new Map(state.allWorks.map(w => [w.id, w]));
+  const stages = state.sequence.filter(s => s.items && s.items.length);
+  let html = '';
+  for(let sIdx = 0; sIdx < stages.length; sIdx++){
+    const stage = stages[sIdx];
+    const items = stage.items || [];
+    // Insert "THEN" marker between stages (sequential)
+    if(sIdx > 0) html += `<div class="seq-then-marker"></div>`;
+    const isParallel = items.length > 1;
+    const parallelHint = stage.parallel_hint
+      ? `<span class="stage-parallel-hint">↔ ${esc(stage.parallel_hint)}</span>`
+      : (isParallel ? `<span class="stage-parallel-hint">↔ read in parallel</span>` : '');
+    html += `<div class="stage">
+      <div class="stage-header">
+        <span class="stage-num">${stage.stage}</span>
+        <span class="stage-label">${esc(stage.label || '')}</span>
+        ${parallelHint}
+      </div>
+      <div class="stage-items${isParallel ? '' : ' single'}">`;
+    for(const item of items){
+      const w = workMap.get(item.id);
+      if(!w) continue;
+      const link = w.landing ? `<a href="${esc(w.landing)}" target="_blank" rel="noopener">${esc(w.title)}</a>` : esc(w.title);
+      html += `<div class="seq-item">
+        <div class="seq-title">${link}</div>
+        <div class="seq-meta">${categoryBadge(w)} ${esc(w.authors)} · ${esc(w.year)} · <em>${esc(w._concept)}</em> <a class="scholar-btn" href="${scholarUrl(w.title)}" target="_blank" rel="noopener">Scholar ↗</a></div>
+        ${item.bridge ? `<div class="seq-bridge">${esc(item.bridge)}</div>` : ''}
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  els.sequenceView.innerHTML = html || '<div class="empty">Sequence empty.</div>';
+}
+
+// ── Corrections ──────────────────────────────────────────────────────────────
+async function addCorrection(payload){
+  if(!state) return;
+  const correction = {topic: state.topic, ...payload, ts: Date.now()};
+  await dbPut('corrections', correction);
+  state.corrections = state.corrections || [];
+  state.corrections.push(correction);
+}
+
+function handleCorrectionAction(action, data){
+  if(action === 'add-work') openModal('Add a work', `Add a real work to "${data.concept}" by DOI or title. Verified against OpenAlex.`,
+    [{key: 'doi', label: 'DOI (preferred)', placeholder: '10.1234/...'}, {key: 'title', label: 'or title', placeholder: 'Work title'}],
+    async (vals) => {
+      let work = null;
+      if(vals.doi?.trim()){
+        work = await openalexWorkByDOI(vals.doi);
+        if(!work){ setStatus('No OpenAlex record for that DOI.', 'error'); return; }
+      }else if(vals.title?.trim()){
+        const results = await openalexWorksForConcept(vals.title, 1);
+        work = results[0];
+        if(!work){ setStatus('No OpenAlex match for that title.', 'error'); return; }
+      }else{ setStatus('Enter a DOI or title.', 'error'); return; }
+      work._concept = data.concept;
+      work.note = '';
+      state.worksByConcept[data.concept] = state.worksByConcept[data.concept] || [];
+      if(!state.worksByConcept[data.concept].some(w => w.id === work.id)){
+        state.worksByConcept[data.concept].push(work);
+      }
+      if(!state.allWorks.some(w => w.id === work.id)) state.allWorks.push(work);
+      await dbPut('topics', {topic: state.topic, data: state, ts: Date.now()});
+      await addCorrection({type: 'add_work', concept: data.concept, workId: work.id, title: work.title});
+      renderWorks();
+      renderGraph();
+      setStatus(`Added "${work.title}" to "${data.concept}".`);
+    });
+  else if(action === 'wrong-edge') openModal('Mark edge wrong', `Mark the "${data.concept}" → ${data.zone === 'predecessors' ? 'topic' : 'successor'} edge as wrong. Suggest a fix or just flag it.`,
+    [{key: 'note', label: 'What\'s wrong / what should replace it?', placeholder: 'e.g. This isn\'t a real prerequisite; replace with X'}],
+    async (vals) => {
+      await addCorrection({type: 'wrong_edge', zone: data.zone, concept: data.concept, note: vals.note});
+      setStatus(`Edge correction recorded for "${data.concept}".`);
+    });
+  else if(action === 'missing-concept') openModal('Add missing concept', `Add a concept that should be in the ${data.zone} zone.`,
+    [{key: 'name', label: 'Concept name', placeholder: 'e.g. Information Theory'}, {key: 'description', label: 'One-phrase description', placeholder: ''}],
+    async (vals) => {
+      if(!vals.name?.trim()){ setStatus('Enter a concept name.', 'error'); return; }
+      const newConcept = {name: vals.name.trim(), description: vals.description || '', relation: 'user-added', coupling: 'direct'};
+      state[data.zone] = state[data.zone] || [];
+      state[data.zone].push(newConcept);
+      // fetch works for the new concept
+      const works = await openalexWorksForConcept(newConcept.name, 10);
+      state.worksByConcept[newConcept.name] = works.map(w => ({...w, _concept: newConcept.name}));
+      for(const w of state.worksByConcept[newConcept.name]){
+        if(!state.allWorks.some(x => x.id === w.id)) state.allWorks.push(w);
+      }
+      await dbPut('topics', {topic: state.topic, data: state, ts: Date.now()});
+      await addCorrection({type: 'add_concept', zone: data.zone, name: newConcept.name});
+      renderGraph();
+      setStatus(`Added "${newConcept.name}" with ${works.length} works.`);
+    });
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+let modalSubmitHandler = null;
+function openModal(title, desc, fields, onSubmit){
+  els.modalTitle.textContent = title;
+  els.modalDesc.textContent = desc;
+  els.modalFields.innerHTML = fields.map(f =>
+    `<label style="display:block;font-size:0.8rem;color:var(--muted);margin-bottom:0.25rem;">${esc(f.label)}</label>` +
+    `<input data-key="${esc(f.key)}" placeholder="${esc(f.placeholder || '')}"` +
+    (f.label.toLowerCase().includes('description') || f.label.toLowerCase().includes('note') ? '' : '') +
+    `>`
+  ).join('');
+  els.modalBackdrop.classList.add('visible');
+  modalSubmitHandler = () => {
+    const vals = {};
+    els.modalFields.querySelectorAll('input').forEach(inp => vals[inp.dataset.key] = inp.value);
+    try{ onSubmit(vals); closeModal(); }catch(e){ setStatus(`Modal error: ${e.message}`, 'error'); }
+  };
+}
+function closeModal(){
+  els.modalBackdrop.classList.remove('visible');
+  modalSubmitHandler = null;
+}
+
+// ── Event wiring ─────────────────────────────────────────────────────────────
+els.generateBtn.addEventListener('click', generate);
+els.testBtn.addEventListener('click', async () => {
+  const model = els.model.value.trim();
+  setStatus(`Testing Anthropic connection with model "${model}"...`);
+  streamLogShow();
+  streamLogSet(`— Connection test —\n`);
+  streamLogAppend(`Model: "${model}"\n`);
+  streamLogAppend(`Anthropic key: ${els.apiKey.value.trim() ? 'present (' + els.apiKey.value.trim().length + ' chars)' : 'MISSING'}\n`);
+  streamLogAppend(`\nSending test request...\n\n`);
+  try{
+    const reply = await callClaude('Reply with just: "connection ok"', 50);
+    streamLogAppend(`Response: ${reply}\n`);
+    setStatus(`Connection OK — model "${model}" works.`);
+  }catch(e){
+    streamLogAppend(`ERROR: ${e.message}\n`);
+    setStatus(`Connection failed: ${e.message}`, 'error');
+  }
+});
+els.topic.addEventListener('keydown', (e) => { if(e.key === 'Enter') generate(); });
+els.apiKey.addEventListener('change', saveSettings);
+els.openalexKey.addEventListener('change', saveSettings);
+els.model.addEventListener('change', saveSettings);
+els.model.addEventListener('input', saveSettings);
+els.clearBtn.addEventListener('click', async () => {
+  if(!confirm('Clear all cached topics and corrections?')) return;
+  await dbClear('topics');
+  await dbClear('corrections');
+  state = null;
+  focusedConcept = null;
+  renderAll();
+  streamLogHide();
+  setStatus('Cache cleared.');
+});
+els.modalCancel.addEventListener('click', closeModal);
+els.modalSubmit.addEventListener('click', () => modalSubmitHandler?.());
+els.modalBackdrop.addEventListener('click', (e) => { if(e.target === els.modalBackdrop) closeModal(); });
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+// Surface any uncaught errors to the status bar so they're not silent.
+window.addEventListener('error', (e) => {
+  console.error('Uncaught error:', e.error || e.message);
+  setStatus(`Uncaught error: ${e.message || 'unknown'}`, 'error');
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled rejection:', e.reason);
+  setStatus(`Unhandled rejection: ${e.reason?.message || e.reason || 'unknown'}`, 'error');
+});
+
+(async () => {
+  loadSettings();
+  try{
+    await openDB();
+  }catch(e){
+    console.error('IndexedDB open failed', e);
+    setStatus('Warning: IndexedDB unavailable — caching disabled.', 'error');
+  }
+})();
+</script>
+</body>
+</html>

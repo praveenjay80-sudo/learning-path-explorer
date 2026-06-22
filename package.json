@@ -1,0 +1,12 @@
+{
+  "name": "concept-atlas",
+  "version": "1.0.0",
+  "description": "Academic concept graph + canonical works + staged reading order, powered by Claude",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
