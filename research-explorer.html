@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Explorer</title>
+<style>
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --surface2:#eef0f3; --text:#1a1d23; --muted:#6b7280;
+  --border:#e2e5ea;
+  --accent:#7c3aed; --accent2:#2563eb;
+  --foundational:#1d4ed8; --empirical:#15803d; --theoretical:#6d28d9;
+  --methodological:#b45309; --recent:#b42318;
+  --tier-foundational:#15803d; --tier-conceptual:#1d4ed8; --tier-applied:#b45309; --tier-research:#6d28d9;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --text:#e6edf3; --muted:#8b949e;
+    --border:#30363d;
+    --accent:#7c3aed; --accent2:#2563eb;
+    --foundational:#2563eb; --empirical:#16a34a; --theoretical:#7c3aed;
+    --methodological:#d97706; --recent:#dea6a4;
+    --tier-foundational:#16a34a; --tier-conceptual:#2563eb; --tier-applied:#d97706; --tier-research:#7c3aed;
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+}
+
+/* ── Header ── */
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:1rem 1.5rem;position:sticky;top:0;z-index:10;
+}
+header h1{
+  font-size:1.35rem;font-weight:800;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,#7c3aed,#2563eb);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:0.25rem;
+}
+.tagline{font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;}
+
+/* Tabs */
+.tabs{display:flex;gap:0;margin-bottom:0.75rem;border-bottom:2px solid var(--border);}
+.tab-btn{
+  background:none;border:none;color:var(--muted);font-size:0.9rem;font-weight:600;
+  padding:0.4rem 1.1rem 0.55rem;cursor:pointer;position:relative;top:2px;border-bottom:2px solid transparent;
+}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-btn:hover:not(.active){color:var(--text);}
+
+.controls{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-start;}
+.controls input{
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  padding:0.5rem 0.75rem;border-radius:6px;font-size:0.9rem;
+}
+.controls input[type=text]{flex:1;min-width:200px;}
+.controls input[type=password]{min-width:220px;max-width:260px;}
+.controls textarea{
+  flex:1;min-width:300px;background:var(--surface);color:var(--text);
+  border:1px solid var(--border);padding:0.5rem 0.75rem;border-radius:6px;
+  font-size:0.9rem;font-family:inherit;resize:vertical;min-height:56px;
+}
+.controls button{
+  background:var(--accent);color:white;border:none;padding:0.5rem 1rem;border-radius:6px;
+  font-size:0.9rem;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.controls button:hover{background:#6d28d9;}
+.controls button:disabled{opacity:0.5;cursor:not-allowed;}
+.controls .secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.controls .secondary:hover{background:var(--border);}
+.key-row{display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;flex-wrap:wrap;}
+.key-label{font-size:0.78rem;color:var(--muted);white-space:nowrap;}
+
+#status{font-size:0.85rem;color:var(--muted);margin-top:0.5rem;min-height:1.2em;}
+#status.error{color:#b42318;}
+#status.info{color:var(--accent);}
+.cache-hint{font-size:0.75rem;color:var(--muted);margin-left:0.5rem;}
+.cache-hint.hit{color:#15803d;}
+
+.stream-log{
+  display:none;margin-top:0.5rem;padding:0.6rem 0.75rem;background:var(--surface2);
+  border:1px solid var(--border);border-radius:5px;font-family:'SF Mono',Consolas,monospace;
+  font-size:0.72rem;line-height:1.4;color:var(--muted);max-height:140px;overflow-y:auto;
+  white-space:pre-wrap;word-break:break-word;
+}
+.stream-log.visible{display:block;}
+
+/* Search bar */
+.search-bar{
+  display:none;margin-top:0.5rem;
+}
+.search-bar.visible{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;}
+.search-bar input{
+  flex:1;min-width:200px;background:var(--surface);color:var(--text);
+  border:1px solid var(--border);padding:0.4rem 0.7rem;border-radius:6px;font-size:0.85rem;
+}
+.filter-chips{display:flex;gap:0.35rem;flex-wrap:wrap;}
+.chip{
+  font-size:0.72rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:20px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface2);color:var(--muted);
+  text-transform:uppercase;letter-spacing:0.04em;
+}
+.chip.active{background:var(--accent);color:white;border-color:var(--accent);}
+.chip:hover:not(.active){border-color:var(--muted);}
+
+/* ── Main 2-pane ── */
+main{
+  display:grid;grid-template-columns:380px 1fr;gap:1rem;padding:1rem;
+  min-height:calc(100vh - 160px);
+}
+@media (max-width:900px){main{grid-template-columns:1fr;}}
+.pane{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:1rem;overflow-y:auto;max-height:calc(100vh - 180px);
+}
+.pane h2{
+  font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.06em;
+  padding-bottom:0.5rem;border-bottom:1px solid var(--border);
+}
+.empty{color:var(--muted);font-size:0.9rem;text-align:center;padding:3rem 1rem;line-height:1.6;}
+
+/* ── Answer section ── */
+.answer-section{
+  display:none;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:1.1rem 1.25rem;
+}
+.answer-header{
+  display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem;
+  padding-bottom:0.6rem;border-bottom:1px solid var(--border);
+}
+.answer-header-label{
+  font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);flex:1;
+}
+.answer-streaming{
+  font-size:0.87rem;line-height:1.75;color:var(--text);white-space:pre-wrap;
+}
+.answer-streaming p{margin-bottom:0.85rem;}
+.answer-streaming p:last-child{margin-bottom:0;}
+.ref-concept{
+  color:var(--accent);font-weight:600;cursor:pointer;
+  border-bottom:1px dashed var(--accent);
+}
+.ref-concept:hover{background:rgba(124,58,237,0.08);border-radius:2px;}
+.ref-work{
+  color:var(--accent2);font-weight:600;cursor:pointer;
+  border-bottom:1px dashed var(--accent2);
+}
+.ref-work:hover{background:rgba(37,99,235,0.08);border-radius:2px;}
+.answer-legend{
+  display:flex;gap:1rem;margin-top:0.75rem;padding-top:0.6rem;
+  border-top:1px solid var(--border);flex-wrap:wrap;
+}
+.legend-item{font-size:0.72rem;color:var(--muted);}
+.legend-item span{font-weight:700;}
+.legend-concept{color:var(--accent);}
+.legend-work{color:var(--accent2);}
+
+/* ── Concept cards ── */
+.concept-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+  padding:0.85rem 1rem;margin-bottom:0.65rem;
+}
+.concept-card.hidden{display:none;}
+.concept-name{
+  font-size:1rem;font-weight:700;margin-bottom:0.5rem;color:var(--accent);
+}
+.concept-scholar{
+  display:inline-block;font-size:0.68rem;color:var(--accent2);text-decoration:none;
+  background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);
+  padding:0.15rem 0.45rem;border-radius:3px;margin-left:0.5rem;font-weight:600;
+}
+.concept-scholar:hover{background:rgba(37,99,235,0.2);}
+.section-label{
+  font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--muted);margin:0.65rem 0 0.3rem;
+}
+.section-body{
+  font-size:0.87rem;line-height:1.65;color:var(--text);
+}
+.relevance-block{
+  background:rgba(124,58,237,0.07);border-left:3px solid var(--accent);
+  border-radius:0 5px 5px 0;padding:0.5rem 0.75rem;margin-top:0.5rem;
+}
+.relevance-block .section-label{color:var(--accent);margin-top:0;}
+.relevance-block .section-body{color:var(--text);}
+
+/* ── Stage layout ── */
+.stage-block{margin-bottom:0.75rem;}
+.stage-block.hidden{display:none;}
+.stage-header{
+  display:flex;align-items:center;gap:0.55rem;margin-bottom:0.55rem;
+  padding:0.5rem 0.65rem;background:var(--surface2);border-radius:6px;
+  border:1px solid var(--border);
+}
+.stage-num{
+  min-width:1.7rem;height:1.7rem;border-radius:50%;background:var(--accent);color:white;
+  display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;flex-shrink:0;
+}
+.stage-label{font-size:0.88rem;font-weight:700;flex:1;}
+.stage-parallel-tag{
+  font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;
+  padding:0.15rem 0.45rem;border-radius:3px;
+  background:rgba(21,128,61,0.12);color:#15803d;border:1px solid rgba(21,128,61,0.2);
+}
+.stage-items{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0.6rem;
+}
+.stage-items.single{grid-template-columns:1fr;}
+.then-marker{
+  display:flex;align-items:center;justify-content:center;gap:0.5rem;
+  color:var(--accent);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;
+  padding:0.35rem 0;margin:0.1rem 0 0.75rem;
+  border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);
+}
+
+/* ── Reading list ── */
+.work-item{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:0.75rem 0.85rem;
+}
+.work-item.hidden{display:none;}
+.work-header{display:flex;align-items:flex-start;gap:0.6rem;margin-bottom:0.35rem;}
+.work-title{font-size:0.95rem;font-weight:700;line-height:1.35;}
+.work-title a{color:var(--accent2);text-decoration:none;}
+.work-title a:hover{text-decoration:underline;}
+.work-meta{font-size:0.78rem;color:var(--muted);margin-bottom:0.4rem;}
+.cat-badge{
+  display:inline-block;font-size:0.63rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.05em;padding:0.12rem 0.4rem;border-radius:3px;margin-right:0.3rem;
+  vertical-align:middle;
+}
+.cat-foundational{background:rgba(29,78,216,0.12);color:var(--foundational);}
+.cat-empirical{background:rgba(21,128,61,0.12);color:var(--empirical);}
+.cat-theoretical{background:rgba(109,40,213,0.12);color:var(--theoretical);}
+.cat-methodological{background:rgba(180,83,9,0.12);color:var(--methodological);}
+.cat-recent_breakthrough{background:rgba(180,35,24,0.12);color:var(--recent);}
+.concepts-chips{display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.45rem;}
+.concept-chip{
+  font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:3px;
+  background:rgba(124,58,237,0.1);color:var(--accent);border:1px solid rgba(124,58,237,0.2);
+}
+.prereq-works{display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.4rem;align-items:center;}
+.prereq-label{font-size:0.65rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;}
+.prereq-work-chip{
+  font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:3px;
+  background:rgba(180,83,9,0.1);color:var(--methodological);border:1px solid rgba(180,83,9,0.25);
+}
+
+/* ── Question Generator ── */
+#questionGenTab .controls textarea{min-height:48px;}
+.tier-section{margin-bottom:1.25rem;}
+.tier-header{
+  display:flex;align-items:center;gap:0.6rem;cursor:pointer;
+  padding:0.5rem 0.65rem;border-radius:6px;background:var(--surface2);
+  border:1px solid var(--border);user-select:none;margin-bottom:0.5rem;
+}
+.tier-header:hover{border-color:var(--muted);}
+.tier-dot{
+  width:0.7rem;height:0.7rem;border-radius:50%;flex-shrink:0;
+}
+.tier-title{font-size:0.9rem;font-weight:700;flex:1;}
+.tier-count{font-size:0.75rem;color:var(--muted);}
+.tier-arrow{font-size:0.8rem;color:var(--muted);transition:transform 0.15s;}
+.tier-section.collapsed .tier-arrow{transform:rotate(-90deg);}
+.tier-section.collapsed .tier-body{display:none;}
+
+.tier-foundational .tier-dot{background:var(--tier-foundational);}
+.tier-conceptual .tier-dot{background:var(--tier-conceptual);}
+.tier-applied .tier-dot{background:var(--tier-applied);}
+.tier-research .tier-dot{background:var(--tier-research);}
+
+.q-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:0.75rem 0.9rem;margin-bottom:0.5rem;
+}
+.q-card.hidden{display:none;}
+.q-text{font-size:0.93rem;font-weight:600;line-height:1.45;margin-bottom:0.4rem;}
+.q-explanation{font-size:0.84rem;color:var(--muted);line-height:1.5;margin-bottom:0.4rem;}
+.q-footer{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;}
+.difficulty-badge{
+  font-size:0.65rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:3px;
+  background:var(--surface);border:1px solid var(--border);color:var(--muted);
+}
+.prereq-chip{
+  font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:3px;
+  background:rgba(37,99,235,0.1);color:var(--accent2);border:1px solid rgba(37,99,235,0.2);
+}
+
+/* Question generator single-pane layout */
+#qgMain{
+  padding:1rem;max-width:900px;margin:0 auto;
+}
+#qgControls{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:1rem;margin-bottom:1rem;
+}
+#qgResults{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:1rem;
+}
+.export-btn{
+  background:var(--surface2);color:var(--text);border:1px solid var(--border);
+  padding:0.35rem 0.8rem;border-radius:5px;font-size:0.82rem;cursor:pointer;
+  font-weight:600;margin-bottom:0.75rem;
+}
+.export-btn:hover{background:var(--border);}
+.field-summary{
+  font-size:0.85rem;color:var(--muted);font-style:italic;margin-bottom:1rem;
+  padding:0.5rem 0.75rem;border-left:3px solid var(--border);
+}
+
+.loader{
+  display:inline-block;width:0.9rem;height:0.9rem;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;
+  vertical-align:middle;margin-right:0.35rem;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Diff sections visibility */
+.tab-section{display:none;}
+.tab-section.active{display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Research Explorer</h1>
+  <p class="tagline">Concepts + reading lists tailored to your research question — and question banks for any academic field.</p>
+  <div class="tabs">
+    <button class="tab-btn active" id="tabQG" onclick="switchTab('qg')">Question Generator</button>
+    <button class="tab-btn" id="tabResearch" onclick="switchTab('research')">Research Explorer</button>
+    <button class="tab-btn" id="tabAnswer" onclick="switchTab('answer')">Answer</button>
+  </div>
+
+  <!-- Question Generator controls -->
+  <div class="tab-section active" id="qgControls2">
+    <div class="controls">
+      <input type="text" id="fieldInput" placeholder="Academic field — e.g. &quot;Quantum Field Theory&quot;" style="flex:2;">
+      <input type="text" id="subtopicInput" placeholder="Sub-topic focus (optional)" style="flex:1;">
+      <button id="qgGenerateBtn" onclick="generateQuestions()">Generate</button>
+      <button class="secondary" id="qgClearBtn" onclick="clearQG()">Clear</button>
+    </div>
+    <div class="key-row">
+      <span class="key-label">Anthropic API key:</span>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-…" style="flex:none;width:240px;">
+      <span class="key-label" style="margin-left:0.75rem;">Model:</span>
+      <input type="text" id="modelInput" value="claude-sonnet-4-6" style="flex:none;width:180px;">
+      <span class="cache-hint" id="qgCacheHint"></span>
+    </div>
+  </div>
+
+  <!-- Research Explorer controls -->
+  <div class="tab-section" id="researchControls">
+    <div class="controls">
+      <textarea id="questionInput" placeholder="Enter your research question — e.g. &quot;How does the replication crisis challenge statistical inference in psychology?&quot;" rows="2"></textarea>
+      <button id="generateBtn" onclick="generate()">Generate</button>
+      <button class="secondary" id="clearBtn" onclick="clearResearch()">Clear</button>
+    </div>
+    <div class="key-row">
+      <span class="key-label" style="font-size:0.78rem;color:var(--muted);">Uses same API key &amp; model as Question Generator tab.</span>
+      <span class="cache-hint" id="cacheHint"></span>
+    </div>
+  </div>
+
+  <!-- Answer tab controls — just shows which question was answered -->
+  <div class="tab-section" id="answerControls">
+    <div id="answerQuestionLabel" style="font-size:0.85rem;color:var(--muted);padding:0.25rem 0;"></div>
+  </div>
+
+  <div id="status"></div>
+  <div id="streamLog" class="stream-log"></div>
+
+  <!-- Search bar for research explorer -->
+  <div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="Filter by keyword…" oninput="applyFilters()">
+    <div class="filter-chips" id="catChips"></div>
+  </div>
+
+  <!-- Search bar for question generator -->
+  <div class="search-bar" id="qgSearchBar">
+    <input type="text" id="qgSearchInput" placeholder="Filter questions by keyword…" oninput="applyQGFilters()">
+    <div class="filter-chips" id="tierChips"></div>
+  </div>
+</header>
+
+<!-- Question Generator main pane -->
+<div class="tab-section active" id="qgMain">
+  <div id="qgResultsView"><p class="empty" style="padding:4rem 1rem;text-align:center;">Enter an academic field and click Generate.</p></div>
+</div>
+
+<!-- Research Explorer main panes -->
+<div class="tab-section" id="researchMain">
+  <main>
+    <div class="pane" id="conceptsPane">
+      <h2>Concepts</h2>
+      <div id="conceptsView"><p class="empty">Enter a research question and click Generate.</p></div>
+    </div>
+    <div class="pane" id="readingPane">
+      <h2>Reading List</h2>
+      <div id="readingView"><p class="empty">Reading list will appear here after generation.</p></div>
+    </div>
+  </main>
+</div>
+
+<!-- Answer tab -->
+<div class="tab-section" id="answerMain">
+  <div class="answer-section" id="answerSection" style="margin:1rem;">
+    <div class="answer-header">
+      <div class="answer-header-label">Answer</div>
+      <div class="answer-legend">
+        <span class="legend-item"><span class="legend-concept">Underlined purple</span> = concept (click → Research Explorer)</span>
+        <span class="legend-item"><span class="legend-work">Underlined blue</span> = work (click → Research Explorer)</span>
+      </div>
+    </div>
+    <div id="answerView" class="answer-streaming"></div>
+  </div>
+  <div id="answerPlaceholder" style="display:none;"><p class="empty" style="padding:4rem 1rem;text-align:center;">Run the Research Explorer first — the answer will appear here.</p></div>
+</div>
+
+<script>
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const STORAGE_KEY = 'research-explorer-settings';
+const DB_NAME = 'research-explorer';
+const DB_VERSION = 1;
+
+const els = {
+  question: document.getElementById('questionInput'),
+  apiKey: document.getElementById('apiKeyInput'),
+  model: document.getElementById('modelInput'),
+  generateBtn: document.getElementById('generateBtn'),
+  clearBtn: document.getElementById('clearBtn'),
+  cacheHint: document.getElementById('cacheHint'),
+  status: document.getElementById('status'),
+  streamLog: document.getElementById('streamLog'),
+  conceptsView: document.getElementById('conceptsView'),
+  readingView: document.getElementById('readingView'),
+  answerSection: document.getElementById('answerSection'),
+  answerView: document.getElementById('answerView'),
+  answerQuestionLabel: document.getElementById('answerQuestionLabel'),
+  answerPlaceholder: document.getElementById('answerPlaceholder'),
+  searchBar: document.getElementById('searchBar'),
+  searchInput: document.getElementById('searchInput'),
+  catChips: document.getElementById('catChips'),
+  // QG
+  fieldInput: document.getElementById('fieldInput'),
+  subtopicInput: document.getElementById('subtopicInput'),
+  qgGenerateBtn: document.getElementById('qgGenerateBtn'),
+  qgCacheHint: document.getElementById('qgCacheHint'),
+  qgSearchBar: document.getElementById('qgSearchBar'),
+  qgSearchInput: document.getElementById('qgSearchInput'),
+  tierChips: document.getElementById('tierChips'),
+  qgResultsView: document.getElementById('qgResultsView'),
+};
+
+let state = null;   // { question, question_summary, concepts[], works[], answer }
+let qgState = null; // { field, field_summary, questions[] }
+let activeTab = 'qg';
+let activeCatFilter = 'all';
+let activeTierFilter = 'all';
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('tabQG').classList.toggle('active', tab === 'qg');
+  document.getElementById('tabResearch').classList.toggle('active', tab === 'research');
+  document.getElementById('tabAnswer').classList.toggle('active', tab === 'answer');
+  document.getElementById('qgControls2').classList.toggle('active', tab === 'qg');
+  document.getElementById('researchControls').classList.toggle('active', tab === 'research');
+  document.getElementById('answerControls').classList.toggle('active', tab === 'answer');
+  document.getElementById('qgMain').classList.toggle('active', tab === 'qg');
+  document.getElementById('researchMain').classList.toggle('active', tab === 'research');
+  document.getElementById('answerMain').classList.toggle('active', tab === 'answer');
+  document.getElementById('searchBar').classList.toggle('visible', tab === 'research' && !!state?.concepts?.length);
+  document.getElementById('qgSearchBar').classList.toggle('visible', tab === 'qg' && !!qgState);
+  setStatus('');
+  streamLogHide();
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    els.apiKey.value = s.apiKey || '';
+    els.model.value = s.model || 'claude-sonnet-4-6';
+  }catch(e){ console.warn('settings load failed', e); }
+}
+function saveSettings(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    apiKey: els.apiKey.value.trim(),
+    model: els.model.value.trim(),
+  }));
+}
+
+// ── IndexedDB ─────────────────────────────────────────────────────────────────
+let db = null;
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains('research')){
+        d.createObjectStore('research', {keyPath: 'key'});
+      }
+      if(!d.objectStoreNames.contains('questions')){
+        d.createObjectStore('questions', {keyPath: 'key'});
+      }
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbGet(store, key){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly').objectStore(store).get(key);
+    tx.onsuccess = () => resolve(tx.result);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+function dbPut(store, value){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite').objectStore(store).put(value);
+    tx.onsuccess = () => resolve(tx.result);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ── JSON repair (ported from concept-atlas) ───────────────────────────────────
+function repairJSON(text){
+  let s = text.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'');
+  const start = s.indexOf('{');
+  const end = s.lastIndexOf('}');
+  if(start >= 0 && end > start) s = s.slice(start, end + 1);
+  s = s.replace(/﻿/g,'').replace(/[​-‍ ]/g,'');
+  s = s.replace(/\/\/[^\n\r]*/g,'').replace(/\/\*[\s\S]*?\*\//g,'');
+  s = s.replace(/,(\s*[}\]])/g,'$1');
+  s = s.replace(/([{,]\s*)([a-zA-Z_$][\w$]*)(\s*:)/g,'$1"$2"$3');
+  s = s.replace(/'([^'\\]*)'/g,'"$1"');
+  s = escapeStringContents(s);
+  return s;
+}
+function escapeStringContents(s){
+  let out='',inStr=false;
+  for(let i=0;i<s.length;i++){
+    const c=s[i];
+    if(c==='\\'&&inStr){out+=c+(s[i+1]||'');i++;continue;}
+    if(c==='"'){
+      if(!inStr){inStr=true;out+=c;}
+      else{
+        let j=i+1;
+        while(j<s.length&&/\s/.test(s[j]))j++;
+        const next=s[j];
+        if(next===','||next==='}'||next===']'||next===':'){inStr=false;out+=c;}
+        else{out+='\\"';}
+      }
+    }else if(inStr&&c==='\n'){out+='\\n';}
+    else if(inStr&&c==='\r'){out+='\\r';}
+    else if(inStr&&c==='\t'){out+='\\t';}
+    else{out+=c;}
+  }
+  return out;
+}
+function parseJSONRobust(text){
+  const repaired=repairJSON(text);
+  try{return JSON.parse(repaired);}
+  catch(e1){
+    try{return JSON.parse(repaired.replace(/[\u0000-\u001F]/g,''));}
+    catch(e2){
+      const posMatch=e1.message.match(/position (\d+)/);
+      const pos=posMatch?parseInt(posMatch[1],10):0;
+      const ctx=pos?repaired.slice(Math.max(0,pos-80),pos+80):repaired.slice(0,200);
+      throw new Error(`JSON parse failed: ${e1.message}. Context: ${JSON.stringify(ctx)}`);
+    }
+  }
+}
+
+// ── Claude API ────────────────────────────────────────────────────────────────
+async function callClaudeStream(prompt, maxTokens, onChunk){
+  const apiKey = els.apiKey.value.trim();
+  if(!apiKey) throw new Error('Anthropic API key required.');
+  const model = els.model.value.trim() || 'claude-sonnet-4-6';
+  const res = await fetch(ANTHROPIC_URL, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    },
+    body:JSON.stringify({
+      model, max_tokens:maxTokens, stream:true,
+      messages:[{role:'user',content:prompt}],
+    }),
+  });
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(`Claude API ${res.status}: ${txt.slice(0,300)}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer='', full='';
+  while(true){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value,{stream:true});
+    const events = buffer.split('\n\n');
+    buffer = events.pop();
+    for(const evt of events){
+      for(const line of evt.split('\n')){
+        if(!line.startsWith('data: ')) continue;
+        try{
+          const parsed = JSON.parse(line.slice(6));
+          if(parsed.type==='content_block_delta'&&parsed.delta?.text){
+            full += parsed.delta.text;
+            onChunk(parsed.delta.text, full);
+          }
+        }catch(_){}
+      }
+    }
+  }
+  if(!full) throw new Error('Empty Claude streaming response.');
+  return full;
+}
+
+// ── Status / stream log helpers ───────────────────────────────────────────────
+function setStatus(msg, kind=''){
+  els.status.textContent = msg;
+  els.status.className = kind;
+}
+function streamLogShow(){
+  els.streamLog.classList.add('visible');
+  els.streamLog.textContent='';
+}
+function streamLogHide(){
+  els.streamLog.classList.remove('visible');
+  els.streamLog.textContent='';
+}
+function streamLogAppend(chunk){
+  els.streamLog.appendChild(document.createTextNode(chunk));
+  els.streamLog.scrollTop = els.streamLog.scrollHeight;
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function scholarUrl(title){ return `https://scholar.google.com/scholar?q=${encodeURIComponent(title)}`; }
+
+// ── Answer helpers ───────────────────────────────────────────────────────────
+function answerPrompt(question, conceptNames, workTitles){
+  return `Research question: "${question}"
+
+Concepts: ${conceptNames.join(', ')}
+Key works: ${workTitles.join(' | ')}
+
+Write a direct, substantive answer to the research question in 3–5 paragraphs. Synthesize the insights from the concepts and works listed above into a coherent answer. Mention specific concepts and works by their exact names as they appear in the lists above wherever they are relevant. Write in plain language for an intelligent non-specialist. Do not write in first person. Do not add a heading or title. Just the answer paragraphs.`;
+}
+
+function renderAnswer(){
+  if(!state?.answer){
+    els.answerSection.style.display = 'none';
+    els.answerPlaceholder.style.display = 'block';
+    els.answerQuestionLabel.textContent = '';
+    return;
+  }
+  els.answerSection.style.display = 'block';
+  els.answerPlaceholder.style.display = 'none';
+  // Show which question this answers
+  els.answerQuestionLabel.textContent = state.question_summary || state.question || '';
+  // Badge the Answer tab to signal it has content
+  document.getElementById('tabAnswer').style.color = 'var(--accent)';
+  // Build lookup sets for concepts and works (sorted longest-first to avoid partial matches)
+  const conceptNames = (state.concepts||[]).map(c => c.name).sort((a,b) => b.length - a.length);
+  const workTitles = (state.works||[]).map(w => w.title).sort((a,b) => b.length - a.length);
+
+  // Split answer into paragraphs, linkify each
+  const paragraphs = state.answer.split(/\n{2,}/).filter(p => p.trim());
+  const linked = paragraphs.map(para => {
+    let text = esc(para.trim());
+    // Link concept names (purple)
+    for(const name of conceptNames){
+      const safe = esc(name);
+      const re = new RegExp(safe.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+      text = text.replace(re,
+        `<span class="ref-concept" onclick="scrollToRef('concept','${safe.replace(/'/g,"\\'")}')">$&</span>`);
+    }
+    // Link work titles (blue) — only if not already inside a span
+    for(const title of workTitles){
+      const safe = esc(title);
+      const re = new RegExp('(?<!class="ref-[^"]*">)' + safe.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+      text = text.replace(re,
+        `<span class="ref-work" onclick="scrollToRef('work','${safe.replace(/'/g,"\\'")}')">$&</span>`);
+    }
+    return `<p>${text}</p>`;
+  }).join('');
+  els.answerView.innerHTML = linked;
+}
+
+function scrollToRef(type, name){
+  switchTab('research');
+  // Brief delay to let the tab render before scrolling
+  setTimeout(() => {
+    if(type === 'concept'){
+      const card = [...document.querySelectorAll('#conceptsView .concept-card')]
+        .find(el => el.querySelector('.concept-name')?.textContent.trim().startsWith(name.slice(0,30)));
+      if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.style.outline='2px solid var(--accent)'; setTimeout(()=>card.style.outline='',1500); }
+    } else {
+      const item = [...document.querySelectorAll('#readingView .work-item')]
+        .find(el => el.querySelector('.work-title')?.textContent.includes(name.slice(0,30)));
+      if(item){ item.scrollIntoView({behavior:'smooth',block:'center'}); item.style.outline='2px solid var(--accent2)'; setTimeout(()=>item.style.outline='',1500); }
+    }
+  }, 80);
+}
+
+// ── RESEARCH EXPLORER ─────────────────────────────────────────────────────────
+
+function conceptsPrompt(question){
+  return `Research question: "${question}"
+
+Identify ALL concepts — fields, frameworks, theories, methods, phenomena — that a researcher must understand to fully answer this research question. Include only load-bearing, genuinely necessary concepts. No padding.
+
+For each concept provide:
+- name: the concept name (concise, standard)
+- explanation: a full paragraph in plain language — what it is, the core ideas, key figures or milestones, and how it fits the broader intellectual landscape. Write for an intelligent non-specialist.
+- relevance: a full paragraph explaining specifically how this concept is needed to answer the research question — what angle it illuminates, what it enables the researcher to understand, what would be missing without it.
+
+Respond ONLY with valid JSON (no markdown, no commentary before or after):
+{ "question_summary": "one crisp sentence restating the question", "concepts": [ { "name": "...", "explanation": "...", "relevance": "..." } ] }`;
+}
+
+function worksPrompt(question, conceptNames){
+  return `Research question: "${question}"
+Relevant concepts: ${conceptNames.join(', ')}
+
+Generate a prioritized reading list of genuinely canonical works for answering this research question. Include the most important: seminal papers, key books, landmark empirical studies, essential methodological texts. No padding — only works that substantively advance understanding of this specific question.
+
+Organize works into STAGES for a sequential reading path:
+- Works in the SAME stage can be read IN PARALLEL (they are at the same level of prerequisite dependency).
+- Stages must be read IN ORDER — you cannot start stage N+1 until stage N is complete.
+- Stage 1 = entry-level foundations with no prerequisites. Higher stages build on earlier ones.
+
+For each work provide:
+- title: exact title
+- authors: array of author names (standard citation style)
+- year: publication year as integer
+- venue: journal name or publisher
+- category: exactly one of "foundational" | "empirical" | "theoretical" | "methodological" | "recent_breakthrough"
+- stage: integer starting at 1 (works in the same stage are parallel; stages are sequential)
+- stage_label: short label for this stage (e.g. "Foundations", "Core Theory", "Empirical Evidence", "Synthesis")
+- prerequisites: array of titles (from this list) that MUST be read before this work — empty array if none
+- explanation: a full paragraph in plain language — what the work argues, how it works, what it contributes to the field
+- relevance: a full paragraph explaining how this specific work helps answer the research question — what insight or framework it provides
+- concepts_covered: array of concept names from the list above that this work covers
+
+Respond ONLY with valid JSON (no markdown, no commentary):
+{ "works": [ { "title": "...", "authors": [...], "year": ..., "venue": "...", "category": "...", "stage": ..., "stage_label": "...", "prerequisites": [...], "explanation": "...", "relevance": "...", "concepts_covered": [...] } ] }`;
+}
+
+async function generate(){
+  const question = els.question.value.trim();
+  if(!question){ setStatus('Enter a research question.','error'); els.question.focus(); return; }
+  if(!els.apiKey.value.trim()){ setStatus('Enter your Anthropic API key.','error'); els.apiKey.focus(); return; }
+  saveSettings();
+  els.generateBtn.disabled = true;
+  setStatus('Checking cache…');
+  streamLogShow();
+
+  const cacheKey = question.toLowerCase();
+  try{
+    const cached = await dbGet('research', cacheKey);
+    if(cached){
+      state = cached.data;
+      els.cacheHint.textContent = 'loaded from cache';
+      els.cacheHint.classList.add('hit');
+      const hasConcepts = state.concepts?.length > 0;
+      const hasWorks = state.works?.length > 0;
+      const hasAnswer = !!state.answer;
+
+      if(hasConcepts && !hasWorks){
+        // Interrupted after stage 1 — resume from stage 2
+        setStatus('Concepts loaded from cache — resuming reading list…','info');
+        renderResearch();
+        streamLogShow();
+        streamLogAppend('=== Resuming Stage 2: Reading List ===\n');
+        const conceptNames = state.concepts.map(c => c.name);
+        const worksRaw = await callClaudeStream(worksPrompt(question, conceptNames), 32000, (chunk) => {
+          streamLogAppend(chunk);
+        });
+        let worksData;
+        try{ worksData = parseJSONRobust(worksRaw); }
+        catch(e){ throw new Error('Works parse failed: ' + e.message); }
+        state.works = (worksData.works || []).sort((a,b) => (a.stage||99) - (b.stage||99));
+        renderResearch();
+        await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+        // Fall through to generate answer below
+      } else if(hasConcepts && hasWorks && !hasAnswer){
+        // Interrupted after stage 2 — resume from stage 3
+        setStatus('Reading list loaded from cache — resuming answer…','info');
+        renderResearch();
+        streamLogShow();
+      } else {
+        // Fully cached
+        setStatus('Loaded from cache.');
+        streamLogHide();
+        renderResearch();
+        els.generateBtn.disabled = false;
+        return;
+      }
+      // Resume stage 3 if answer is missing
+      if(!state.answer){
+        streamLogAppend('=== Resuming Stage 3: Answer ===\n');
+        const cNames = state.concepts.map(c => c.name);
+        const wTitles = state.works.map(w => w.title);
+        els.answerSection.classList.add('visible');
+        els.answerView.textContent = '';
+        let answerFull = '';
+        await callClaudeStream(answerPrompt(question, cNames, wTitles), 8000, (chunk) => {
+          answerFull += chunk;
+          streamLogAppend(chunk);
+        });
+        state.answer = answerFull;
+        renderAnswer();
+        await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+        setStatus('Done.');
+        streamLogHide();
+      }
+      els.generateBtn.disabled = false;
+      return;
+    }
+    els.cacheHint.textContent = '';
+    els.cacheHint.classList.remove('hit');
+
+    // Stage 1: concepts
+    setStatus('Stage 1/2 — generating concepts…','info');
+    streamLogAppend('=== Stage 1: Concepts ===\n');
+    const conceptsRaw = await callClaudeStream(conceptsPrompt(question), 14000, (chunk) => {
+      streamLogAppend(chunk);
+    });
+    streamLogAppend('\n\n');
+
+    let conceptsData;
+    try{ conceptsData = parseJSONRobust(conceptsRaw); }
+    catch(e){ throw new Error('Concepts parse failed: ' + e.message); }
+
+    state = {
+      question,
+      question_summary: conceptsData.question_summary || question,
+      concepts: conceptsData.concepts || [],
+      works: [],
+    };
+    // Save concepts immediately — so they survive even if stage 2 fails
+    await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+    renderResearch();
+
+    // Stage 2: reading list
+    setStatus('Stage 2/2 — generating reading list…','info');
+    streamLogAppend('=== Stage 2: Reading List ===\n');
+    const conceptNames = state.concepts.map(c => c.name);
+    const worksRaw = await callClaudeStream(worksPrompt(question, conceptNames), 32000, (chunk) => {
+      streamLogAppend(chunk);
+    });
+    streamLogAppend('\n');
+
+    let worksData;
+    try{ worksData = parseJSONRobust(worksRaw); }
+    catch(e){ throw new Error('Works parse failed: ' + e.message); }
+
+    state.works = (worksData.works || []).sort((a,b) => (a.stage||99) - (b.stage||99));
+    renderResearch();
+
+    // Save stage 2 result
+    await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+
+    // Stage 3: synthesized answer
+    setStatus('Stage 3/3 — writing answer…','info');
+    streamLogAppend('=== Stage 3: Answer ===\n');
+    const workTitles = state.works.map(w => w.title);
+    els.answerView.textContent = '';
+    let answerFull = '';
+    await callClaudeStream(answerPrompt(question, conceptNames, workTitles), 8000, (chunk) => {
+      answerFull += chunk;
+      streamLogAppend(chunk);
+    });
+    state.answer = answerFull;
+    renderAnswer();
+
+    // Final save with answer included
+    await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+    setStatus('Done.');
+    streamLogHide();
+  }catch(e){
+    setStatus(e.message, 'error');
+    console.error(e);
+  }finally{
+    els.generateBtn.disabled = false;
+  }
+}
+
+function clearResearch(){
+  state = null;
+  els.question.value = '';
+  els.cacheHint.textContent = '';
+  setStatus('');
+  streamLogHide();
+  els.answerSection.style.display = 'none';
+  els.answerView.innerHTML = '';
+  els.answerQuestionLabel.textContent = '';
+  els.answerPlaceholder.style.display = 'block';
+  document.getElementById('tabAnswer').style.color = '';
+  els.conceptsView.innerHTML = '<p class="empty">Enter a research question and click Generate.</p>';
+  els.readingView.innerHTML = '<p class="empty">Reading list will appear here after generation.</p>';
+  els.searchBar.classList.remove('visible');
+}
+
+function renderResearch(){
+  if(!state) return;
+  renderAnswer();
+  renderConcepts();
+  renderWorks();
+  els.searchBar.classList.add('visible');
+  buildCatChips();
+  applyFilters();
+}
+
+function renderConcepts(){
+  if(!state.concepts.length){
+    els.conceptsView.innerHTML = '<p class="empty">No concepts generated yet.</p>';
+    return;
+  }
+  let html = '';
+  for(const c of state.concepts){
+    html += `<div class="concept-card" data-name="${esc(c.name.toLowerCase())}">
+      <div class="concept-name">${esc(c.name)}<a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a></div>
+      <div class="section-label">What it is</div>
+      <div class="section-body">${esc(c.explanation||'')}</div>
+      <div class="relevance-block">
+        <div class="section-label">Why it matters for this question</div>
+        <div class="section-body">${esc(c.relevance||'')}</div>
+      </div>
+    </div>`;
+  }
+  els.conceptsView.innerHTML = html;
+}
+
+function renderWorks(){
+  if(!state.works.length){
+    els.readingView.innerHTML = '<p class="empty">Generating reading list…</p>';
+    return;
+  }
+  // Group by stage
+  const stageMap = new Map();
+  for(const w of state.works){
+    const s = w.stage || 1;
+    if(!stageMap.has(s)) stageMap.set(s, { label: w.stage_label || `Stage ${s}`, works: [] });
+    stageMap.get(s).works.push(w);
+  }
+  const stages = [...stageMap.entries()].sort((a,b) => a[0]-b[0]);
+
+  let html = '';
+  stages.forEach(([stageNum, stageData], idx) => {
+    const isParallel = stageData.works.length > 1;
+    const stageId = `stage-${stageNum}`;
+    // Build work cards
+    let cardsHtml = '';
+    for(const w of stageData.works){
+      const catClass = 'cat-' + (w.category||'foundational').replace(/\s/g,'_');
+      const conceptChips = (w.concepts_covered||[]).map(cn => `<span class="concept-chip">${esc(cn)}</span>`).join('');
+      const prereqChips = (w.prerequisites||[]).map(t => `<span class="prereq-work-chip">${esc(t)}</span>`).join('');
+      const authStr = Array.isArray(w.authors) ? w.authors.slice(0,4).join(', ') + (w.authors.length>4?' et al.':'') : (w.authors||'');
+      const venue = w.venue ? ` · ${esc(w.venue)}` : '';
+      cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}">
+        <div class="work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)}</a></div>
+        <div class="work-meta">
+          <span class="cat-badge ${catClass}">${esc(w.category||'').replace('_',' ')}</span>
+          ${esc(authStr)} · ${w.year||''}${venue}
+        </div>
+        ${prereqChips ? `<div class="prereq-works"><span class="prereq-label">Read first:</span>${prereqChips}</div>` : ''}
+        <div class="section-label" style="margin-top:0.6rem;">What this work does</div>
+        <div class="section-body">${esc(w.explanation||'')}</div>
+        <div class="relevance-block">
+          <div class="section-label">How it answers your question</div>
+          <div class="section-body">${esc(w.relevance||'')}</div>
+        </div>
+        ${conceptChips ? `<div class="concepts-chips">${conceptChips}</div>` : ''}
+      </div>`;
+    }
+    if(idx > 0){
+      html += `<div class="then-marker">↓ &nbsp; THEN &nbsp; ↓</div>`;
+    }
+    html += `<div class="stage-block" id="${stageId}" data-stage="${stageNum}">
+      <div class="stage-header">
+        <div class="stage-num">${stageNum}</div>
+        <div class="stage-label">${esc(stageData.label)}</div>
+        ${isParallel ? `<span class="stage-parallel-tag">Read in parallel</span>` : ''}
+      </div>
+      <div class="stage-items${isParallel?'':' single'}">${cardsHtml}</div>
+    </div>`;
+  });
+  els.readingView.innerHTML = html;
+}
+
+function buildCatChips(){
+  if(!state||!state.works.length) return;
+  const cats = ['all', ...new Set(state.works.map(w => w.category).filter(Boolean))];
+  els.catChips.innerHTML = cats.map(c =>
+    `<span class="chip${c===activeCatFilter?' active':''}" onclick="setCatFilter('${c}')">${c==='all'?'All':c.replace('_',' ')}</span>`
+  ).join('');
+}
+
+function setCatFilter(cat){
+  activeCatFilter = cat;
+  buildCatChips();
+  applyFilters();
+}
+
+function applyFilters(){
+  if(!state) return;
+  const kw = (els.searchInput.value||'').toLowerCase().trim();
+  // Concepts: keyword filter only
+  document.querySelectorAll('#conceptsView .concept-card').forEach(el => {
+    const fullText = el.textContent.toLowerCase();
+    el.classList.toggle('hidden', !(!kw || fullText.includes(kw)));
+  });
+  // Works: category + keyword filter per card
+  document.querySelectorAll('#readingView .work-item').forEach(el => {
+    const cat = el.dataset.cat || '';
+    const text = el.dataset.text || '';
+    const catMatch = activeCatFilter === 'all' || cat === activeCatFilter;
+    const kwMatch = !kw || text.includes(kw);
+    el.classList.toggle('hidden', !(catMatch && kwMatch));
+  });
+  // Hide entire stage block if all its work cards are hidden; also hide THEN markers
+  document.querySelectorAll('#readingView .stage-block').forEach(block => {
+    const visible = [...block.querySelectorAll('.work-item')].some(el => !el.classList.contains('hidden'));
+    block.classList.toggle('hidden', !visible);
+  });
+  // Hide THEN markers that are directly before a hidden stage or after a hidden stage
+  const stageBlocks = [...document.querySelectorAll('#readingView .stage-block')];
+  const thenMarkers = [...document.querySelectorAll('#readingView .then-marker')];
+  thenMarkers.forEach((marker, i) => {
+    // marker[i] sits between stageBlocks[i] and stageBlocks[i+1]
+    const prevHidden = stageBlocks[i]?.classList.contains('hidden');
+    const nextHidden = stageBlocks[i+1]?.classList.contains('hidden');
+    marker.style.display = (prevHidden || nextHidden) ? 'none' : '';
+  });
+}
+
+// ── QUESTION GENERATOR ────────────────────────────────────────────────────────
+
+const TIERS = ['foundational','conceptual','applied','research'];
+const TIER_LABELS = { foundational:'Foundational', conceptual:'Conceptual', applied:'Applied', research:'Research' };
+const TIER_DESC = {
+  foundational:'Definitional & factual — suitable for beginners',
+  conceptual:'Why/how questions — upper undergrad level',
+  applied:'Case studies & problem-solving — graduate level',
+  research:'Open problems & synthesis — PhD / researcher level',
+};
+
+function questionsPrompt(field, subtopic){
+  const sub = subtopic ? `\nSub-topic focus: "${subtopic}"` : '';
+  return `Academic field: "${field}"${sub}
+
+Generate a comprehensive question bank spanning from foundational to research level. Cover the full intellectual range of this field. Include only questions that are intellectually substantive and genuinely test understanding (no trivial fill-in-the-blank).
+
+For each question provide:
+- question: the question text (clear, complete, intellectually engaging)
+- tier: exactly one of "foundational" | "conceptual" | "applied" | "research"
+- explanation: 1-2 sentences describing what a complete, high-quality answer would cover
+- concepts_needed: array of prerequisite concept names a student needs to answer this well
+- difficulty: integer 1 (easiest) to 10 (hardest)
+
+Respond ONLY with valid JSON (no markdown, no commentary):
+{ "field_summary": "one sentence overview of the field and its core concerns", "questions": [ { "question": "...", "tier": "...", "explanation": "...", "concepts_needed": [...], "difficulty": ... } ] }`;
+}
+
+async function generateQuestions(){
+  const field = els.fieldInput.value.trim();
+  if(!field){ setStatus('Enter an academic field.','error'); els.fieldInput.focus(); return; }
+  if(!els.apiKey.value.trim()){ setStatus('Enter your Anthropic API key.','error'); els.apiKey.focus(); return; }
+  saveSettings();
+  els.qgGenerateBtn.disabled = true;
+  setStatus('Checking cache…');
+  streamLogShow();
+
+  const subtopic = els.subtopicInput.value.trim();
+  const cacheKey = field.toLowerCase() + '|' + subtopic.toLowerCase();
+  try{
+    const cached = await dbGet('questions', cacheKey);
+    if(cached){
+      qgState = cached.data;
+      els.qgCacheHint.textContent = 'loaded from cache';
+      els.qgCacheHint.classList.add('hit');
+      setStatus('Loaded from cache.');
+      streamLogHide();
+      renderQuestions();
+      els.qgGenerateBtn.disabled = false;
+      return;
+    }
+    els.qgCacheHint.textContent = '';
+    els.qgCacheHint.classList.remove('hit');
+
+    setStatus('Generating question bank…','info');
+    const raw = await callClaudeStream(questionsPrompt(field, subtopic), 20000, (chunk) => {
+      streamLogAppend(chunk);
+    });
+
+    let data;
+    try{ data = parseJSONRobust(raw); }
+    catch(e){ throw new Error('Questions parse failed: ' + e.message); }
+
+    qgState = {
+      field,
+      subtopic,
+      field_summary: data.field_summary || '',
+      questions: data.questions || [],
+    };
+
+    await dbPut('questions', { key: cacheKey, data: qgState, ts: Date.now() });
+    setStatus('Done.');
+    streamLogHide();
+    renderQuestions();
+  }catch(e){
+    setStatus(e.message,'error');
+    console.error(e);
+  }finally{
+    els.qgGenerateBtn.disabled = false;
+  }
+}
+
+function clearQG(){
+  qgState = null;
+  els.fieldInput.value = '';
+  els.subtopicInput.value = '';
+  els.qgCacheHint.textContent = '';
+  setStatus('');
+  streamLogHide();
+  els.qgResultsView.innerHTML = '<p class="empty" style="padding:4rem 1rem;text-align:center;">Enter an academic field and click Generate.</p>';
+  els.qgSearchBar.classList.remove('visible');
+}
+
+function renderQuestions(){
+  if(!qgState) return;
+  const counts = {};
+  for(const t of TIERS) counts[t] = qgState.questions.filter(q => q.tier === t).length;
+
+  let html = '';
+  if(qgState.field_summary){
+    html += `<div class="field-summary">${esc(qgState.field_summary)}</div>`;
+  }
+  html += `<button class="export-btn" onclick="exportQuestions()">Export as Markdown</button>`;
+
+  for(const tier of TIERS){
+    const qs = qgState.questions.filter(q => q.tier === tier);
+    if(!qs.length) continue;
+    let cardsHtml = '';
+    for(const q of qs){
+      const prereqs = (q.concepts_needed||[]).map(p => `<span class="prereq-chip">${esc(p)}</span>`).join('');
+      cardsHtml += `<div class="q-card" data-tier="${tier}" data-text="${esc((q.question+' '+(q.explanation||'')).toLowerCase())}">
+        <div class="q-text">${esc(q.question)}</div>
+        ${q.explanation ? `<div class="q-explanation">${esc(q.explanation)}</div>` : ''}
+        <div class="q-footer">
+          <span class="difficulty-badge">Difficulty ${q.difficulty||'?'}/10</span>
+          ${prereqs}
+        </div>
+      </div>`;
+    }
+    html += `<div class="tier-section tier-${tier}" id="tier-${tier}">
+      <div class="tier-header" onclick="toggleTier('${tier}')">
+        <span class="tier-dot"></span>
+        <span class="tier-title">${TIER_LABELS[tier]}</span>
+        <span class="tier-count">${counts[tier]} question${counts[tier]!==1?'s':''}</span>
+        <span class="tier-arrow">▾</span>
+      </div>
+      <div class="tier-body">${cardsHtml}</div>
+    </div>`;
+  }
+  els.qgResultsView.innerHTML = html;
+  els.qgSearchBar.classList.add('visible');
+  buildTierChips();
+}
+
+function toggleTier(tier){
+  const el = document.getElementById('tier-' + tier);
+  if(el) el.classList.toggle('collapsed');
+}
+
+function buildTierChips(){
+  const tiers = ['all', ...TIERS];
+  els.tierChips.innerHTML = tiers.map(t =>
+    `<span class="chip${t===activeTierFilter?' active':''}" onclick="setTierFilter('${t}')">${t==='all'?'All Tiers':TIER_LABELS[t]||t}</span>`
+  ).join('');
+}
+
+function setTierFilter(tier){
+  activeTierFilter = tier;
+  buildTierChips();
+  applyQGFilters();
+}
+
+function applyQGFilters(){
+  if(!qgState) return;
+  const kw = (els.qgSearchInput.value||'').toLowerCase().trim();
+  document.querySelectorAll('#qgResultsView .q-card').forEach(el => {
+    const tier = el.dataset.tier || '';
+    const text = el.dataset.text || '';
+    const tierMatch = activeTierFilter === 'all' || tier === activeTierFilter;
+    const kwMatch = !kw || text.includes(kw) || el.textContent.toLowerCase().includes(kw);
+    el.classList.toggle('hidden', !(tierMatch && kwMatch));
+  });
+}
+
+function exportQuestions(){
+  if(!qgState) return;
+  const lines = [`# Question Bank: ${qgState.field}${qgState.subtopic?' — '+qgState.subtopic:''}`, ''];
+  if(qgState.field_summary) lines.push(`> ${qgState.field_summary}`, '');
+  for(const tier of TIERS){
+    const qs = qgState.questions.filter(q => q.tier === tier);
+    if(!qs.length) continue;
+    lines.push(`## ${TIER_LABELS[tier]}`, '');
+    qs.forEach((q, i) => {
+      lines.push(`${i+1}. **${q.question}**`);
+      if(q.explanation) lines.push(`   *${q.explanation}*`);
+      if(q.difficulty) lines.push(`   Difficulty: ${q.difficulty}/10`);
+      if(q.concepts_needed?.length) lines.push(`   Prerequisites: ${q.concepts_needed.join(', ')}`);
+      lines.push('');
+    });
+  }
+  const md = lines.join('\n');
+  navigator.clipboard.writeText(md).then(() => {
+    setStatus('Copied to clipboard!');
+    setTimeout(() => setStatus(''), 2000);
+  }).catch(() => {
+    // fallback: open in new window
+    const w = window.open('', '_blank');
+    w.document.write('<pre style="white-space:pre-wrap;font-family:monospace;padding:2rem;">' + esc(md) + '</pre>');
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+openDB().then(() => {
+  loadSettings();
+}).catch(e => console.warn('IndexedDB init failed:', e));
+</script>
+</body>
+</html>

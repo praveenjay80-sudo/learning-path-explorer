@@ -1,61 +1,82 @@
-# Concept Atlas
+# Academic Research Tools
 
-A single-file static HTML app that takes any academic topic and produces a concept graph + canonical works + staged reading order.
+Two single-file static HTML apps powered by the Anthropic Claude API. No build step, no backend dependencies — vanilla HTML/CSS/JS served by a minimal Node.js server for Railway deployment.
 
-## File
+---
 
-- **`concept-atlas.html`** — the entire app (~1400 lines, single file, no build step, no backend)
+## Apps
 
-## What it does
+### 1. Research Explorer — `research-explorer.html`
 
-Enter any academic topic (e.g. "Machine Learning") → get:
+Enter any research question → get a full concept map, staged reading list, and a synthesized answer — all anchored to the specific question.
 
-1. **Concept graph** (left pane) — prerequisites, core concepts, and next-level successors. Each concept links to OpenAlex. Load-bearing concepts only, no padding.
-2. **Canonical works per concept** (center pane) — 3-5 genuinely canonical works per concept, categorized as seminal / breakthrough / pedagogical, with Google Scholar links. Claude curates the canon directly (not OpenAlex — OpenAlex's title.search was too literal and missed canonical textbooks).
-3. **Staged reading order** (right pane) — works arranged into stages. Items within a stage can be read in parallel; stages are strictly sequential. Each item has a forward-facing bridge sentence.
+**Three tabs:**
 
-## Architecture
+1. **Question Generator** — enter an academic field (+ optional sub-topic) → tiered question bank from Foundational through Research level. Each question includes an explanation of what a complete answer covers, prerequisite concepts, and a difficulty rating.
 
-- **Single static HTML file** — vanilla HTML/CSS/JS, no framework, no build step
+2. **Research Explorer** — enter a research question → two panes:
+   - *Left*: all load-bearing concepts with plain-language explanation + how each concept addresses the question
+   - *Right*: reading list organized into sequential stages (works within a stage are parallel); each work has a plain-language summary, "how it answers your question" paragraph, prerequisite chips, and a Google Scholar link
+
+3. **Answer** — synthesized 3–5 paragraph answer to the research question, with inline clickable links to concepts (purple) and works (blue) that jump to the Research Explorer tab
+
+**Generation flow (3 stages, all streamed):**
+1. Claude generates concept list — saved to IndexedDB immediately
+2. Claude generates staged reading list — saved to IndexedDB immediately
+3. Claude writes synthesized answer — full state saved to IndexedDB
+
+**Cache resilience:** if generation is interrupted at any stage, the next run resumes from where it left off (no repeated API calls for already-completed stages).
+
+---
+
+### 2. Concept Atlas — `concept-atlas.html`
+
+Enter any academic topic → concept graph + canonical works + staged reading order.
+
+**Three panes:**
+1. *Left*: concept graph — prerequisites, core concepts, successors. Each concept links to OpenAlex.
+2. *Center*: canonical works per concept — seminal / breakthrough / pedagogical, with Google Scholar links
+3. *Right*: staged reading sequence — parallel within stage, sequential between stages, with bridge sentences
+
+**Generation flow (3 stages, streamed):**
+1. Claude generates concept graph — streamed
+2. OpenAlex concept tags fetched per concept (parallel, optional)
+3. Claude generates canonical works per concept (parallel)
+4. Claude sequences all works into staged reading order — streamed
+
+---
+
+## Architecture (both apps)
+
+- **Single static HTML files** — vanilla HTML/CSS/JS, no framework, no build step
 - **Anthropic Claude API** — user-supplied key, called browser-side via `anthropic-dangerous-direct-browser-access` header
-- **OpenAlex API** — optional, user-supplied key, used only for concept tag enrichment (not for works)
-- **IndexedDB** — topic-keyed cache so repeat queries load instantly
-- **Streaming** — Anthropic SSE for Stages 1 and 3 (concept graph and reading sequence)
+- **IndexedDB** — query-keyed cache so repeat queries load instantly
+- **Streaming** — Anthropic SSE via fetch + ReadableStream
 
-## Generation flow
+## API keys
 
-1. **Stage 1**: Claude generates concept graph (predecessors / core / successors) — streamed
-2. **Stage 1b**: OpenAlex concept tags fetched per concept (parallel, if key present)
-3. **Stage 2**: Claude generates canonical works per concept (parallel, 3-5 works each)
-4. **Stage 3**: Claude sequences all works into staged reading order — streamed
+- **Anthropic API key** (required) — for all Claude calls; entered in header, persisted to localStorage
+- **OpenAlex API key** (optional, Concept Atlas only) — for concept tag enrichment
 
-## Key design choices
+## Routes (server.js)
 
-- **No OpenAlex for works** — Claude curates the canon directly. OpenAlex's title.search missed canonical textbooks whose titles don't contain the exact concept name (e.g. Strang's "Introduction to Linear Algebra" doesn't title-match "Linear Algebra").
-- **No numerical caps** — prompts say "include ONLY genuinely canonical/load-bearing items. No numerical cap. Do not pad." The count is whatever the quality bar produces.
-- **Google Scholar links on every work** — no API key needed, just `scholar.google.com/scholar?q=<title>`
-- **Concept names hyperlink to OpenAlex** — `openalex.org/concepts?search=<name>` (no key needed)
-- **Corrections UI** — users can add missing works, mark wrong edges, add missing concepts. All corrections persist in IndexedDB.
+- `/` → `research-explorer.html` (main app)
+- `/research-explorer` → `research-explorer.html`
+- `/concept-atlas` → `concept-atlas.html`
 
-## API keys needed
+## How to run locally
 
-- **Anthropic API key** (required) — for Claude calls
-- **OpenAlex API key** (optional) — only for concept tag enrichment
-
-Both are entered in the header and persisted to localStorage.
-
-## How to run
-
-Open `concept-atlas.html` directly in a browser, or serve the folder locally. No build step.
+Open either HTML file directly in a browser. No build step needed.
 
 ## How to deploy
 
-The app is a single static HTML file. For Railway deployment, a minimal Node.js server (`server.js`) serves the file. See `server.js` and `package.json`.
+Push to GitHub — Railway auto-deploys via `node server.js`. See `railway.json`.
 
 ## Tech stack
 
 - Vanilla HTML/CSS/JS (no framework, no build step)
-- Anthropic Messages API (Claude)
-- OpenAlex API (concepts endpoint, optional)
+- Anthropic Messages API (claude-sonnet-4-6 default)
+- OpenAlex API (Concept Atlas only, optional)
 - IndexedDB for persistence
 - SSE streaming via fetch + ReadableStream
+- Node.js (server.js, Railway only)

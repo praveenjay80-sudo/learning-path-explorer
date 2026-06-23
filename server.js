@@ -3,25 +3,35 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const HTML_FILE = path.join(__dirname, 'concept-atlas.html');
+
+const ROUTES = {
+  '/':                    'research-explorer.html',
+  '/research-explorer':   'research-explorer.html',
+  '/research-explorer.html': 'research-explorer.html',
+  '/concept-atlas':       'concept-atlas.html',
+  '/concept-atlas.html':  'concept-atlas.html',
+};
 
 const server = http.createServer((req, res) => {
-  if (req.url === '/' || req.url === '/index.html' || req.url === '/concept-atlas.html') {
-    fs.readFile(HTML_FILE, (err, data) => {
+  const file = ROUTES[req.url.split('?')[0]];
+  if (file) {
+    fs.readFile(path.join(__dirname, file), (err, data) => {
       if (err) {
         res.writeHead(500, {'Content-Type': 'text/plain'});
-        res.end('Error loading concept-atlas.html');
+        res.end('Error loading ' + file);
         return;
       }
       res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
       res.end(data);
     });
   } else {
-    res.writeHead(404, {'Content-Type': 'text/plain'});
-    res.end('Not found. The app is at /');
+    res.writeHead(302, {'Location': '/'});
+    res.end();
   }
 });
 
 server.listen(PORT, () => {
-  console.log(`Concept Atlas running on port ${PORT}`);
+  console.log(`Academic Research Tools running on port ${PORT}`);
+  console.log(`  /                → research-explorer.html`);
+  console.log(`  /concept-atlas   → concept-atlas.html`);
 });

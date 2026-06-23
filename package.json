@@ -1,7 +1,7 @@
 {
-  "name": "concept-atlas",
-  "version": "1.0.0",
-  "description": "Academic concept graph + canonical works + staged reading order, powered by Claude",
+  "name": "academic-research-tools",
+  "version": "2.0.0",
+  "description": "Research Explorer + Concept Atlas — Claude-powered academic research tools",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
