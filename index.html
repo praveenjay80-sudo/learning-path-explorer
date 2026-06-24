@@ -656,9 +656,129 @@
     .lib-kw-status { padding:.32rem 1rem; font-size:.7rem; color:var(--text-muted); background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.65rem; }
     .lib-kw-bar { flex:1; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
     .lib-kw-bar-fill { height:100%; background:var(--core-header); transition:width .25s; border-radius:2px; }
+
+  /* ── Stream status ── */
+  .stream-status { font-size:.75rem; color:var(--text-muted); text-align:center; min-height:1em; margin-top:.25rem; }
+  .cache-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.7rem; font-weight:700; padding:.1rem .45rem; border-radius:999px; background:rgba(21,128,61,.12); color:#15803d; border:1px solid rgba(21,128,61,.3); }
+
+  /* ── Personalization modal ── */
+  .person-questions { display:flex; flex-direction:column; gap:.875rem; }
+  .person-q { display:flex; flex-direction:column; gap:.35rem; }
+  .person-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); }
+  .person-opts { display:flex; flex-wrap:wrap; gap:.35rem; }
+  .person-opt { padding:.3rem .75rem; border:1px solid var(--border); border-radius:999px; font-size:.8rem; font-family:inherit; cursor:pointer; background:var(--surface2); color:var(--text); transition:border-color .13s,background .13s,color .13s; }
+  .person-opt:hover { border-color:var(--core-header); color:var(--core-header); }
+  .person-opt.active { background:var(--core-header); color:#fff; border-color:var(--core-header); }
+  .person-prior { width:100%; padding:.45rem .75rem; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); font-size:.85rem; font-family:inherit; transition:border-color .15s; }
+  .person-prior:focus { outline:none; border-color:var(--core-header); box-shadow:0 0 0 3px color-mix(in srgb,var(--core-header) 15%,transparent); }
+  .person-generate-row { display:flex; gap:.75rem; margin-top:1.25rem; align-items:center; }
+  .person-generate-row .primary { flex:1; }
+
+  /* ── Sub-explore drawer ── */
+  .sub-explore-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:900; display:none; align-items:stretch; justify-content:flex-end; }
+  .sub-explore-overlay.visible { display:flex; }
+  .sub-explore-panel { width:min(700px,100vw); height:100vh; background:var(--bg); border-left:1px solid var(--border); display:flex; flex-direction:column; animation:slideInRight .2s cubic-bezier(.34,1.1,.64,1); overflow:hidden; }
+  @keyframes slideInRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+  .sub-explore-header { display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.25rem; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; gap:1rem; }
+  .sub-explore-crumb { display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; flex:1; min-width:0; }
+  .sub-explore-crumb-item { font-size:.82rem; font-weight:700; color:var(--text-muted); cursor:pointer; transition:color .13s; }
+  .sub-explore-crumb-item:hover { color:var(--core-header); }
+  .sub-explore-crumb-sep { color:var(--border); font-size:1rem; flex-shrink:0; }
+  .sub-explore-crumb-current { font-size:.88rem; font-weight:800; color:var(--core-header); }
+  .sub-explore-close { background:none; border:1px solid var(--border); border-radius:8px; padding:.28rem .6rem; font-size:.8rem; cursor:pointer; color:var(--text-muted); font-family:inherit; transition:all .13s; flex-shrink:0; }
+  .sub-explore-close:hover { border-color:var(--text); color:var(--text); }
+  .sub-explore-body { flex:1; overflow-y:auto; padding:1.25rem 1.25rem 3rem; }
+  .sub-explore-title { font-size:1.25rem; font-weight:800; letter-spacing:-.02em; margin-bottom:1.25rem; color:var(--core-header); line-height:1.3; }
+  .sub-explore-loader { height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-bottom:.75rem; }
+  .sub-explore-loader-bar { height:100%; width:40%; background:linear-gradient(90deg,var(--core-header),var(--succ-header),var(--core-header)); border-radius:2px; animation:slide 1.4s ease-in-out infinite; }
+  .sub-explore-status { font-size:.8rem; color:var(--text-muted); text-align:center; margin-bottom:1.5rem; }
+
+  /* ── Chat panel ── */
+  .chat-panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-top:2rem; overflow:hidden; display:none; }
+  .chat-panel.visible { display:block; }
+  .chat-header { display:flex; align-items:center; justify-content:space-between; padding:.875rem 1.25rem; background:var(--surface2); border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+  .chat-title { font-size:.9rem; font-weight:700; color:var(--text); }
+  .chat-toggle-btn { background:none; border:none; color:var(--text-muted); font-size:.8rem; cursor:pointer; font-family:inherit; }
+  .chat-body.collapsed { display:none; }
+  .chat-quick-chips { display:flex; flex-wrap:wrap; gap:.35rem; padding:.625rem .875rem .5rem; border-bottom:1px solid var(--border); }
+  .chat-quick-chip { padding:.22rem .65rem; border:1px solid var(--border); border-radius:999px; font-size:.72rem; font-family:inherit; cursor:pointer; background:var(--surface2); color:var(--text-muted); transition:all .13s; white-space:nowrap; }
+  .chat-quick-chip:hover { border-color:var(--core-header); color:var(--core-header); background:color-mix(in srgb,var(--core-header) 8%,var(--surface)); }
+  .chat-messages { max-height:380px; overflow-y:auto; padding:.75rem .875rem; display:flex; flex-direction:column; gap:.65rem; }
+  .chat-msg { display:flex; gap:.55rem; align-items:flex-start; }
+  .chat-msg.user { flex-direction:row-reverse; }
+  .chat-avatar { width:1.6rem; height:1.6rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.7rem; flex-shrink:0; font-weight:800; background:var(--core-header); color:#fff; }
+  .chat-msg.ai .chat-avatar { background:var(--surface2); border:1px solid var(--border); color:var(--text-muted); }
+  .chat-bubble { max-width:82%; padding:.55rem .8rem; border-radius:12px; font-size:.84rem; line-height:1.6; color:var(--text); }
+  .chat-msg.user .chat-bubble { background:var(--core-header); color:#fff; border-radius:12px 12px 2px 12px; }
+  .chat-msg.ai .chat-bubble { background:var(--surface2); border:1px solid var(--border); border-radius:12px 12px 12px 2px; }
+  .chat-streaming .chat-bubble::after { content:'▋'; opacity:.7; animation:blink 1s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:.7} 50%{opacity:0} }
+  .chat-input-row { display:flex; gap:.5rem; padding:.625rem .875rem; border-top:1px solid var(--border); }
+  .chat-input { flex:1; padding:.5rem .8rem; border:1px solid var(--border); border-radius:8px; background:var(--surface2); color:var(--text); font-size:.875rem; font-family:inherit; transition:border-color .15s; }
+  .chat-input:focus { outline:none; border-color:var(--core-header); }
+  .chat-send { padding:.5rem 1rem; background:var(--core-header); color:#fff; border:none; border-radius:8px; font-size:.85rem; font-weight:700; cursor:pointer; font-family:inherit; }
+  .chat-send:hover { opacity:.88; }
+  .chat-send:disabled { opacity:.4; cursor:not-allowed; }
+  .chat-empty { font-size:.83rem; color:var(--text-muted); text-align:center; padding:1.25rem; font-style:italic; }
   </style>
 </head>
 <body>
+
+<!-- Personalization Modal -->
+<div class="modal-backdrop" id="personModal">
+  <div class="modal-card" style="max-width:540px">
+    <div class="modal-eyebrow">Personalize your learning path</div>
+    <div id="personTopic" class="modal-topic" style="font-size:1.05rem;margin-bottom:1.25rem"></div>
+    <div class="person-questions">
+      <div class="person-q">
+        <div class="person-label">Background level</div>
+        <div class="person-opts" id="pBackground">
+          <button class="person-opt" data-v="complete beginner">Beginner</button>
+          <button class="person-opt" data-v="some exposure">Some exposure</button>
+          <button class="person-opt active" data-v="intermediate">Intermediate</button>
+          <button class="person-opt" data-v="advanced">Advanced</button>
+        </div>
+      </div>
+      <div class="person-q">
+        <div class="person-label">Goal</div>
+        <div class="person-opts" id="pGoal">
+          <button class="person-opt" data-v="understand the big picture">Big picture</button>
+          <button class="person-opt active" data-v="build practical skills">Practical skills</button>
+          <button class="person-opt" data-v="reach research level">Research level</button>
+          <button class="person-opt" data-v="exam or course prep">Exam prep</button>
+        </div>
+      </div>
+      <div class="person-q">
+        <div class="person-label">Time available</div>
+        <div class="person-opts" id="pTime">
+          <button class="person-opt" data-v="a few hours">A few hours</button>
+          <button class="person-opt" data-v="a few weeks">A few weeks</button>
+          <button class="person-opt active" data-v="a few months">A few months</button>
+          <button class="person-opt" data-v="a year or more">A year+</button>
+        </div>
+      </div>
+      <div class="person-q">
+        <div class="person-label">Prior knowledge <span style="font-weight:400;color:var(--text-muted)">(optional)</span></div>
+        <input type="text" id="pPrior" class="person-prior" placeholder="e.g. calculus, Python, basic statistics…">
+      </div>
+    </div>
+    <div class="person-generate-row">
+      <button class="primary" id="personSubmit">Generate &#x2192;</button>
+      <button class="modal-cancel" id="personCancel" style="margin:0">&#x2190; Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sub-explore Drawer -->
+<div id="subExploreOverlay" class="sub-explore-overlay">
+  <div id="subExplorePanel" class="sub-explore-panel">
+    <div class="sub-explore-header">
+      <div id="subExploreCrumb" class="sub-explore-crumb"></div>
+      <button id="subExploreClose" class="sub-explore-close">&#x2715; Close</button>
+    </div>
+    <div id="subExploreBody" class="sub-explore-body"></div>
+  </div>
+</div>
 
 <!-- Intent Modal -->
 <div class="modal-backdrop" id="intentModal">
@@ -827,6 +947,7 @@
   </div>
 
   <div class="loader-wrap" id="loaderWrap"><div class="loader-bar"></div></div>
+  <div class="stream-status" id="streamStatus"></div>
   <div class="error-box" id="errorBox"></div>
 
   <div id="output">
@@ -895,6 +1016,24 @@
     </div>
   </div>
 
+  <!-- Chat Panel -->
+  <div id="chatPanel" class="chat-panel">
+    <div id="chatHeader" class="chat-header">
+      <div class="chat-title">&#x1F4AC; Ask about <span id="chatTopicLabel"></span></div>
+      <button id="chatToggleBtn" class="chat-toggle-btn">&#x25B2;</button>
+    </div>
+    <div id="chatBody" class="chat-body">
+      <div id="chatQuickChips" class="chat-quick-chips"></div>
+      <div id="chatMessages" class="chat-messages">
+        <div class="chat-empty">Generate a learning path above to start chatting about the topic.</div>
+      </div>
+      <div class="chat-input-row">
+        <input id="chatInput" type="text" class="chat-input" placeholder="Ask anything about this topic…">
+        <button id="chatSend" class="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 <script>
   const $ = id => document.getElementById(id);
@@ -919,7 +1058,9 @@
   const explainCache = {};
   let _lastStartData = null;
   let _lastFinishData = null;
+  let _lastTracksData = null;
   let _lastTopic = '';
+  let _currentProfile = null;
 
   // API key is intentionally never stored — user enters it fresh each session
 
@@ -968,7 +1109,7 @@
   $('modalCancel').addEventListener('click', hideModal);
 
   document.querySelectorAll('.modal-opt').forEach(btn =>
-    btn.addEventListener('click', () => { const c = btn.dataset.choice; hideModal(); executeChoice(c, pendingTopic); })
+    btn.addEventListener('click', () => { const c = btn.dataset.choice; hideModal(); showPersonModal(c, pendingTopic); })
   );
 
   // ── UI helpers ───────────────────────────────────────────────────────────────
@@ -1004,26 +1145,16 @@
     else localStorage.removeItem(progressKey(topic, concept));
   }
 
-  // ── API ──────────────────────────────────────────────────────────────────────
-  async function callAPI(prompt, maxTokens) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKeyInput.value.trim(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!res.ok) {
-      let msg = `API error ${res.status}: ${res.statusText}`;
-      try { const j = await res.json(); msg = j?.error?.message || msg; } catch(_) {}
-      throw new Error(msg);
+  // ── API (streaming via SSE) ──────────────────────────────────────────────────
+  async function callAPI(prompt, maxTokens, statusEl) {
+    let text = '', chars = 0;
+    for await (const chunk of streamSSE(prompt, maxTokens)) {
+      text += chunk; chars += chunk.length;
+      if (statusEl) statusEl.textContent = `Receiving… ${chars.toLocaleString()} chars`;
     }
-    const raw = (await res.json())?.content?.[0]?.text || '';
-    try { return JSON.parse(raw); } catch(_) {
-      const m = raw.match(/\{[\s\S]*/);
+    if (statusEl) statusEl.textContent = '';
+    try { return JSON.parse(text); } catch(_) {
+      const m = text.match(/\{[\s\S]*/);
       if (m) { try { return repairJSON(m[0]); } catch(_2) {} }
       throw new Error('Model returned non-JSON. Try again.');
     }
@@ -1064,53 +1195,39 @@
     return JSON.parse(partial + closes.reverse().join(''));
   }
 
-  async function callText(prompt, maxTokens) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKeyInput.value.trim(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
-    });
-    if (!res.ok) {
-      let msg = `API error ${res.status}`;
-      try { const j = await res.json(); msg = j?.error?.message || msg; } catch(_) {}
-      throw new Error(msg);
+  async function callText(prompt, maxTokens, onChunk) {
+    let text = '';
+    for await (const chunk of streamSSE(prompt, maxTokens)) {
+      text += chunk;
+      if (onChunk) onChunk(text);
     }
-    return (await res.json())?.content?.[0]?.text || '';
+    return text;
   }
 
   async function callHaiku(prompt, maxTokens) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKeyInput.value.trim(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: maxTokens, messages: [{ role: 'user', content: prompt }] })
-    });
-    if(!res.ok) throw new Error(`API ${res.status}`);
-    return (await res.json())?.content?.[0]?.text || '';
+    let text = '';
+    for await (const chunk of streamSSE(prompt, maxTokens)) text += chunk;
+    return text;
   }
 
   // ── Prompts ──────────────────────────────────────────────────────────────────
 
-  function mainPrompt(topic) {
+  function profileCtx(p) {
+    if (!p || (!p.background && !p.goal && !p.time && !p.prior)) return '';
+    return `\n\nLEARNER PROFILE — tailor this path accordingly:\n- Background: ${p.background||'not specified'}\n- Goal: ${p.goal||'not specified'}\n- Time available: ${p.time||'not specified'}${p.prior ? '\n- Prior knowledge: '+p.prior : ''}\nAdjust depth, layer count, pacing, and reference difficulty to fit this profile.`;
+  }
+
+  function mainPrompt(topic, profile) {
     return `You are an expert academic librarian. Map the concept graph for: "${topic}".
 Return ONLY raw valid JSON:
 {"topic":"","summary":"2-sentence explanation.",
 "predecessors":[{"name":"","description":"","relation":"","coupling":"direct","refs":[{"title":"","authors":"Lastname,F.(Year).Publisher.","type":"seminal|breakthrough|pedagogical","note":""}]}],
 "core":[{"name":"","description":"","relation":"","refs":[{"title":"","authors":"","type":"","note":""}]}],
 "successors":[{"name":"","description":"","relation":"","coupling":"direct","refs":[{"title":"","authors":"","type":"","note":""}]}]}
-coupling:"direct"=hard prerequisite;"contextual"=enriching but optional. All genuinely relevant concepts; 3-5 core; 2-3 refs each; real verifiable works. Return ONLY JSON.`;
+coupling:"direct"=hard prerequisite;"contextual"=enriching but optional. All genuinely relevant concepts; 3-5 core; 2-3 refs each; real verifiable works. Return ONLY JSON.${profileCtx(profile)}`;
   }
 
-  function coldStartPrompt(topic) {
+  function coldStartPrompt(topic, profile) {
     return `You are building the most complete, rigorous, zero-to-mastery learning path leading to "${topic}".
 Your goal: capture 100% of what a learner must understand before they can genuinely work with "${topic}". Miss nothing.
 
@@ -1126,10 +1243,10 @@ Rules:
 - Each concept gets 1–2 real verifiable references — the canonical textbook or landmark paper for that subject
 - Cover every major subject area a learner would need; omit nothing significant at this level
 - No duplicate concepts across layers
-Return ONLY JSON.`;
+Return ONLY JSON.${profileCtx(profile)}`;
   }
 
-  function coldFinishPrompt(topic) {
+  function coldFinishPrompt(topic, profile) {
     return `You are mapping the complete intellectual frontier beyond mastery of "${topic}" — every horizon a dedicated expert would explore.
 Your goal: capture 100% of the advanced territory that opens once someone fully understands "${topic}". Miss nothing.
 
@@ -1146,14 +1263,14 @@ Rules:
 - Cover every major advanced area a serious expert would explore; omit nothing significant at this level
 - pinnacles: 3–6 specific named open problems or cutting-edge research frontiers
 - No duplicate concepts across layers
-Return ONLY JSON.`;
+Return ONLY JSON.${profileCtx(profile)}`;
   }
 
-  function specsPrompt(topic) {
+  function specsPrompt(topic, profile) {
     return `Identify 3-4 distinct specialization paths branching from "${topic}".
 Return ONLY raw valid JSON:
 {"tracks":[{"name":"track name","tagline":"what specialist this creates","steps":[{"concept":"name","note":"one phrase"}],"destination":"specific career or research area"}]}
-Rules: 3-4 meaningfully distinct tracks; 5-7 ordered steps each; tracks diverge clearly; concrete destinations. Return ONLY JSON.`;
+Rules: 3-4 meaningfully distinct tracks; 5-7 ordered steps each; tracks diverge clearly; concrete destinations. Return ONLY JSON.${profileCtx(profile)}`;
   }
 
   function explainPrompt(conceptName) {
@@ -1169,7 +1286,7 @@ Rules:
   }
 
   // ── Choice execution ─────────────────────────────────────────────────────────
-  async function executeChoice(choice, topic) {
+  async function executeChoice(choice, topic, profile) {
     clearError();
     topicInput.value = topic;
     output.classList.remove('visible', 'paths-only');
@@ -1177,15 +1294,26 @@ Rules:
     pathBtn.disabled = true;
     readBtn.disabled = true;
 
-    if      (choice === 'map')   await runConceptMap(topic);
-    else if (choice === 'paths') await runPathsOnly(topic);
-    else                          await runBoth(topic);
+    if      (choice === 'map')   await runConceptMap(topic, profile);
+    else if (choice === 'paths') await runPathsOnly(topic, profile);
+    else                          await runBoth(topic, profile);
   }
 
-  async function runConceptMap(topic) {
+  async function runConceptMap(topic, profile) {
+    const statusEl = $('streamStatus');
+    const cKey = cacheKey(topic, 'map');
+    const cached = await getCache(cKey);
     setLoading(true);
     try {
-      const data = await callAPI(mainPrompt(topic), 10000);
+      let data;
+      if (cached) {
+        data = cached.mapData;
+        statusEl.innerHTML = '<span class="cache-badge">&#x26A1; Loaded from cache</span>';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      } else {
+        data = await callAPI(mainPrompt(topic, profile), 10000, statusEl);
+        setCache(cKey, { mapData: data });
+      }
       setSummary(data.topic||topic, data.summary||'', 'map');
       renderZone(data.predecessors,'predGrid','predMeta','pred');
       renderZone(data.core,        'coreGrid','coreMeta','core');
@@ -1195,70 +1323,121 @@ Rules:
       pathBtnTitle.textContent = 'Explore Learning Paths';
       output.scrollIntoView({ behavior:'smooth', block:'start' });
     } catch(err) { showError(err.message); }
-    finally { setLoading(false); }
+    finally { setLoading(false); if(statusEl) statusEl.textContent = ''; }
   }
 
-  async function runPathsOnly(topic) {
+  async function runPathsOnly(topic, profile) {
+    const statusEl = $('streamStatus');
+    const cKey = cacheKey(topic, 'paths');
+    const cached = await getCache(cKey);
     output.classList.add('visible','paths-only');
     setSummary(topic,'','paths');
     pathsSection.style.display = 'block';
-    pathsLoader.classList.add('active');
     output.scrollIntoView({ behavior:'smooth', block:'start' });
-    const [sr,fr,tr] = await Promise.allSettled([
-      callAPI(coldStartPrompt(topic),8192),
-      callAPI(coldFinishPrompt(topic),8192),
-      callAPI(specsPrompt(topic),4000)
-    ]);
-    pathsLoader.classList.remove('active');
-    renderPathResults(sr,fr,tr,topic);
+
+    let startData, finishData, tracksData;
+    if (cached) {
+      startData = cached.startData; finishData = cached.finishData; tracksData = cached.tracksData;
+      statusEl.innerHTML = '<span class="cache-badge">&#x26A1; Loaded from cache</span>';
+      setTimeout(() => { statusEl.textContent = ''; }, 2000);
+    } else {
+      pathsLoader.classList.add('active');
+      statusEl.textContent = 'Generating learning paths…';
+      const [sr,fr,tr] = await Promise.allSettled([
+        callAPI(coldStartPrompt(topic, profile), 8192),
+        callAPI(coldFinishPrompt(topic, profile), 8192),
+        callAPI(specsPrompt(topic, profile), 4000)
+      ]);
+      pathsLoader.classList.remove('active');
+      statusEl.textContent = '';
+      startData = sr.status==='fulfilled' ? sr.value : null;
+      finishData = fr.status==='fulfilled' ? fr.value : null;
+      tracksData = tr.status==='fulfilled' ? tr.value : null;
+      if (startData || finishData) setCache(cKey, { startData, finishData, tracksData });
+    }
+    renderPathResultsValues(startData, finishData, tracksData, topic);
     pathBtn.disabled = false;
     pathBtnTitle.textContent = 'Re-generate Path';
     readBtn.disabled = false;
+    initChat(topic, startData, finishData, tracksData);
   }
 
-  async function runBoth(topic) {
+  async function runBoth(topic, profile) {
+    const statusEl = $('streamStatus');
+    const cKey = cacheKey(topic, 'both');
+    const cached = await getCache(cKey);
     setLoading(true);
+    let mapData;
     try {
-      const data = await callAPI(mainPrompt(topic),10000);
-      setSummary(data.topic||topic, data.summary||'', 'both');
-      renderZone(data.predecessors,'predGrid','predMeta','pred');
-      renderZone(data.core,        'coreGrid','coreMeta','core');
-      renderZone(data.successors,  'succGrid','succMeta','succ');
+      if (cached) {
+        mapData = cached.mapData;
+        statusEl.innerHTML = '<span class="cache-badge">&#x26A1; Loaded from cache</span>';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      } else {
+        mapData = await callAPI(mainPrompt(topic, profile), 10000, statusEl);
+      }
+      setSummary(mapData.topic||topic, mapData.summary||'', 'both');
+      renderZone(mapData.predecessors,'predGrid','predMeta','pred');
+      renderZone(mapData.core,        'coreGrid','coreMeta','core');
+      renderZone(mapData.successors,  'succGrid','succMeta','succ');
       output.classList.add('visible');
       output.scrollIntoView({ behavior:'smooth', block:'start' });
     } catch(err) { showError(err.message); setLoading(false); return; }
     finally { setLoading(false); }
-    pathsSection.style.display='block';
-    pathsLoader.classList.add('active');
-    const [sr,fr,tr] = await Promise.allSettled([
-      callAPI(coldStartPrompt(topic),8192),
-      callAPI(coldFinishPrompt(topic),8192),
-      callAPI(specsPrompt(topic),4000)
-    ]);
-    pathsLoader.classList.remove('active');
-    renderPathResults(sr,fr,tr,topic);
+
+    let startData, finishData, tracksData;
+    if (cached) {
+      startData = cached.startData; finishData = cached.finishData; tracksData = cached.tracksData;
+    } else {
+      pathsSection.style.display = 'block';
+      pathsLoader.classList.add('active');
+      statusEl.textContent = 'Generating learning paths…';
+      const [sr,fr,tr] = await Promise.allSettled([
+        callAPI(coldStartPrompt(topic, profile), 8192),
+        callAPI(coldFinishPrompt(topic, profile), 8192),
+        callAPI(specsPrompt(topic, profile), 4000)
+      ]);
+      pathsLoader.classList.remove('active');
+      statusEl.textContent = '';
+      startData = sr.status==='fulfilled' ? sr.value : null;
+      finishData = fr.status==='fulfilled' ? fr.value : null;
+      tracksData = tr.status==='fulfilled' ? tr.value : null;
+      setCache(cKey, { mapData, startData, finishData, tracksData });
+    }
+    pathsSection.style.display = 'block';
+    renderPathResultsValues(startData, finishData, tracksData, topic);
     pathBtn.disabled = false;
     pathBtnTitle.textContent = 'Re-generate Path';
     readBtn.disabled = false;
+    initChat(topic, startData, finishData, tracksData);
   }
 
-  function renderPathResults(sr,fr,tr,topic) {
+  function renderPathResultsValues(startData, finishData, tracksData, topic) {
     _lastTopic = topic;
-    _lastStartData = sr.status==='fulfilled' ? sr.value : null;
-    _lastFinishData = fr.status==='fulfilled' ? fr.value : null;
-    if (_lastStartData) renderColdStart(_lastStartData,topic);
-    else $('csLadder').innerHTML=`<div class="section-error">Cold start failed: ${esc(sr.reason?.message)}</div>`;
-    if (_lastFinishData) renderColdFinish(_lastFinishData,topic);
-    else $('cfLadder').innerHTML=`<div class="section-error">Cold finish failed: ${esc(fr.reason?.message)}</div>`;
-    if (tr.status==='fulfilled') renderTracks(tr.value);
-    else $('tracksGrid').innerHTML=`<div class="section-error">Specializations failed: ${esc(tr.reason?.message)}</div>`;
-    // Enable Step 2 once paths are loaded
-    if (_lastStartData || _lastFinishData) {
+    _lastStartData = startData;
+    _lastFinishData = finishData;
+    _lastTracksData = tracksData;
+    if (startData) renderColdStart(startData, topic);
+    else $('csLadder').innerHTML = '<div class="section-error">Cold start path not available</div>';
+    if (finishData) renderColdFinish(finishData, topic);
+    else $('cfLadder').innerHTML = '<div class="section-error">Cold finish path not available</div>';
+    if (tracksData) renderTracks(tracksData);
+    else $('tracksGrid').innerHTML = '<div class="section-error">Specializations not available</div>';
+    if (startData || finishData) {
       readBtn.disabled = false;
       $('rsSection').style.display = 'none';
       $('rsList').innerHTML = '';
       $('rsCount').textContent = '';
     }
+  }
+
+  function renderPathResults(sr,fr,tr,topic) {
+    renderPathResultsValues(
+      sr.status==='fulfilled' ? sr.value : null,
+      fr.status==='fulfilled' ? fr.value : null,
+      tr.status==='fulfilled' ? tr.value : null,
+      topic
+    );
   }
 
   // ── Rendering helpers ────────────────────────────────────────────────────────
@@ -1284,7 +1463,7 @@ Rules:
     const card = document.createElement('article');
     card.className=`card ${zone}${isContextual?' contextual':''}`;
     card.innerHTML=`<div class="card-header"><div class="card-header-left"><div class="card-name">${esc(concept.name)}</div><div class="card-desc">${esc(concept.description)}</div></div>${ctxTag}</div><div class="card-body"><div class="card-relation">${esc(concept.relation)}</div><div class="refs">${refsHtml}</div></div>`;
-    card.querySelector('.card-name').addEventListener('click',()=>openTab(concept.name));
+    card.querySelector('.card-name').addEventListener('click',()=>openSubExplore(concept.name));
     return card;
   }
 
@@ -1339,7 +1518,7 @@ Rules:
     nameEl.className = 'cold-concept-name';
     nameEl.href = '#';
     nameEl.innerHTML = `${esc(concept.name)} <span class="cold-ext-icon">&#x2197;</span>`;
-    nameEl.addEventListener('click', e => { e.preventDefault(); openTab(concept.name); });
+    nameEl.addEventListener('click', e => { e.preventDefault(); openSubExplore(concept.name); });
 
     left.appendChild(check);
     left.appendChild(nameEl);
@@ -1373,7 +1552,7 @@ Rules:
 
       panel.innerHTML = '<span class="explain-loading">Explaining in plain language…</span>';
       try {
-        const text = await callText(explainPrompt(concept.name), 400);
+        const text = await callText(explainPrompt(concept.name), 400, (t) => { panel.textContent = t; });
         explainCache[concept.name] = text;
         panel.textContent = text;
       } catch(err) {
@@ -1444,7 +1623,7 @@ Rules:
       const h=document.createElement('div');h.className='cold-endpoint horizon';h.innerHTML='<span>&#x2605;</span> Research Frontier';ladder.appendChild(h);
       const lbl=document.createElement('div');lbl.className='cold-pinnacles-label';lbl.textContent='Pinnacle destinations';ladder.appendChild(lbl);
       const wrap=document.createElement('div');wrap.className='cold-pinnacles';
-      data.pinnacles.forEach(p=>{const a=document.createElement('a');a.className='cold-pinnacle';a.href='#';a.textContent=p;a.addEventListener('click',e=>{e.preventDefault();openTab(p);});wrap.appendChild(a);});
+      data.pinnacles.forEach(p=>{const a=document.createElement('a');a.className='cold-pinnacle';a.href='#';a.textContent=p;a.addEventListener('click',e=>{e.preventDefault();openSubExplore(p);});wrap.appendChild(a);});
       ladder.appendChild(wrap);
     }
   }
@@ -1455,7 +1634,7 @@ Rules:
       const card=document.createElement('div');card.className=`track-card track-${Math.min(i,3)}`;
       const sh=(track.steps||[]).map((s,j)=>`<div class="track-step"><div class="track-step-num">${j+1}</div><div class="track-step-body"><a class="track-step-concept" href="#" data-c="${esc(s.concept)}">${esc(s.concept)}</a>${s.note?`<div class="track-step-note">${esc(s.note)}</div>`:''}</div></div>`).join('');
       card.innerHTML=`<div class="track-header"><div class="track-name">${esc(track.name)}</div><div class="track-tagline">${esc(track.tagline)}</div></div><div class="track-body">${sh}</div><div class="track-dest"><span class="track-dest-label">&#x2192; Destination</span><div class="track-dest-value">${esc(track.destination)}</div></div>`;
-      card.querySelectorAll('.track-step-concept').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();openTab(el.dataset.c);}));
+      card.querySelectorAll('.track-step-concept').forEach(el=>el.addEventListener('click',e=>{e.preventDefault();openSubExplore(el.dataset.c);}));
       grid.appendChild(card);
     });
   }
@@ -2427,6 +2606,380 @@ booksBtn.addEventListener('click', ()=>{
 $('booksSearch').addEventListener('input', e=>{
   clearTimeout(_booksTimer);
   _booksTimer = setTimeout(()=>fetchBooks(e.target.value), 400);
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ── STREAMING SSE ──────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+
+async function* streamSSE(promptOrMessages, maxTokens, system) {
+  const messages = Array.isArray(promptOrMessages)
+    ? promptOrMessages
+    : [{ role: 'user', content: promptOrMessages }];
+  const body = { model: 'claude-sonnet-4-6', max_tokens: maxTokens, stream: true, messages };
+  if (system) body.system = system;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKeyInput.value.trim(),
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    let msg = `API error ${res.status}`;
+    try { const j = await res.json(); msg = j?.error?.message || msg; } catch(_) {}
+    throw new Error(msg);
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') return;
+      try {
+        const e = JSON.parse(data);
+        if (e.type === 'content_block_delta' && e.delta?.type === 'text_delta') yield e.delta.text;
+        if (e.type === 'error') throw new Error(e.error?.message || 'Stream error');
+      } catch(_) {}
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ── INDEXEDDB CACHE ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+
+let _db = null;
+const _DB_NAME = 'learning-path-explorer', _DB_STORE = 'explorations', _CACHE_TTL = 7*24*60*60*1000;
+
+function _initDB() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(_DB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(_DB_STORE, { keyPath: 'key' });
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function getCache(key) {
+  try {
+    await _initDB();
+    return new Promise(res => {
+      const req = _db.transaction(_DB_STORE,'readonly').objectStore(_DB_STORE).get(key);
+      req.onsuccess = () => {
+        const r = req.result;
+        res(!r || Date.now()-r.ts > _CACHE_TTL ? null : r.data);
+      };
+      req.onerror = () => res(null);
+    });
+  } catch(_) { return null; }
+}
+
+async function setCache(key, data) {
+  try {
+    await _initDB();
+    return new Promise(res => {
+      const tx = _db.transaction(_DB_STORE,'readwrite');
+      tx.objectStore(_DB_STORE).put({ key, ts: Date.now(), data });
+      tx.oncomplete = res; tx.onerror = res;
+    });
+  } catch(_) {}
+}
+
+function cacheKey(topic, choice) {
+  return `v1_${topic.toLowerCase().replace(/[^a-z0-9]/g,'_')}_${choice}`;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ── PERSONALIZATION MODAL ──────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+
+const personModal = $('personModal');
+let _pendingChoice = '';
+
+function showPersonModal(choice, topic) {
+  _pendingChoice = choice;
+  $('personTopic').textContent = `"${topic}"`;
+  personModal.classList.add('visible');
+}
+
+function hidePersonModal() { personModal.classList.remove('visible'); }
+
+personModal.addEventListener('click', e => { if (e.target === personModal) hidePersonModal(); });
+
+document.querySelectorAll('.person-opts').forEach(group => {
+  group.querySelectorAll('.person-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.person-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+});
+
+function getProfile() {
+  const getActive = id => { const a = document.querySelector(`#${id} .person-opt.active`); return a ? a.dataset.v : ''; };
+  return {
+    background: getActive('pBackground'),
+    goal: getActive('pGoal'),
+    time: getActive('pTime'),
+    prior: $('pPrior').value.trim()
+  };
+}
+
+$('personSubmit').addEventListener('click', () => {
+  const profile = getProfile();
+  _currentProfile = profile;
+  hidePersonModal();
+  executeChoice(_pendingChoice, pendingTopic, profile);
+});
+
+$('personCancel').addEventListener('click', () => { hidePersonModal(); showModal(pendingTopic); });
+
+// ════════════════════════════════════════════════════════════════════
+// ── SUB-EXPLORE DRAWER ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+
+const subExploreOverlay = $('subExploreOverlay');
+const subExploreClose   = $('subExploreClose');
+const subExploreBodyEl  = $('subExploreBody');
+const subExploreCrumbEl = $('subExploreCrumb');
+let _subCrumb = [];
+
+function closeSubExplore() {
+  subExploreOverlay.classList.remove('visible');
+  _subCrumb = [];
+}
+
+subExploreClose.addEventListener('click', closeSubExplore);
+subExploreOverlay.addEventListener('click', e => { if (e.target === subExploreOverlay) closeSubExplore(); });
+
+function updateSubCrumb() {
+  subExploreCrumbEl.innerHTML = '';
+  _subCrumb.forEach((item, i) => {
+    if (i > 0) {
+      const sep = document.createElement('span');
+      sep.className = 'sub-explore-crumb-sep'; sep.textContent = '›';
+      subExploreCrumbEl.appendChild(sep);
+    }
+    const span = document.createElement('span');
+    if (i === _subCrumb.length - 1) {
+      span.className = 'sub-explore-crumb-current';
+      span.textContent = item.name;
+    } else {
+      span.className = 'sub-explore-crumb-item';
+      span.textContent = item.name;
+      const idx = i;
+      span.addEventListener('click', () => {
+        _subCrumb = _subCrumb.slice(0, idx + 1);
+        renderSubContent(_subCrumb[idx]);
+        updateSubCrumb();
+      });
+    }
+    subExploreCrumbEl.appendChild(span);
+  });
+}
+
+function renderSubContent(item) {
+  subExploreBodyEl.innerHTML = '';
+  const titleEl = document.createElement('div');
+  titleEl.className = 'sub-explore-title'; titleEl.textContent = item.name;
+  subExploreBodyEl.appendChild(titleEl);
+
+  if (item.error) {
+    const err = document.createElement('div');
+    err.className = 'section-error'; err.textContent = item.error;
+    subExploreBodyEl.appendChild(err); return;
+  }
+
+  if (item.startData) {
+    const sh = document.createElement('div');
+    sh.innerHTML = '<div class="zone-header" style="margin-top:0"><div class="zone-hr"></div><div class="zone-pill cold-s">&#x2193; Cold Start Path</div><div class="zone-hr"></div></div>';
+    subExploreBodyEl.appendChild(sh);
+    const csL = document.createElement('div'); csL.className = 'cold-ladder';
+    const top = document.createElement('div'); top.className='cold-endpoint foundation'; top.innerHTML='<span>&#x25A0;</span> Absolute Foundation'; csL.appendChild(top);
+    (item.startData.layers||[]).forEach((l,i) => csL.appendChild(buildColdLayer(l, i, item.name)));
+    const c1 = document.createElement('div'); c1.className='cold-connector'; c1.innerHTML='<div class="cold-connector-line"></div>'; csL.appendChild(c1);
+    const bot = document.createElement('div'); bot.className='cold-endpoint topic-node'; bot.innerHTML=`<span>&#x25CE;</span> ${esc(item.name)}`; csL.appendChild(bot);
+    subExploreBodyEl.appendChild(csL);
+  }
+
+  if (item.finishData) {
+    const fh = document.createElement('div');
+    fh.innerHTML = '<div class="zone-header" style="margin-top:2rem"><div class="zone-hr"></div><div class="zone-pill cold-f">&#x2191; Cold Finish Path</div><div class="zone-hr"></div></div>';
+    subExploreBodyEl.appendChild(fh);
+    const cfL = document.createElement('div'); cfL.className = 'cold-ladder';
+    const top2 = document.createElement('div'); top2.className='cold-endpoint topic-node'; top2.innerHTML=`<span>&#x25CE;</span> ${esc(item.name)}`; cfL.appendChild(top2);
+    (item.finishData.layers||[]).forEach((l,i) => cfL.appendChild(buildColdLayer(l, i, item.name)));
+    if ((item.finishData.pinnacles||[]).length > 0) {
+      const c2 = document.createElement('div'); c2.className='cold-connector'; c2.innerHTML='<div class="cold-connector-line"></div>'; cfL.appendChild(c2);
+      const h = document.createElement('div'); h.className='cold-endpoint horizon'; h.innerHTML='<span>&#x2605;</span> Research Frontier'; cfL.appendChild(h);
+      const lbl = document.createElement('div'); lbl.className='cold-pinnacles-label'; lbl.textContent='Pinnacle destinations'; cfL.appendChild(lbl);
+      const wrap = document.createElement('div'); wrap.className='cold-pinnacles';
+      item.finishData.pinnacles.forEach(p => {
+        const a = document.createElement('a'); a.className='cold-pinnacle'; a.href='#'; a.textContent=p;
+        a.addEventListener('click', e => { e.preventDefault(); openSubExplore(p); });
+        wrap.appendChild(a);
+      });
+      cfL.appendChild(wrap);
+    }
+    subExploreBodyEl.appendChild(cfL);
+  }
+}
+
+async function openSubExplore(name) {
+  if (!apiKeyInput.value.trim()) { showError('Enter your Anthropic API key first.'); return; }
+  subExploreOverlay.classList.add('visible');
+  subExploreBodyEl.innerHTML = '';
+
+  const loaderDiv = document.createElement('div');
+  loaderDiv.className = 'sub-explore-loader';
+  loaderDiv.innerHTML = '<div class="sub-explore-loader-bar"></div>';
+  const statusDiv = document.createElement('div');
+  statusDiv.className = 'sub-explore-status';
+  statusDiv.textContent = `Generating path for "${name}"…`;
+  subExploreBodyEl.appendChild(loaderDiv);
+  subExploreBodyEl.appendChild(statusDiv);
+
+  const cKey = cacheKey(name, 'paths');
+  let cached = await getCache(cKey);
+  let startData = null, finishData = null;
+
+  if (cached) {
+    startData = cached.startData; finishData = cached.finishData;
+    statusDiv.innerHTML = '<span class="cache-badge">&#x26A1; Loaded from cache</span>';
+  } else {
+    try {
+      const [sr, fr] = await Promise.allSettled([
+        callAPI(coldStartPrompt(name, _currentProfile), 8192, statusDiv),
+        callAPI(coldFinishPrompt(name, _currentProfile), 8192)
+      ]);
+      startData = sr.status==='fulfilled' ? sr.value : null;
+      finishData = fr.status==='fulfilled' ? fr.value : null;
+      if (startData || finishData) setCache(cKey, { startData, finishData, tracksData: null });
+    } catch(err) {
+      subExploreBodyEl.innerHTML = `<div class="sub-explore-title">${esc(name)}</div><div class="section-error">${esc(err.message)}</div>`;
+      return;
+    }
+  }
+
+  const item = { name, startData, finishData };
+  if (!_subCrumb.length || _subCrumb[_subCrumb.length-1].name !== name) _subCrumb.push(item);
+  updateSubCrumb();
+  renderSubContent(item);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ── CHAT PANEL ─────────────────────────────────────════════════════
+// ════════════════════════════════════════════════════════════════════
+
+const chatPanelEl   = $('chatPanel');
+const chatMessagesEl= $('chatMessages');
+const chatInputEl   = $('chatInput');
+const chatSendBtn   = $('chatSend');
+const chatQuickChipsEl = $('chatQuickChips');
+let _chatHistory = [];
+let _chatSystemPrompt = '';
+
+const QUICK_QUESTIONS = [
+  'Where should I start?',
+  "What's the hardest concept?",
+  'What can I safely skip if short on time?',
+  'Give me a 4-week study plan',
+  'What careers does mastering this open?',
+  'How do the start and finish paths connect?'
+];
+
+function initChat(topic, startData, finishData, tracksData) {
+  _chatHistory = [];
+  chatMessagesEl.innerHTML = '';
+  chatInputEl.value = '';
+  $('chatTopicLabel').textContent = `"${topic}"`;
+  chatPanelEl.classList.add('visible');
+
+  const startLayers = (startData?.layers||[]).map(l=>l.label).join(', ');
+  const finishLayers = (finishData?.layers||[]).map(l=>l.label).join(', ');
+  const trackNames = (tracksData?.tracks||[]).map(t=>t.name).join(', ');
+  _chatSystemPrompt = `You are a concise, knowledgeable academic tutor helping someone learn "${topic}". Their learning path has:\n- Cold Start layers (beginner to topic): ${startLayers||'N/A'}\n- Cold Finish layers (topic to frontier): ${finishLayers||'N/A'}\n- Specialization tracks: ${trackNames||'N/A'}\nAnswer in plain language. Keep replies under 200 words unless detail is explicitly requested. Use **bold** for key terms.`;
+
+  chatQuickChipsEl.innerHTML = '';
+  QUICK_QUESTIONS.forEach(q => {
+    const chip = document.createElement('button');
+    chip.className = 'chat-quick-chip'; chip.textContent = q;
+    chip.addEventListener('click', () => { chip.disabled = true; sendChatMsg(q); });
+    chatQuickChipsEl.appendChild(chip);
+  });
+
+  appendChatBubble('ai', `Ready to help you master **${topic}**! Ask anything about the path, concepts, or where to begin.`);
+}
+
+function appendChatBubble(role, text, streaming=false) {
+  const msg = document.createElement('div');
+  msg.className = `chat-msg ${role}${streaming?' chat-streaming':''}`;
+  const av = document.createElement('div'); av.className='chat-avatar'; av.textContent = role==='user' ? 'U' : '✦';
+  const bubble = document.createElement('div'); bubble.className='chat-bubble';
+  bubble.innerHTML = chatMd(text);
+  msg.appendChild(av); msg.appendChild(bubble);
+  chatMessagesEl.appendChild(msg);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  return { msg, bubble };
+}
+
+function chatMd(t) {
+  return String(t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br>');
+}
+
+async function sendChatMsg(text) {
+  if (!text.trim() || !apiKeyInput.value.trim()) return;
+  chatSendBtn.disabled = true;
+  chatInputEl.value = '';
+  chatQuickChipsEl.querySelectorAll('.chat-quick-chip').forEach(c => { c.disabled = true; });
+  appendChatBubble('user', text);
+  _chatHistory.push({ role:'user', content: text });
+
+  const { msg, bubble } = appendChatBubble('ai', '', true);
+  bubble.innerHTML = '<em style="color:var(--text-muted)">Thinking…</em>';
+
+  let fullText = '';
+  try {
+    for await (const chunk of streamSSE(_chatHistory, 800, _chatSystemPrompt)) {
+      fullText += chunk;
+      bubble.innerHTML = chatMd(fullText);
+      chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+    msg.classList.remove('chat-streaming');
+    _chatHistory.push({ role:'assistant', content: fullText });
+  } catch(err) {
+    bubble.textContent = `Error: ${err.message}`;
+    msg.classList.remove('chat-streaming');
+    _chatHistory.pop();
+  } finally {
+    chatSendBtn.disabled = false;
+    chatQuickChipsEl.querySelectorAll('.chat-quick-chip').forEach(c => { c.disabled = false; });
+  }
+}
+
+$('chatHeader').addEventListener('click', () => {
+  const collapsed = $('chatBody').classList.toggle('collapsed');
+  $('chatToggleBtn').textContent = collapsed ? '▼' : '▲';
+});
+
+chatSendBtn.addEventListener('click', () => sendChatMsg(chatInputEl.value.trim()));
+chatInputEl.addEventListener('keydown', e => {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMsg(chatInputEl.value.trim()); }
 });
 
 </script>
