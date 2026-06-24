@@ -483,6 +483,47 @@ main{
 .missing-item-name{font-weight:700;color:var(--accent);}
 .missing-item-reason{font-size:.78rem;color:var(--text);margin-left:.35rem;}
 
+/* ── Progress tracker ── */
+.progress-btn{
+  background:none;border:none;font-size:1.05rem;cursor:pointer;
+  padding:.05rem .2rem;border-radius:4px;line-height:1;flex-shrink:0;
+  transition:transform .1s;
+}
+.progress-btn:hover{transform:scale(1.2);}
+.progress-bar-wrap{display:flex;align-items:center;gap:.45rem;margin-top:.3rem;}
+.progress-bar-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border);}
+.progress-bar-fill{height:100%;border-radius:2px;background:var(--accent2);transition:width .3s;}
+.progress-bar-fill.done{background:#15803d;}
+.stage-progress-lbl{font-size:.65rem;color:var(--muted);white-space:nowrap;font-weight:600;}
+.pane-progress{font-size:.72rem;color:var(--muted);font-weight:600;float:right;margin-top:-.05rem;}
+.work-item.done-state{opacity:.72;}
+.work-item.done-state .work-title a{text-decoration:line-through;text-decoration-color:var(--muted);}
+
+/* ── Notes ── */
+.notes-btn{
+  background:none;border:1px solid transparent;border-radius:4px;
+  font-size:.7rem;font-weight:700;cursor:pointer;color:var(--muted);
+  padding:.08rem .38rem;font-family:inherit;
+}
+.notes-btn:hover{border-color:var(--border);color:var(--text);}
+.notes-btn.has-note{color:var(--accent2);border-color:rgba(37,99,235,.25);}
+.notes-area{
+  display:none;width:100%;margin-top:.45rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:5px;
+  padding:.4rem .55rem;font-size:.82rem;font-family:inherit;color:var(--text);
+  resize:vertical;min-height:60px;line-height:1.5;
+}
+.notes-area:focus{outline:none;border-color:var(--accent2);}
+.notes-area.open{display:block;}
+
+/* ── Export ── */
+.export-md-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;float:right;margin-top:-.05rem;
+}
+.export-md-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
 /* ── Chat panel ── */
 .chat-panel{
   position:fixed;bottom:0;left:0;right:0;z-index:100;
@@ -998,25 +1039,48 @@ function scrollToRef(type, name){
 
 // ── Semantic Scholar ──────────────────────────────────────────────────────────
 const S2_BASE = 'https://api.semanticscholar.org/graph/v1';
-const S2_FIELDS = 'paperId,title,authors,year,venue,openAccessPdf,citationCount,references';
+// NOTE: 'references' is NOT a valid search-endpoint field — it must be fetched separately
+const S2_SEARCH_FIELDS = 'paperId,title,authors,year,venue,openAccessPdf,citationCount';
+
+function titleJaccard(a, b){
+  const norm = t => (t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  const wa = new Set(norm(a).split(' ').filter(w=>w.length>3));
+  const wb = new Set(norm(b).split(' ').filter(w=>w.length>3));
+  if(!wa.size && !wb.size) return 0;
+  const inter = [...wa].filter(w=>wb.has(w)).length;
+  const union = new Set([...wa,...wb]).size;
+  return inter / union;
+}
 
 async function s2Search(title){
   try{
-    const url = `${S2_BASE}/paper/search?query=${encodeURIComponent(title)}&limit=3&fields=${S2_FIELDS}`;
+    const url = `${S2_BASE}/paper/search?query=${encodeURIComponent(title)}&limit=5&fields=${S2_SEARCH_FIELDS}`;
     const res = await fetch(url);
-    if(!res.ok) return null;
+    if(!res.ok){
+      console.warn(`S2 search ${res.status} for: ${title}`);
+      return null;
+    }
     const data = await res.json();
     const candidates = data.data || [];
     if(!candidates.length) return null;
-    const clean = t => (t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
-    const q = clean(title);
-    // Try to find a close title match
-    for(const c of candidates){
-      const ct = clean(c.title||'');
-      if(ct === q || ct.includes(q.slice(0,35)) || q.includes(ct.slice(0,35))) return c;
+    // Pick best title match by Jaccard word overlap
+    let best = candidates[0], bestScore = titleJaccard(title, candidates[0]?.title||'');
+    for(const c of candidates.slice(1)){
+      const s = titleJaccard(title, c.title||'');
+      if(s > bestScore){ bestScore = s; best = c; }
     }
-    return candidates[0]; // fallback: first result
-  }catch(e){ return null; }
+    return best;
+  }catch(e){ console.warn('S2 search error:', e); return null; }
+}
+
+async function s2GetRefs(paperId){
+  try{
+    const url = `${S2_BASE}/paper/${paperId}/references?fields=paperId&limit=100`;
+    const res = await fetch(url);
+    if(!res.ok) return [];
+    const data = await res.json();
+    return (data.data||[]).map(r=>r.citedPaper?.paperId).filter(Boolean);
+  }catch(e){ return []; }
 }
 
 function topoStages(n, citesInList){
@@ -1059,62 +1123,73 @@ async function runS2Verify(){
 }
 
 async function verifyWorksWithS2(works){
-  streamLogAppend('=== Semantic Scholar Verification ===\n');
+  streamLogAppend('=== Phase 1: Searching Semantic Scholar ===\n');
   const verified = [];
+
+  // Phase 1: search for each paper (700ms apart to stay under rate limit)
   for(let i=0;i<works.length;i++){
     const w = works[i];
     setStatus(`Verifying ${i+1}/${works.length}: ${w.title.slice(0,45)}…`, 'info');
     const s2 = await s2Search(w.title);
     if(s2){
-      streamLogAppend(`✓ ${w.title.slice(0,55)}\n`);
+      streamLogAppend(`✓ ${w.title.slice(0,52)}\n`);
       verified.push({
         ...w,
         authors: s2.authors?.length ? s2.authors.map(a=>a.name) : w.authors,
-        year:  s2.year  || w.year,
+        year: s2.year || w.year,
         venue: s2.venue || w.venue,
-        s2:{
-          paperId:      s2.paperId,
-          verified:     true,
-          citationCount: s2.citationCount || 0,
-          openAccessPdf: s2.openAccessPdf || null,
-          referenceIds:  (s2.references||[]).map(r=>r.paperId).filter(Boolean),
-        }
+        s2:{ paperId:s2.paperId, verified:true, citationCount:s2.citationCount||0, openAccessPdf:s2.openAccessPdf||null, referenceIds:[] }
       });
     }else{
-      streamLogAppend(`✗ Not found: ${w.title.slice(0,55)}\n`);
-      verified.push({...w, s2:{verified:false, citationCount:0, openAccessPdf:null, referenceIds:[]}});
+      streamLogAppend(`✗ Not found: ${w.title.slice(0,52)}\n`);
+      verified.push({...w, s2:{verified:false,citationCount:0,openAccessPdf:null,referenceIds:[]}});
     }
-    if(i < works.length-1) await new Promise(r=>setTimeout(r, 700));
+    if(i < works.length-1) await new Promise(r=>setTimeout(r, 750));
   }
 
-  // Build citation graph among verified works, recompute stages
-  const pidMap = new Map();
-  verified.forEach((w,i)=>{ if(w.s2?.paperId) pidMap.set(w.s2.paperId, i); });
-  const citesInList = verified.map(w =>
-    new Set((w.s2?.referenceIds||[]).map(id=>pidMap.get(id)).filter(x=>x!=null))
-  );
-  const totalLinks = citesInList.reduce((s,c)=>s+c.size, 0);
+  // Phase 2: fetch reference lists for verified papers (to build citation graph)
+  const verifiedWithPid = verified.filter(w=>w.s2?.paperId);
+  if(verifiedWithPid.length > 1){
+    streamLogAppend('\n=== Phase 2: Fetching citation links ===\n');
+    for(let i=0;i<verifiedWithPid.length;i++){
+      const w = verifiedWithPid[i];
+      setStatus(`Fetching references ${i+1}/${verifiedWithPid.length}…`, 'info');
+      w.s2.referenceIds = await s2GetRefs(w.s2.paperId);
+      streamLogAppend(`  refs for "${w.title.slice(0,40)}": ${w.s2.referenceIds.length}\n`);
+      if(i < verifiedWithPid.length-1) await new Promise(r=>setTimeout(r, 500));
+    }
 
-  if(totalLinks > 0){
-    const newStages = topoStages(verified.length, citesInList);
-    // Preserve original stage labels; only update stage numbers
-    const origLabel = new Map(verified.map(w=>[w.stage, w.stage_label]));
-    verified.forEach((w,i)=>{
-      const ns = newStages.get(i)||1;
-      w.stage = ns;
-    });
-    // Re-derive stage labels: keep original label for the closest original stage
-    const usedStages = [...new Set(verified.map(w=>w.stage))].sort((a,b)=>a-b);
-    usedStages.forEach(s=>{
-      const matching = verified.filter(w=>w.stage===s);
-      if(matching.every(w=>!w.stage_label||w.stage_label===`Stage ${w.stage}`)){
-        // Find best original label: min original stage that maps to this new stage
-      }
-    });
-    streamLogAppend(`\nCitation graph: ${totalLinks} inter-work links → stages recomputed.\n`);
-  }else{
-    streamLogAppend(`\nNo citation links between these works — original order kept.\n`);
+    // Build citation graph and topological stages
+    const pidMap = new Map();
+    verified.forEach((w,i)=>{ if(w.s2?.paperId) pidMap.set(w.s2.paperId, i); });
+    const citesInList = verified.map(w =>
+      new Set((w.s2?.referenceIds||[]).map(id=>pidMap.get(id)).filter(x=>x!=null))
+    );
+    const totalLinks = citesInList.reduce((s,c)=>s+c.size, 0);
+
+    if(totalLinks > 0){
+      const newStages = topoStages(verified.length, citesInList);
+      // Remap stages: renumber 1..N and carry over the closest original stage_label
+      const origLabelForStage = new Map(verified.map(w=>[w.stage, w.stage_label]));
+      verified.forEach((w,i)=>{ w.stage = newStages.get(i)||1; });
+      // Give each new stage a label from the closest original stage
+      const stageToOrigStages = new Map();
+      verified.forEach(w=>{
+        if(!stageToOrigStages.has(w.stage)) stageToOrigStages.set(w.stage,[]);
+      });
+      // Re-assign stage_labels per new stage
+      const newStageSorted = [...new Set(verified.map(w=>w.stage))].sort((a,b)=>a-b);
+      const origLabels = [...origLabelForStage.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
+      newStageSorted.forEach((ns,idx)=>{
+        const label = origLabels[idx] || `Stage ${ns}`;
+        verified.filter(w=>w.stage===ns).forEach(w=>w.stage_label=label);
+      });
+      streamLogAppend(`\n${totalLinks} citation links → reading order recomputed from real data.\n`);
+    }else{
+      streamLogAppend(`\nNo citation links between these works — keeping original order.\n`);
+    }
   }
+
   return verified.sort((a,b)=>(a.stage||99)-(b.stage||99));
 }
 
@@ -1181,6 +1256,10 @@ function renderCoverageMatrix(){
 function computeMinSet(){
   if(!state?.works?.length||!state?.concepts?.length) return new Set();
   const works = state.works, concepts = state.concepts;
+  // Case-insensitive lookup map
+  const nameToIdx = new Map(concepts.map((c,i)=>[c.name.toLowerCase().trim(), i]));
+  const resolve = cn => nameToIdx.get((cn||'').toLowerCase().trim()) ?? -1;
+
   const uncovered = new Set(concepts.map((_,i)=>i));
   const selected = new Set();
   while(uncovered.size>0){
@@ -1188,16 +1267,14 @@ function computeMinSet(){
     works.forEach((w,wi)=>{
       if(selected.has(wi)) return;
       const n = (w.concepts_covered||[]).filter(cn=>{
-        const ci = concepts.findIndex(c=>c.name===cn);
-        return ci>=0 && uncovered.has(ci);
+        const ci = resolve(cn); return ci>=0 && uncovered.has(ci);
       }).length;
       if(n>bestCount){ bestCount=n; best=wi; }
     });
     if(best<0||bestCount===0) break;
     selected.add(best);
     (works[best].concepts_covered||[]).forEach(cn=>{
-      const ci = concepts.findIndex(c=>c.name===cn);
-      if(ci>=0) uncovered.delete(ci);
+      const ci = resolve(cn); if(ci>=0) uncovered.delete(ci);
     });
   }
   return selected;
