@@ -692,6 +692,17 @@
   .sub-explore-loader { height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; margin-bottom:.75rem; }
   .sub-explore-loader-bar { height:100%; width:40%; background:linear-gradient(90deg,var(--core-header),var(--succ-header),var(--core-header)); border-radius:2px; animation:slide 1.4s ease-in-out infinite; }
   .sub-explore-status { font-size:.8rem; color:var(--text-muted); text-align:center; margin-bottom:1.5rem; }
+  .sub-map-trigger {
+    display:flex; align-items:center; gap:.65rem; width:100%;
+    padding:.8rem 1.1rem; border:2px dashed var(--border); border-radius:12px;
+    background:var(--surface); color:var(--text-muted);
+    font-family:inherit; font-size:.85rem; font-weight:700;
+    cursor:pointer; margin-bottom:1.75rem;
+    transition:border-color .15s,color .15s,background .15s;
+  }
+  .sub-map-trigger:hover { border-color:var(--core-header); color:var(--core-header); background:color-mix(in srgb,var(--core-header) 5%,var(--surface)); }
+  .sub-map-trigger:disabled { opacity:.4; cursor:not-allowed; }
+  .sub-map-section { margin-bottom:1.75rem; }
 
   /* ── Chat panel ── */
   .chat-panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-top:2rem; overflow:hidden; display:none; }
@@ -2835,6 +2846,82 @@ function renderSubContent(item) {
     }
     subExploreBodyEl.appendChild(cfL);
   }
+
+  // Opt-in concept map trigger
+  const mapTriggerEl = document.createElement('button');
+  mapTriggerEl.className = 'sub-map-trigger';
+  mapTriggerEl.innerHTML = '<span style="font-size:1.1em">◎</span> Generate Full Concept Map';
+  subExploreBodyEl.appendChild(mapTriggerEl);
+  const mapContainerEl = document.createElement('div');
+  subExploreBodyEl.appendChild(mapContainerEl);
+  mapTriggerEl.addEventListener('click', () => loadSubExploreMap(item, mapContainerEl, mapTriggerEl));
+}
+
+function renderSubZone(items, container, zone) {
+  if (!items || !items.length) return;
+  if (zone === 'core') {
+    items.forEach(c => container.appendChild(buildCard(c, zone, false))); return;
+  }
+  const direct = items.filter(c => c.coupling !== 'contextual');
+  const contextual = items.filter(c => c.coupling === 'contextual');
+  direct.forEach(c => container.appendChild(buildCard(c, zone, false)));
+  if (contextual.length > 0) {
+    const ctxGroup = document.createElement('div'); ctxGroup.className = 'contextual-group hidden';
+    contextual.forEach(c => ctxGroup.appendChild(buildCard(c, zone, true)));
+    container.appendChild(ctxGroup);
+    const ctxBtn = document.createElement('button'); ctxBtn.className = 'zone-toggle';
+    ctxBtn.textContent = `+ ${contextual.length} contextual`;
+    let exp = false;
+    ctxBtn.addEventListener('click', () => {
+      exp = !exp;
+      ctxGroup.classList.toggle('hidden', !exp);
+      ctxBtn.textContent = exp ? `− hide contextual` : `+ ${contextual.length} contextual`;
+      ctxBtn.classList.toggle('active', exp);
+    });
+    container.appendChild(ctxBtn);
+  }
+}
+
+async function loadSubExploreMap(item, container, btn) {
+  btn.disabled = true; btn.textContent = '⟳ Generating…';
+  const mapKey = cacheKey(item.name, 'map');
+  const statusEl = document.createElement('div');
+  statusEl.className = 'sub-explore-status'; statusEl.style.marginBottom = '1rem';
+  container.appendChild(statusEl);
+
+  let mapData = await getCache(mapKey);
+  if (!mapData) {
+    try {
+      mapData = await callAPI(mainPrompt(item.name, _currentProfile), 10000, statusEl);
+      setCache(mapKey, mapData);
+    } catch (err) {
+      statusEl.remove();
+      const errEl = document.createElement('div'); errEl.className = 'section-error'; errEl.textContent = err.message;
+      container.appendChild(errEl);
+      btn.disabled = false; btn.textContent = '◎ Retry Concept Map';
+      return;
+    }
+  } else {
+    statusEl.innerHTML = '<span class="cache-badge">&#x26A1; Loaded from cache</span>';
+  }
+
+  statusEl.remove();
+  btn.remove();
+
+  const zoneDefs = [
+    { key: 'predecessors', label: '&#x2191; Prerequisites', pill: 'pred', items: mapData.predecessors },
+    { key: 'core',         label: '&#x25CE; Core Concepts',  pill: 'core', items: mapData.core },
+    { key: 'successors',   label: '&#x2193; Extensions',     pill: 'succ', items: mapData.successors },
+  ];
+  zoneDefs.forEach(z => {
+    if (!z.items || !z.items.length) return;
+    const header = document.createElement('div');
+    header.innerHTML = `<div class="zone-header" style="margin-top:1.5rem"><div class="zone-hr"></div><div class="zone-pill ${z.pill}">${z.label}</div><div class="zone-hr"></div></div>`;
+    container.appendChild(header);
+    const grid = document.createElement('div'); grid.className = 'cards-grid'; grid.style.marginTop = '.75rem';
+    container.appendChild(grid);
+    renderSubZone(z.items, grid, z.key);
+  });
 }
 
 async function openSubExplore(name) {

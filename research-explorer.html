@@ -105,6 +105,8 @@ header h1{
 }
 .chip.active{background:var(--accent);color:white;border-color:var(--accent);}
 .chip:hover:not(.active){border-color:var(--muted);}
+.qg-type-row{display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;flex-wrap:wrap;}
+.qg-type-row .key-label{white-space:nowrap;}
 
 /* ── Main 2-pane ── */
 main{
@@ -345,6 +347,10 @@ main{
       <button id="qgGenerateBtn" onclick="generateQuestions()">Generate</button>
       <button class="secondary" id="qgClearBtn" onclick="clearQG()">Clear</button>
     </div>
+    <div class="qg-type-row">
+      <span class="key-label">Question type:</span>
+      <div class="filter-chips" id="qgTypeChips"></div>
+    </div>
     <div class="key-row">
       <span class="key-label">Anthropic API key:</span>
       <input type="password" id="apiKeyInput" placeholder="sk-ant-…" style="flex:none;width:240px;">
@@ -454,6 +460,7 @@ const els = {
   qgSearchBar: document.getElementById('qgSearchBar'),
   qgSearchInput: document.getElementById('qgSearchInput'),
   tierChips: document.getElementById('tierChips'),
+  qgTypeChips: document.getElementById('qgTypeChips'),
   qgResultsView: document.getElementById('qgResultsView'),
 };
 
@@ -462,6 +469,7 @@ let qgState = null; // { field, field_summary, questions[] }
 let activeTab = 'qg';
 let activeCatFilter = 'all';
 let activeTierFilter = 'all';
+let qgSelectedType = 'all';
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab){
@@ -1060,9 +1068,27 @@ const TIER_DESC = {
   research:'Open problems & synthesis — PhD / researcher level',
 };
 
+const QG_TYPES = ['all','conceptual','theoretical','applied','historical','comparative','critical'];
+const QG_TYPE_LABELS = {
+  all:'All Types', conceptual:'Conceptual', theoretical:'Theoretical',
+  applied:'Applied', historical:'Historical', comparative:'Comparative', critical:'Critical',
+};
+const QG_TYPE_INSTR = {
+  all: '',
+  conceptual: 'Frame ALL questions to test understanding of core mechanisms, structures, and principles — focus on how and why things work.',
+  theoretical: 'Frame ALL questions around formal, mathematical, logical, or axiomatic reasoning — proofs, derivations, and theoretical foundations.',
+  applied: 'Frame ALL questions around real-world problem-solving, practical implementation, case studies, and concrete decisions.',
+  historical: 'Frame ALL questions around intellectual lineage, development of ideas, key figures, schools of thought, and historical context.',
+  comparative: 'Frame ALL questions to compare and contrast frameworks, paradigms, methods, or competing approaches within the field.',
+  critical: 'Frame ALL questions to evaluate evidence, challenge assumptions, debate open questions, and examine methodological critique.',
+};
+
 function questionsPrompt(field, subtopic){
   const sub = subtopic ? `\nSub-topic focus: "${subtopic}"` : '';
-  return `Academic field: "${field}"${sub}
+  const typeInstr = qgSelectedType !== 'all'
+    ? `\nQuestion type: ${QG_TYPE_LABELS[qgSelectedType]}. ${QG_TYPE_INSTR[qgSelectedType]} Do not include questions outside this framing.`
+    : '';
+  return `Academic field: "${field}"${sub}${typeInstr}
 
 Generate a comprehensive question bank spanning from foundational to research level. Cover the full intellectual range of this field. Include only questions that are intellectually substantive and genuinely test understanding (no trivial fill-in-the-blank).
 
@@ -1087,7 +1113,7 @@ async function generateQuestions(){
   streamLogShow();
 
   const subtopic = els.subtopicInput.value.trim();
-  const cacheKey = field.toLowerCase() + '|' + subtopic.toLowerCase();
+  const cacheKey = field.toLowerCase() + '|' + subtopic.toLowerCase() + '|' + qgSelectedType;
   try{
     const cached = await dbGet('questions', cacheKey);
     if(cached){
@@ -1188,6 +1214,17 @@ function toggleTier(tier){
   if(el) el.classList.toggle('collapsed');
 }
 
+function buildQGTypeChips(){
+  els.qgTypeChips.innerHTML = QG_TYPES.map(t =>
+    `<span class="chip${t===qgSelectedType?' active':''}" onclick="setQGType('${t}')">${QG_TYPE_LABELS[t]}</span>`
+  ).join('');
+}
+
+function setQGType(type){
+  qgSelectedType = type;
+  buildQGTypeChips();
+}
+
 function buildTierChips(){
   const tiers = ['all', ...TIERS];
   els.tierChips.innerHTML = tiers.map(t =>
@@ -1243,6 +1280,7 @@ function exportQuestions(){
 // ── Init ──────────────────────────────────────────────────────────────────────
 openDB().then(() => {
   loadSettings();
+  buildQGTypeChips();
 }).catch(e => console.warn('IndexedDB init failed:', e));
 </script>
 </body>
