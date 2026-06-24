@@ -289,6 +289,13 @@ main{
 }
 .q-card.hidden{display:none;}
 .q-text{font-size:0.93rem;font-weight:600;line-height:1.45;margin-bottom:0.4rem;}
+.explore-q{cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}
+.explore-q:hover{color:var(--accent2);}
+.q-explore-hint{
+  font-size:.65rem;font-weight:700;color:var(--accent2);white-space:nowrap;
+  opacity:0;transition:opacity .15s;margin-top:.18rem;flex-shrink:0;
+}
+.explore-q:hover .q-explore-hint{opacity:1;}
 .q-explanation{font-size:0.84rem;color:var(--muted);line-height:1.5;margin-bottom:0.4rem;}
 .q-footer{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;}
 .difficulty-badge{
@@ -2135,7 +2142,7 @@ function renderQuestions(){
     for(const q of qs){
       const prereqs = (q.concepts_needed||[]).map(p => `<span class="prereq-chip">${esc(p)}</span>`).join('');
       cardsHtml += `<div class="q-card" data-tier="${tier}" data-text="${esc((q.question+' '+(q.explanation||'')).toLowerCase())}">
-        <div class="q-text">${esc(q.question)}</div>
+        <div class="q-text explore-q" data-q="${esc(q.question)}" onclick="useQuestion(this.dataset.q)" title="Click to explore in Research tab">${esc(q.question)}<span class="q-explore-hint">Explore &#x2192;</span></div>
         ${q.explanation ? `<div class="q-explanation">${esc(q.explanation)}</div>` : ''}
         <div class="q-footer">
           <span class="difficulty-badge">Difficulty ${q.difficulty||'?'}/10</span>
@@ -2156,6 +2163,12 @@ function renderQuestions(){
   els.qgResultsView.innerHTML = html;
   els.qgSearchBar.classList.add('visible');
   buildTierChips();
+}
+
+function useQuestion(question){
+  els.question.value = question;
+  switchTab('research');
+  els.question.focus();
 }
 
 function toggleTier(tier){
