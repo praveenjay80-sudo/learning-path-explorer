@@ -408,6 +408,81 @@ main{
 .concept-name-link{cursor:pointer;text-decoration:none;border-bottom:1px dashed var(--accent);color:inherit;}
 .concept-name-link:hover{border-bottom-color:transparent;color:var(--accent);}
 
+/* ── Semantic Scholar badges ── */
+.s2-verified{display:inline-flex;align-items:center;gap:.2rem;font-size:.62rem;font-weight:700;
+  padding:.08rem .38rem;border-radius:3px;vertical-align:middle;margin-left:.3rem;
+  background:rgba(21,128,61,.1);color:#15803d;border:1px solid rgba(21,128,61,.22);}
+.s2-unverified{display:inline-flex;align-items:center;gap:.2rem;font-size:.62rem;font-weight:700;
+  padding:.08rem .38rem;border-radius:3px;vertical-align:middle;margin-left:.3rem;
+  background:rgba(180,83,9,.09);color:var(--methodological);border:1px solid rgba(180,83,9,.22);}
+.cite-count{font-size:.67rem;color:var(--muted);font-weight:600;margin-left:.35rem;}
+.oa-link{display:inline-flex;align-items:center;gap:.18rem;font-size:.68rem;color:#15803d;
+  text-decoration:none;background:rgba(21,128,61,.08);border:1px solid rgba(21,128,61,.2);
+  padding:.1rem .42rem;border-radius:3px;font-weight:700;margin-left:.3rem;}
+.oa-link:hover{background:rgba(21,128,61,.18);}
+.work-item.min-set-hi{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,58,237,.13);}
+
+/* ── Coverage matrix ── */
+.coverage-wrap{padding:.75rem 1rem 1rem;}
+.coverage-toggle{
+  display:flex;align-items:center;gap:.55rem;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:.55rem 1rem;font-size:.82rem;font-weight:700;color:var(--text);
+  user-select:none;
+}
+.coverage-toggle:hover{border-color:var(--muted);}
+.coverage-toggle-arrow{font-size:.72rem;color:var(--muted);transition:transform .15s;}
+.coverage-wrap.open .coverage-toggle-arrow{transform:rotate(180deg);}
+.coverage-body{
+  background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;
+  border-top:none;padding:.85rem;overflow-x:auto;display:none;
+}
+.coverage-wrap.open .coverage-body{display:block;}
+.matrix-tbl{border-collapse:collapse;font-size:.72rem;}
+.matrix-tbl th{padding:.28rem .4rem;font-weight:700;color:var(--muted);font-size:.63rem;
+  text-transform:uppercase;letter-spacing:.04em;text-align:center;}
+.matrix-tbl td{padding:.22rem .32rem;vertical-align:middle;}
+.matrix-tbl td.mc{font-size:.73rem;font-weight:600;color:var(--text);white-space:nowrap;
+  padding-right:.65rem;max-width:175px;overflow:hidden;text-overflow:ellipsis;}
+.m-dot{width:13px;height:13px;border-radius:2px;margin:0 auto;
+  background:rgba(37,99,235,.07);border:1px solid var(--border);}
+.m-dot.on{background:var(--accent2);border-color:var(--accent2);}
+.m-dot.hi{background:var(--accent);border-color:var(--accent);}
+.matrix-tbl .mrow:hover td{background:rgba(124,58,237,.04);}
+.matrix-tbl .m-wnum{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.25rem;height:1.25rem;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:.62rem;font-weight:700;color:var(--text);}
+.matrix-tbl .m-wnum.min{background:var(--accent);border-color:var(--accent);color:#fff;}
+.matrix-tbl .m-covrow td{border-top:1px solid var(--border);font-weight:700;font-size:.67rem;color:var(--accent2);text-align:center;}
+.min-set-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;margin-left:auto;}
+.min-set-btn.active{background:rgba(124,58,237,.1);border-color:var(--accent);color:var(--accent);}
+.min-set-btn:hover:not(.active){border-color:var(--muted);color:var(--text);}
+.s2-verify-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;}
+.s2-verify-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+.s2-verify-btn.running{opacity:.6;cursor:not-allowed;}
+
+/* ── Missing concepts ── */
+.missing-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.15rem .55rem;font-size:.7rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;float:right;margin-top:-.1rem;}
+.missing-btn:hover{border-color:var(--accent);color:var(--accent);}
+.missing-section{
+  background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.18);
+  border-radius:6px;padding:.6rem .8rem;margin:.45rem 0;
+  font-size:.82rem;line-height:1.6;display:none;}
+.missing-item{margin-bottom:.4rem;padding:.35rem .55rem;background:var(--surface);border-radius:5px;border:1px solid var(--border);}
+.missing-item-name{font-weight:700;color:var(--accent);}
+.missing-item-reason{font-size:.78rem;color:var(--text);margin-left:.35rem;}
+
 /* ── Chat panel ── */
 .chat-panel{
   position:fixed;bottom:0;left:0;right:0;z-index:100;
@@ -512,6 +587,8 @@ body{padding-bottom:48px;}
   <div class="search-bar" id="searchBar">
     <input type="text" id="searchInput" placeholder="Filter by keyword…" oninput="applyFilters()">
     <div class="filter-chips" id="catChips"></div>
+    <button class="s2-verify-btn" id="s2VerifyBtn" onclick="runS2Verify()" title="Verify works with Semantic Scholar + reorder by real citations">&#x1F50D; Verify works</button>
+    <button class="min-set-btn" id="minSetBtn" onclick="toggleMinSet()">Min reading set</button>
   </div>
 
   <!-- Search bar for question generator -->
@@ -530,7 +607,8 @@ body{padding-bottom:48px;}
 <div class="tab-section" id="researchMain">
   <main>
     <div class="pane" id="conceptsPane">
-      <h2>Concepts</h2>
+      <h2>Concepts <button class="missing-btn" id="missingBtn" onclick="findMissingConcepts()" style="display:none">Find missing</button></h2>
+      <div id="missingSection" class="missing-section"></div>
       <div id="conceptsView"><p class="empty">Enter a research question and click Generate.</p></div>
     </div>
     <div class="pane" id="readingPane">
@@ -538,6 +616,15 @@ body{padding-bottom:48px;}
       <div id="readingView"><p class="empty">Reading list will appear here after generation.</p></div>
     </div>
   </main>
+  <!-- Coverage matrix (full width, below both panes) -->
+  <div class="coverage-wrap" id="coverageWrap" style="display:none">
+    <div class="coverage-toggle" onclick="toggleCoverageMatrix()">
+      <span>&#x1F4CA; Concept &times; Work Coverage Matrix</span>
+      <span class="coverage-toggle-arrow">&#x25BC;</span>
+      <span id="coverageSummary" style="font-size:.72rem;color:var(--muted);font-weight:400;margin-left:.25rem;"></span>
+    </div>
+    <div class="coverage-body" id="coverageBody"></div>
+  </div>
 </div>
 
 <!-- Answer tab -->
@@ -909,6 +996,262 @@ function scrollToRef(type, name){
   }, 80);
 }
 
+// ── Semantic Scholar ──────────────────────────────────────────────────────────
+const S2_BASE = 'https://api.semanticscholar.org/graph/v1';
+const S2_FIELDS = 'paperId,title,authors,year,venue,openAccessPdf,citationCount,references';
+
+async function s2Search(title){
+  try{
+    const url = `${S2_BASE}/paper/search?query=${encodeURIComponent(title)}&limit=3&fields=${S2_FIELDS}`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const candidates = data.data || [];
+    if(!candidates.length) return null;
+    const clean = t => (t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+    const q = clean(title);
+    // Try to find a close title match
+    for(const c of candidates){
+      const ct = clean(c.title||'');
+      if(ct === q || ct.includes(q.slice(0,35)) || q.includes(ct.slice(0,35))) return c;
+    }
+    return candidates[0]; // fallback: first result
+  }catch(e){ return null; }
+}
+
+function topoStages(n, citesInList){
+  // citesInList[i] = Set of indices that work i cites (i depends on those)
+  // Stage = 1 + max stage of all cited works; cycle-safe via visiting guard
+  const stages = new Map(), visiting = new Set();
+  function stageOf(i){
+    if(stages.has(i)) return stages.get(i);
+    if(visiting.has(i)){ return 1; }  // break cycle
+    visiting.add(i);
+    const deps = citesInList[i] || new Set();
+    const s = deps.size ? Math.max(...[...deps].map(stageOf)) + 1 : 1;
+    visiting.delete(i);
+    stages.set(i, s);
+    return s;
+  }
+  for(let i=0;i<n;i++) stageOf(i);
+  return stages;
+}
+
+async function runS2Verify(){
+  if(!state?.works?.length) return;
+  const btn = document.getElementById('s2VerifyBtn');
+  if(btn){ btn.classList.add('running'); btn.textContent = 'Verifying…'; btn.disabled = true; }
+  streamLogShow();
+  try{
+    state.works = await verifyWorksWithS2(state.works);
+    state.s2Verified = true;
+    const cacheKey = state.question.toLowerCase();
+    await dbPut('research', {key: cacheKey, data: state, ts: Date.now()});
+    renderResearch();
+    setStatus('Semantic Scholar verification complete.', 'info');
+    setTimeout(()=>setStatus(''), 3000);
+    streamLogHide();
+  }catch(e){
+    setStatus('S2 verify failed: ' + e.message, 'error');
+  }finally{
+    if(btn){ btn.classList.remove('running'); btn.textContent = '🔍 Verify works'; btn.disabled = false; }
+  }
+}
+
+async function verifyWorksWithS2(works){
+  streamLogAppend('=== Semantic Scholar Verification ===\n');
+  const verified = [];
+  for(let i=0;i<works.length;i++){
+    const w = works[i];
+    setStatus(`Verifying ${i+1}/${works.length}: ${w.title.slice(0,45)}…`, 'info');
+    const s2 = await s2Search(w.title);
+    if(s2){
+      streamLogAppend(`✓ ${w.title.slice(0,55)}\n`);
+      verified.push({
+        ...w,
+        authors: s2.authors?.length ? s2.authors.map(a=>a.name) : w.authors,
+        year:  s2.year  || w.year,
+        venue: s2.venue || w.venue,
+        s2:{
+          paperId:      s2.paperId,
+          verified:     true,
+          citationCount: s2.citationCount || 0,
+          openAccessPdf: s2.openAccessPdf || null,
+          referenceIds:  (s2.references||[]).map(r=>r.paperId).filter(Boolean),
+        }
+      });
+    }else{
+      streamLogAppend(`✗ Not found: ${w.title.slice(0,55)}\n`);
+      verified.push({...w, s2:{verified:false, citationCount:0, openAccessPdf:null, referenceIds:[]}});
+    }
+    if(i < works.length-1) await new Promise(r=>setTimeout(r, 700));
+  }
+
+  // Build citation graph among verified works, recompute stages
+  const pidMap = new Map();
+  verified.forEach((w,i)=>{ if(w.s2?.paperId) pidMap.set(w.s2.paperId, i); });
+  const citesInList = verified.map(w =>
+    new Set((w.s2?.referenceIds||[]).map(id=>pidMap.get(id)).filter(x=>x!=null))
+  );
+  const totalLinks = citesInList.reduce((s,c)=>s+c.size, 0);
+
+  if(totalLinks > 0){
+    const newStages = topoStages(verified.length, citesInList);
+    // Preserve original stage labels; only update stage numbers
+    const origLabel = new Map(verified.map(w=>[w.stage, w.stage_label]));
+    verified.forEach((w,i)=>{
+      const ns = newStages.get(i)||1;
+      w.stage = ns;
+    });
+    // Re-derive stage labels: keep original label for the closest original stage
+    const usedStages = [...new Set(verified.map(w=>w.stage))].sort((a,b)=>a-b);
+    usedStages.forEach(s=>{
+      const matching = verified.filter(w=>w.stage===s);
+      if(matching.every(w=>!w.stage_label||w.stage_label===`Stage ${w.stage}`)){
+        // Find best original label: min original stage that maps to this new stage
+      }
+    });
+    streamLogAppend(`\nCitation graph: ${totalLinks} inter-work links → stages recomputed.\n`);
+  }else{
+    streamLogAppend(`\nNo citation links between these works — original order kept.\n`);
+  }
+  return verified.sort((a,b)=>(a.stage||99)-(b.stage||99));
+}
+
+// ── Coverage matrix ───────────────────────────────────────────────────────────
+let minSetActive = false;
+let minSetIndices = null;
+let coverageOpen = false;
+
+function toggleCoverageMatrix(){
+  coverageOpen = !coverageOpen;
+  document.getElementById('coverageWrap').classList.toggle('open', coverageOpen);
+  if(coverageOpen) renderCoverageMatrix();
+}
+
+function renderCoverageMatrix(){
+  const body = document.getElementById('coverageBody');
+  const wrap = document.getElementById('coverageWrap');
+  if(!body||!state?.works?.length||!state?.concepts?.length){ if(wrap) wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  const works = state.works;
+  const concepts = state.concepts;
+
+  // concept i is covered by work j iff works[j].concepts_covered includes concepts[i].name
+  const covered = concepts.map(c => works.map(w => (w.concepts_covered||[]).includes(c.name)));
+  // work coverage count
+  const wCov = works.map((_,wi) => concepts.filter((_,ci)=>covered[ci][wi]).length);
+
+  // summary
+  const total = concepts.length * works.length;
+  const filled = covered.flat().filter(Boolean).length;
+  const pct = total ? Math.round(filled/total*100) : 0;
+  const sumEl = document.getElementById('coverageSummary');
+  if(sumEl) sumEl.textContent = `${concepts.length} concepts × ${works.length} works · ${pct}% coverage`;
+
+  // Build work order numbers (same as renderWorks: sorted by stage)
+  let gNum = 0;
+  const wNums = works.map(()=>++gNum);
+
+  let html = `<table class="matrix-tbl"><thead><tr><th style="text-align:left">Concept</th>`;
+  works.forEach((_,wi)=>{
+    const isMin = minSetActive && minSetIndices?.has(wi);
+    html += `<th><span class="m-wnum${isMin?' min':''}">${ wNums[wi] }</span></th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  concepts.forEach((c,ci)=>{
+    html += `<tr class="mrow"><td class="mc" title="${esc(c.name)}">${esc(c.name.length>23?c.name.slice(0,22)+'…':c.name)}</td>`;
+    works.forEach((_,wi)=>{
+      const on = covered[ci][wi];
+      const hi = on && minSetActive && minSetIndices?.has(wi);
+      html += `<td><div class="m-dot${hi?' hi':on?' on':''}"></div></td>`;
+    });
+    html += `</tr>`;
+  });
+
+  // Coverage count row
+  html += `<tr class="m-covrow"><td style="text-align:left;font-size:.67rem;color:var(--muted)">Concepts covered</td>`;
+  works.forEach((_,wi)=>html+=`<td>${wCov[wi]}</td>`);
+  html += `</tr></tbody></table>`;
+  body.innerHTML = html;
+}
+
+function computeMinSet(){
+  if(!state?.works?.length||!state?.concepts?.length) return new Set();
+  const works = state.works, concepts = state.concepts;
+  const uncovered = new Set(concepts.map((_,i)=>i));
+  const selected = new Set();
+  while(uncovered.size>0){
+    let best=-1, bestCount=0;
+    works.forEach((w,wi)=>{
+      if(selected.has(wi)) return;
+      const n = (w.concepts_covered||[]).filter(cn=>{
+        const ci = concepts.findIndex(c=>c.name===cn);
+        return ci>=0 && uncovered.has(ci);
+      }).length;
+      if(n>bestCount){ bestCount=n; best=wi; }
+    });
+    if(best<0||bestCount===0) break;
+    selected.add(best);
+    (works[best].concepts_covered||[]).forEach(cn=>{
+      const ci = concepts.findIndex(c=>c.name===cn);
+      if(ci>=0) uncovered.delete(ci);
+    });
+  }
+  return selected;
+}
+
+function toggleMinSet(){
+  minSetActive = !minSetActive;
+  const btn = document.getElementById('minSetBtn');
+  if(btn) btn.classList.toggle('active', minSetActive);
+  if(minSetActive){
+    minSetIndices = computeMinSet();
+    document.querySelectorAll('#readingView .work-item').forEach((el,i)=>{
+      el.classList.toggle('min-set-hi', minSetIndices.has(i));
+    });
+  }else{
+    minSetIndices = null;
+    document.querySelectorAll('#readingView .work-item').forEach(el=>el.classList.remove('min-set-hi'));
+  }
+  if(coverageOpen) renderCoverageMatrix();
+}
+
+// ── Find missing concepts ─────────────────────────────────────────────────────
+async function findMissingConcepts(){
+  if(!state?.concepts?.length||!state?.works?.length) return;
+  const btn = document.getElementById('missingBtn');
+  const sec = document.getElementById('missingSection');
+  if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
+  if(sec){ sec.style.display='block'; sec.innerHTML='<span style="color:var(--muted);font-size:.78rem;">Asking Claude to review the concept map…</span>'; }
+  try{
+    const cNames = state.concepts.map(c=>c.name).join(', ');
+    const prompt = `Research question: "${state.question}"
+
+Current concept map includes: ${cNames}
+
+You are a senior researcher reviewing this concept map. Identify 3-5 concepts that are MISSING — concepts that are genuinely load-bearing for answering this question but not listed. Be specific and honest. Do not repeat what is already there. Only include concepts whose absence creates a real gap.
+
+Respond ONLY with valid JSON (no markdown):
+{"missing":[{"name":"...","reason":"one sentence on what this adds"}]}`;
+    const raw = await callClaudeStream(prompt, 2000, ()=>{});
+    const data = parseJSONRobust(raw);
+    const missing = data.missing||[];
+    if(!missing.length){ sec.innerHTML='<span style="color:var(--muted);font-size:.78rem;">No significant gaps found.</span>'; return; }
+    let html = '';
+    missing.forEach(m=>{
+      html += `<div class="missing-item"><span class="missing-item-name">${esc(m.name)}</span><span class="missing-item-reason">${esc(m.reason||'')}</span></div>`;
+    });
+    sec.innerHTML = html;
+  }catch(e){
+    if(sec) sec.innerHTML = `<span style="color:var(--muted);font-size:.78rem;">${esc(e.message)}</span>`;
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='Find missing'; }
+  }
+}
+
 // ── RESEARCH EXPLORER ─────────────────────────────────────────────────────────
 
 function conceptsPrompt(question){
@@ -1037,7 +1380,7 @@ async function generate(){
     els.cacheHint.classList.remove('hit');
 
     // Stage 1: concepts
-    setStatus('Stage 1/2 — generating concepts…','info');
+    setStatus('Stage 1/3 — generating concepts…','info');
     streamLogAppend('=== Stage 1: Concepts ===\n');
     const conceptsRaw = await callClaudeStream(conceptsPromptP(question), 14000, (chunk) => {
       streamLogAppend(chunk);
@@ -1059,7 +1402,7 @@ async function generate(){
     renderResearch();
 
     // Stage 2: reading list
-    setStatus('Stage 2/2 — generating reading list…','info');
+    setStatus('Stage 2/3 — generating reading list…','info');
     streamLogAppend('=== Stage 2: Reading List ===\n');
     const conceptNames = state.concepts.map(c => c.name);
     const worksRaw = await callClaudeStream(worksPromptP(question, conceptNames), 32000, (chunk) => {
@@ -1076,6 +1419,16 @@ async function generate(){
 
     // Save stage 2 result
     await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+
+    // Stage 2.5: Semantic Scholar verification + citation-graph ordering
+    try{
+      state.works = await verifyWorksWithS2(state.works);
+      state.s2Verified = true;
+      renderResearch();
+      await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+    }catch(s2err){
+      streamLogAppend(`\nS2 verification skipped: ${s2err.message}\n`);
+    }
 
     // Stage 3: synthesized answer
     setStatus('Stage 3/3 — writing answer…','info');
@@ -1119,6 +1472,16 @@ function clearResearch(){
   els.conceptsView.innerHTML = '<p class="empty">Enter a research question and click Generate.</p>';
   els.readingView.innerHTML = '<p class="empty">Reading list will appear here after generation.</p>';
   els.searchBar.classList.remove('visible');
+  // Reset new state
+  minSetActive = false; minSetIndices = null; coverageOpen = false;
+  const cw = document.getElementById('coverageWrap');
+  if(cw){ cw.style.display='none'; cw.classList.remove('open'); }
+  const sec = document.getElementById('missingSection');
+  if(sec){ sec.style.display='none'; sec.innerHTML=''; }
+  const mb = document.getElementById('missingBtn');
+  if(mb){ mb.style.display='none'; mb.textContent='Find missing'; }
+  const msb = document.getElementById('minSetBtn');
+  if(msb) msb.classList.remove('active');
 }
 
 function renderResearch(){
@@ -1129,6 +1492,17 @@ function renderResearch(){
   els.searchBar.classList.add('visible');
   buildCatChips();
   applyFilters();
+  // Show "Find missing" button once concepts+works are ready
+  const missingBtn = document.getElementById('missingBtn');
+  if(missingBtn) missingBtn.style.display = (state.concepts?.length && state.works?.length) ? '' : 'none';
+  // Render coverage matrix if open, or just update the wrapper visibility
+  const cw = document.getElementById('coverageWrap');
+  if(cw && state.works?.length && state.concepts?.length){
+    cw.style.display = 'block';
+    if(coverageOpen) renderCoverageMatrix();
+  }
+  // Re-apply min-set highlighting if active
+  if(minSetActive){ minSetIndices = computeMinSet(); }
 }
 
 function renderConcepts(){
@@ -1201,14 +1575,20 @@ function renderWorks(){
       const prereqChips = (w.prerequisites||[]).map(t => `<span class="prereq-work-chip">${esc(t)}</span>`).join('');
       const authStr = Array.isArray(w.authors) ? w.authors.slice(0,4).join(', ') + (w.authors.length>4?' et al.':'') : (w.authors||'');
       const venue = w.venue ? ` · ${esc(w.venue)}` : '';
+      // S2 enrichment
+      const s2 = w.s2 || null;
+      const verBadge = s2 ? (s2.verified ? `<span class="s2-verified">&#x2713; S2</span>` : `<span class="s2-unverified">? unverified</span>`) : '';
+      const citeBadge = s2?.citationCount ? `<span class="cite-count">&#x1F4C8; ${s2.citationCount.toLocaleString()} citations</span>` : '';
+      const oaLink = s2?.openAccessPdf?.url ? `<a class="oa-link" href="${esc(s2.openAccessPdf.url)}" target="_blank" rel="noopener">&#x1F513; Free PDF</a>` : '';
       cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}">
         <div class="work-title">
           <span class="work-order-num">${globalOrder}</span>
           <a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)}</a>
+          ${verBadge}${oaLink}
         </div>
         <div class="work-meta">
           <span class="cat-badge ${catClass}">${esc(w.category||'').replace('_',' ')}</span>
-          ${esc(authStr)} · ${w.year||''}${venue}
+          ${esc(authStr)} · ${w.year||''}${venue}${citeBadge}
         </div>
         ${prereqChips ? `<div class="prereq-works"><span class="prereq-label">Read first:</span>${prereqChips}</div>` : ''}
         <div class="section-label" style="margin-top:0.6rem;">What this work does</div>
