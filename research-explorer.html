@@ -423,6 +423,14 @@ main{
   padding:.08rem .38rem;border-radius:3px;vertical-align:middle;margin-left:.3rem;
   background:rgba(180,83,9,.09);color:var(--methodological);border:1px solid rgba(180,83,9,.22);}
 .cite-count{font-size:.67rem;color:var(--muted);font-weight:600;margin-left:.35rem;}
+.cite-tier{
+  display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;
+  padding:.05rem .32rem;border-radius:3px;margin-right:.28rem;vertical-align:middle;letter-spacing:.02em;
+}
+.cite-top1{background:rgba(234,179,8,.18);color:#a16207;border:1px solid rgba(234,179,8,.35);}
+.cite-top5{background:rgba(21,128,61,.13);color:#15803d;border:1px solid rgba(21,128,61,.3);}
+.cite-top10{background:rgba(37,99,235,.1);color:#1d4ed8;border:1px solid rgba(37,99,235,.25);}
+.cite-top25{background:rgba(107,114,128,.1);color:var(--muted);border:1px solid var(--border);}
 .oa-link{display:inline-flex;align-items:center;gap:.18rem;font-size:.68rem;color:#15803d;
   text-decoration:none;background:rgba(21,128,61,.08);border:1px solid rgba(21,128,61,.2);
   padding:.1rem .42rem;border-radius:3px;font-weight:700;margin-left:.3rem;}
@@ -1079,7 +1087,7 @@ function scrollToRef(type, name){
 
 // ── OpenAlex ──────────────────────────────────────────────────────────────────
 const OA_BASE = 'https://api.openalex.org';
-const OA_SELECT = 'id,title,authorships,publication_year,cited_by_count,open_access,doi,referenced_works';
+const OA_SELECT = 'id,title,authorships,publication_year,cited_by_count,cited_by_percentile_year,open_access,doi,referenced_works';
 
 function oaRequestUrl(path, params = {}){
   const key = els.oaKey?.value?.trim();
@@ -1202,6 +1210,7 @@ async function verifyWorksWithOA(works){
       const oaId = oa ? shortOAId(oa.id) : null;
       // Prefer GS citation count (more comprehensive); fall back to OA
       const citationCount = serpa?.inline_links?.cited_by?.total || oa?.cited_by_count || 0;
+      const citationPercentile = oa?.cited_by_percentile_year?.min ?? null;
       const openAccessUrl = oa?.open_access?.oa_url || serpa?.resources?.[0]?.link || null;
       const referencedWorks = oa ? (oa.referenced_works || []).map(shortOAId) : [];
       const gsLink = serpa?.link || null;
@@ -1209,12 +1218,13 @@ async function verifyWorksWithOA(works){
         ? (oa.authorships || []).map(a=>a.author?.display_name).filter(Boolean)
         : w.authors;
       const sources = [oa ? 'OA' : null, serpa ? 'GS' : null].filter(Boolean).join('+');
-      streamLogAppend(`✓ ${w.title.slice(0,46)} [${sources}] ${citationCount} cites\n`);
+      const pctLabel = citationPercentile != null ? ` p${citationPercentile}` : '';
+      streamLogAppend(`✓ ${w.title.slice(0,44)} [${sources}] ${citationCount} cites${pctLabel}\n`);
       verified.push({
         ...w,
         authors: authorNames.length ? authorNames : w.authors,
         year: oa?.publication_year || w.year,
-        oa:{ oaId, verified:true, citationCount, openAccessUrl, referencedWorks, gsLink }
+        oa:{ oaId, verified:true, citationCount, citationPercentile, openAccessUrl, referencedWorks, gsLink }
       });
     }else{
       streamLogAppend(`✗ Not found: ${w.title.slice(0,50)}\n`);
@@ -1928,8 +1938,20 @@ function renderWorks(){
       // Verification enrichment
       const oa = w.oa || null;
       const verBadge = oa ? (oa.verified ? `<span class="oa-verified">&#x2713; Verified</span>` : `<span class="oa-unverified">? unverified</span>`) : '';
-      const citeBadge = oa?.citationCount ? `<span class="cite-count">&#x1F4C8; ${oa.citationCount.toLocaleString()} citations</span>` : '';
       const oaLink = oa?.openAccessUrl ? `<a class="oa-link" href="${esc(oa.openAccessUrl)}" target="_blank" rel="noopener">&#x1F513; Free PDF</a>` : '';
+      const citeBadge = (() => {
+        if(!oa?.citationCount) return '';
+        const pct = oa.citationPercentile;
+        const raw = oa.citationCount.toLocaleString() + ' citations';
+        if(pct == null) return `<span class="cite-count">&#x1F4C8; ${raw}</span>`;
+        let tier = '', cls = '';
+        if(pct >= 99){ tier = 'Top 1%'; cls = 'cite-top1'; }
+        else if(pct >= 95){ tier = 'Top 5%'; cls = 'cite-top5'; }
+        else if(pct >= 90){ tier = 'Top 10%'; cls = 'cite-top10'; }
+        else if(pct >= 75){ tier = 'Top 25%'; cls = 'cite-top25'; }
+        const tierHtml = tier ? `<span class="cite-tier ${cls}">${tier}</span>` : '';
+        return `<span class="cite-count" title="${raw} · ${pct}th percentile vs same-year works in field">${tierHtml}&#x1F4C8; ${raw}</span>`;
+      })();
       const workLink = oa?.gsLink || scholarUrl(w.title);
       cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}">
         <div class="work-title">
