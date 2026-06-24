@@ -246,6 +246,13 @@ main{
   font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:3px;
   background:rgba(124,58,237,0.1);color:var(--accent);border:1px solid rgba(124,58,237,0.2);
 }
+.key-sections-block{margin-top:0.5rem;}
+.key-sections-list{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.25rem;}
+.key-section-chip{
+  font-size:0.72rem;padding:0.15rem 0.5rem;border-radius:4px;
+  background:rgba(37,99,235,0.08);color:var(--accent2);border:1px solid rgba(37,99,235,0.2);
+  font-weight:500;
+}
 .prereq-works{display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.4rem;align-items:center;}
 .prereq-label{font-size:0.65rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;}
 .prereq-work-chip{
@@ -397,6 +404,7 @@ main{
 .cx-work-title{font-size:.84rem;font-weight:700;color:var(--accent2);}
 .cx-work-authors{font-size:.75rem;color:var(--muted);margin-top:.15rem;}
 .cx-work-note{font-size:.78rem;color:var(--text);margin-top:.25rem;font-style:italic;}
+.cx-where-to-look{font-size:.76rem;color:var(--accent);margin-top:.2rem;font-weight:600;}
 .concept-name-link{cursor:pointer;text-decoration:none;border-bottom:1px dashed var(--accent);color:inherit;}
 .concept-name-link:hover{border-bottom-color:transparent;color:var(--accent);}
 
@@ -716,7 +724,18 @@ function escapeStringContents(s){
         let j=i+1;
         while(j<s.length&&/\s/.test(s[j]))j++;
         const next=s[j];
-        if(next===','||next==='}'||next===']'||next===':'){inStr=false;out+=c;}
+        if(next==='}'||next===']'||next===':'){inStr=false;out+=c;}
+        else if(next===','){
+          // Only close if after the comma we see a valid JSON value starter or key,
+          // not prose that's still part of the string value.
+          let k=j+1;
+          while(k<s.length&&/\s/.test(s[k]))k++;
+          const afterComma=s[k];
+          // Valid JSON starts: " { [ t(rue) f(alse) n(ull) digits -
+          // Prose inside a string value would start with letters a-z (non-keyword) or (, )
+          if(/["{\[tfn0-9\-]/.test(afterComma)){inStr=false;out+=c;}
+          else{out+='\\"';}
+        }
         else{out+='\\"';}
       }
     }else if(inStr&&c==='\n'){out+='\\n';}
@@ -895,14 +914,19 @@ function scrollToRef(type, name){
 function conceptsPrompt(question){
   return `Research question: "${question}"
 
-Identify ALL concepts — fields, frameworks, theories, methods, phenomena — that a researcher must understand to fully answer this research question. Include only load-bearing, genuinely necessary concepts. No padding.
+Identify ONLY the concepts a researcher absolutely must understand to answer THIS SPECIFIC research question — not the field in general. Apply this strict exclusion test to every candidate concept: "If this concept were removed, could the research question still be fully and specifically answered?" If yes, exclude it. Only include concepts where their absence creates a direct gap in answering exactly this question.
 
-For each concept provide:
+Do NOT include:
+- General background that any educated reader already knows
+- Concepts that are adjacent or interesting but not load-bearing for this question
+- Sub-concepts already fully explained by a higher-level concept already in the list
+
+For each included concept provide:
 - name: the concept name (concise, standard)
 - explanation: a full paragraph in plain language — what it is, the core ideas, key figures or milestones, and how it fits the broader intellectual landscape. Write for an intelligent non-specialist.
-- relevance: a full paragraph explaining specifically how this concept is needed to answer the research question — what angle it illuminates, what it enables the researcher to understand, what would be missing without it.
+- relevance: a full paragraph explaining specifically how THIS concept is required to answer THIS research question — what specific gap it fills, what the researcher cannot understand without it, and what would be missing from the answer if this concept were absent.
 
-Respond ONLY with valid JSON (no markdown, no commentary before or after):
+Respond ONLY with valid JSON (no markdown, no commentary before or after). Do NOT use double-quote characters inside JSON string values — rephrase to avoid them:
 { "question_summary": "one crisp sentence restating the question", "concepts": [ { "name": "...", "explanation": "...", "relevance": "..." } ] }`;
 }
 
@@ -929,9 +953,12 @@ For each work provide:
 - explanation: a full paragraph in plain language — what the work argues, how it works, what it contributes to the field
 - relevance: a full paragraph explaining how this specific work helps answer the research question — what insight or framework it provides
 - concepts_covered: array of concept names from the list above that this work covers
+- key_sections: array of 2-3 specific chapters, sections, or named parts within this work most directly relevant to the research question (e.g. ["Ch. 4: The Causal Model", "Section 2.3: Experimental Design"]). For journal articles, name specific subsections (e.g. ["Methods: Instrumental Variables", "Discussion: Causal Interpretation"]). Be precise and specific — not "Chapter 3" but "Chapter 3: The Mechanism of Cooperation".
+
+IMPORTANT: Do NOT use double-quote characters inside any JSON string values. Rephrase or use parentheses instead of quotes within strings.
 
 Respond ONLY with valid JSON (no markdown, no commentary):
-{ "works": [ { "title": "...", "authors": [...], "year": ..., "venue": "...", "category": "...", "stage": ..., "stage_label": "...", "prerequisites": [...], "explanation": "...", "relevance": "...", "concepts_covered": [...] } ] }`;
+{ "works": [ { "title": "...", "authors": [...], "year": ..., "venue": "...", "category": "...", "stage": ..., "stage_label": "...", "prerequisites": [...], "explanation": "...", "relevance": "...", "concepts_covered": [...], "key_sections": [...] } ] }`;
 }
 
 async function generate(){
@@ -1190,6 +1217,7 @@ function renderWorks(){
           <div class="section-label">How it answers your question</div>
           <div class="section-body">${esc(w.relevance||'')}</div>
         </div>
+        ${w.key_sections?.length ? `<div class="key-sections-block"><div class="section-label">Where to look</div><div class="key-sections-list">${w.key_sections.map(s=>`<span class="key-section-chip">${esc(s)}</span>`).join('')}</div></div>` : ''}
         ${conceptChips ? `<div class="concepts-chips">${conceptChips}</div>` : ''}
       </div>`;
     }
@@ -1550,9 +1578,9 @@ Generate a structured concept map. Respond ONLY with valid JSON:
 "prerequisites":[{"name":"","description":"one sentence why this is needed"}],
 "core_ideas":[{"name":"","description":"one sentence on this central idea"}],
 "successors":[{"name":"","description":"one sentence on what this opens up"}],
-"key_works":[{"title":"","authors":"Lastname, F. (Year).","note":"one sentence on what it contributes"}]}
+"key_works":[{"title":"","authors":"Lastname, F. (Year).","where_to_look":"exact chapter, section, or pages covering this concept best (e.g. Ch. 3: The Core Model, or Section 2.1-2.4, or Part II)","note":"one sentence on what it contributes"}]}
 
-Rules: 3-5 items each list; real verifiable works; no padding. Return ONLY JSON.`;
+Rules: 3-5 items each list; real verifiable works; specific where_to_look per work; no padding. Do NOT use double-quote characters inside any JSON string values. Return ONLY JSON.`;
 }
 
 function handleCxBackdrop(e){ if(e.target===cxOverlayEl||e.target.classList.contains('cx-backdrop')) closeCx(); }
@@ -1627,7 +1655,7 @@ function renderCxContent(item){
   if(d.key_works?.length){
     html += `<div class="cx-section"><div class="cx-sec-label">&#x1F4DA; Key Works</div>`;
     d.key_works.forEach(w => {
-      html += `<div class="cx-work"><div class="cx-work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)} &#x2197;</a></div><div class="cx-work-authors">${esc(w.authors||'')}</div>${w.note?`<div class="cx-work-note">${esc(w.note)}</div>`:''}</div>`;
+      html += `<div class="cx-work"><div class="cx-work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)} &#x2197;</a></div><div class="cx-work-authors">${esc(w.authors||'')}</div>${w.where_to_look?`<div class="cx-where-to-look">&#x1F50D; Find it in: ${esc(w.where_to_look)}</div>`:''} ${w.note?`<div class="cx-work-note">${esc(w.note)}</div>`:''}</div>`;
     });
     html += `</div>`;
   }
