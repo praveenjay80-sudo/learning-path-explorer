@@ -5,13 +5,11 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 
 const ROUTES = {
-  '/':                           'index.html',
-  '/learning-path-explorer':     'index.html',
-  '/learning-path-explorer.html':'index.html',
-  '/research-explorer':          'research-explorer.html',
-  '/research-explorer.html':     'research-explorer.html',
-  '/concept-atlas':              'concept-atlas.html',
-  '/concept-atlas.html':         'concept-atlas.html',
+  '/':                    'research-explorer.html',
+  '/research-explorer':   'research-explorer.html',
+  '/research-explorer.html': 'research-explorer.html',
+  '/concept-atlas':       'concept-atlas.html',
+  '/concept-atlas.html':  'concept-atlas.html',
 };
 
 const server = http.createServer((req, res) => {
@@ -33,8 +31,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Learning Path Explorer running on port ${PORT}`);
-  console.log(`  /                    → index.html (Learning Path Explorer)`);
-  console.log(`  /research-explorer   → research-explorer.html`);
-  console.log(`  /concept-atlas       → concept-atlas.html`);
+  console.log(`Academic Research Tools running on port ${PORT}`);
+  console.log(`  /                → research-explorer.html`);
+  console.log(`  /concept-atlas   → concept-atlas.html`);
 });
