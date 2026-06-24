@@ -477,6 +477,12 @@ main{
   color:var(--muted);font-family:inherit;margin-left:auto;}
 .min-set-btn.active{background:rgba(124,58,237,.1);border-color:var(--accent);color:var(--accent);}
 .min-set-btn:hover:not(.active){border-color:var(--muted);color:var(--text);}
+.citation-filter-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;}
+.citation-filter-btn.active{background:rgba(21,128,61,.1);border-color:#15803d;color:#15803d;}
+.citation-filter-btn:hover:not(.active){border-color:var(--muted);color:var(--text);}
 .oa-verify-btn{
   background:none;border:1px solid var(--border);border-radius:5px;
   padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
@@ -668,6 +674,7 @@ body{padding-bottom:48px;}
     <input type="text" id="searchInput" placeholder="Filter by keyword…" oninput="applyFilters()">
     <div class="filter-chips" id="catChips"></div>
     <button class="oa-verify-btn" id="oaVerifyBtn" onclick="runOAVerify()" title="Verify works with OpenAlex + reorder by real citation graph">&#x1F50D; Verify works</button>
+    <button class="citation-filter-btn" id="citationFilterBtn" onclick="toggleCitationFilter()" title="Show only works in the top 10% for citations in their field and year">&#x1F3C5; High impact</button>
     <button class="min-set-btn" id="minSetBtn" onclick="toggleMinSet()">Min reading set</button>
   </div>
 
@@ -797,6 +804,7 @@ let state = null;   // { question, question_summary, concepts[], works[], answer
 let qgState = null; // { field, field_summary, questions[] }
 let activeTab = 'qg';
 let activeCatFilter = 'all';
+let citationFilterActive = false;
 let activeTierFilter = 'all';
 let qgSelectedType = 'all';
 
@@ -1828,7 +1836,7 @@ function clearResearch(){
   els.searchBar.classList.remove('visible');
   // Reset new state
   minSetActive = false; minSetIndices = null; coverageOpen = false;
-  conceptViewMode = 'list'; missingConceptsCache = [];
+  conceptViewMode = 'list'; missingConceptsCache = []; citationFilterActive = false;
   const cw = document.getElementById('coverageWrap');
   if(cw){ cw.style.display='none'; cw.classList.remove('open'); }
   const sec = document.getElementById('missingSection');
@@ -1839,6 +1847,8 @@ function clearResearch(){
   if(msb) msb.classList.remove('active');
   const gtb = document.getElementById('graphToggleBtn');
   if(gtb){ gtb.style.display='none'; gtb.classList.remove('active'); }
+  const cfb = document.getElementById('citationFilterBtn');
+  if(cfb) cfb.classList.remove('active');
 }
 
 function renderResearch(){
@@ -1953,7 +1963,7 @@ function renderWorks(){
         return `<span class="cite-count" title="${raw} · ${pct}th percentile vs same-year works in field">${tierHtml}&#x1F4C8; ${raw}</span>`;
       })();
       const workLink = oa?.gsLink || scholarUrl(w.title);
-      cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}">
+      cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}" data-percentile="${oa?.citationPercentile ?? ''}">
         <div class="work-title">
           <span class="work-order-num">${globalOrder}</span>
           <a href="${esc(workLink)}" target="_blank" rel="noopener">${esc(w.title)}</a>
@@ -2003,6 +2013,13 @@ function setCatFilter(cat){
   applyFilters();
 }
 
+function toggleCitationFilter(){
+  citationFilterActive = !citationFilterActive;
+  const btn = document.getElementById('citationFilterBtn');
+  if(btn) btn.classList.toggle('active', citationFilterActive);
+  applyFilters();
+}
+
 function applyFilters(){
   if(!state) return;
   const kw = (els.searchInput.value||'').toLowerCase().trim();
@@ -2011,13 +2028,15 @@ function applyFilters(){
     const fullText = el.textContent.toLowerCase();
     el.classList.toggle('hidden', !(!kw || fullText.includes(kw)));
   });
-  // Works: category + keyword filter per card
+  // Works: category + keyword + citation filter per card
   document.querySelectorAll('#readingView .work-item').forEach(el => {
     const cat = el.dataset.cat || '';
     const text = el.dataset.text || '';
+    const pct = el.dataset.percentile !== '' ? Number(el.dataset.percentile) : null;
     const catMatch = activeCatFilter === 'all' || cat === activeCatFilter;
     const kwMatch = !kw || text.includes(kw);
-    el.classList.toggle('hidden', !(catMatch && kwMatch));
+    const citeMatch = !citationFilterActive || (pct != null && pct >= 90);
+    el.classList.toggle('hidden', !(catMatch && kwMatch && citeMatch));
   });
   // Hide entire stage block if all its work cards are hidden; also hide THEN markers
   document.querySelectorAll('#readingView .stage-block').forEach(block => {
