@@ -326,6 +326,87 @@ main{
 /* Diff sections visibility */
 .tab-section{display:none;}
 .tab-section.active{display:block;}
+
+/* ── Personalization chips row ── */
+.person-row{display:flex;align-items:center;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
+.person-row-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap;margin-right:0.1rem;}
+
+/* ── Concept explore drawer ── */
+.cx-overlay{position:fixed;inset:0;z-index:200;display:flex;justify-content:flex-end;pointer-events:none;}
+.cx-overlay.open{pointer-events:all;}
+.cx-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .2s;}
+.cx-overlay.open .cx-backdrop{opacity:1;}
+.cx-panel{
+  position:relative;width:min(500px,100vw);height:100%;
+  background:var(--surface);border-left:1px solid var(--border);
+  overflow-y:auto;padding:1.1rem 1.2rem;
+  transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.cx-overlay.open .cx-panel{transform:translateX(0);}
+.cx-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem;
+  padding-bottom:.75rem;border-bottom:1px solid var(--border);margin-bottom:.85rem;
+  position:sticky;top:-1.1rem;background:var(--surface);z-index:1;padding-top:.25rem;margin-top:-.25rem;
+}
+.cx-crumb{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;flex:1;}
+.cx-crumb-item{font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer;}
+.cx-crumb-item:hover{text-decoration:underline;}
+.cx-crumb-sep{font-size:.75rem;color:var(--muted);}
+.cx-close{background:none;border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;cursor:pointer;color:var(--muted);font-size:.8rem;font-family:inherit;white-space:nowrap;}
+.cx-close:hover{border-color:var(--muted);color:var(--text);}
+.cx-loader{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:.65rem;}
+.cx-loader-bar{height:100%;width:35%;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));border-radius:2px;animation:cxslide 1.4s ease-in-out infinite;}
+@keyframes cxslide{0%{transform:translateX(-150%)}100%{transform:translateX(420%)}}
+.cx-status{font-size:.78rem;color:var(--muted);margin-bottom:.6rem;}
+.cx-section{margin-bottom:1rem;}
+.cx-sec-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.45rem;}
+.cx-body{font-size:.87rem;line-height:1.65;color:var(--text);}
+.cx-item{
+  display:flex;flex-direction:column;gap:.15rem;padding:.5rem .65rem;
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  margin-bottom:.35rem;cursor:pointer;transition:border-color .15s;
+}
+.cx-item:hover{border-color:var(--accent);}
+.cx-item-name{font-size:.85rem;font-weight:700;color:var(--accent);}
+.cx-item-desc{font-size:.77rem;color:var(--muted);line-height:1.4;}
+.cx-work{padding:.5rem .65rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:.35rem;}
+.cx-work-title{font-size:.84rem;font-weight:700;color:var(--accent2);}
+.cx-work-authors{font-size:.75rem;color:var(--muted);margin-top:.15rem;}
+.cx-work-note{font-size:.78rem;color:var(--text);margin-top:.25rem;font-style:italic;}
+.concept-name-link{cursor:pointer;text-decoration:none;border-bottom:1px dashed var(--accent);color:inherit;}
+.concept-name-link:hover{border-bottom-color:transparent;color:var(--accent);}
+
+/* ── Chat panel ── */
+.chat-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--surface);border-top:1px solid var(--border);
+  box-shadow:0 -4px 20px rgba(0,0,0,.07);
+  transform:translateY(calc(100% - 42px));transition:transform .22s cubic-bezier(.4,0,.2,1);
+}
+.chat-panel.open{transform:translateY(0);}
+.chat-header{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;cursor:pointer;user-select:none;}
+.chat-title{font-size:.84rem;font-weight:700;color:var(--accent);flex:1;}
+.chat-toggle-btn{background:none;border:1px solid var(--border);border-radius:4px;padding:.15rem .45rem;cursor:pointer;color:var(--muted);font-size:.72rem;}
+.chat-body{border-top:1px solid var(--border);}
+.chat-quick{display:flex;gap:.3rem;flex-wrap:wrap;padding:.5rem 1rem .35rem;}
+.chat-quick-chip{
+  font-size:.71rem;font-weight:600;padding:.18rem .55rem;border-radius:20px;cursor:pointer;
+  border:1px solid rgba(124,58,237,.25);background:rgba(124,58,237,.07);color:var(--accent);
+}
+.chat-quick-chip:hover{background:rgba(124,58,237,.15);}
+.chat-messages{overflow-y:auto;max-height:210px;padding:.5rem 1rem;display:flex;flex-direction:column;gap:.5rem;}
+.chat-bubble{font-size:.85rem;line-height:1.55;padding:.45rem .7rem;border-radius:8px;max-width:85%;}
+.chat-bubble.user{background:var(--accent);color:#fff;align-self:flex-end;}
+.chat-bubble.assistant{background:var(--surface2);border:1px solid var(--border);align-self:flex-start;}
+.chat-bubble.streaming{border-color:var(--accent);}
+.chat-empty-msg{font-size:.82rem;color:var(--muted);text-align:center;padding:.75rem;}
+.chat-input-row{display:flex;gap:.5rem;padding:.5rem 1rem .6rem;}
+.chat-input{flex:1;padding:.4rem .65rem;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:.875rem;font-family:inherit;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:.4rem .85rem;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.chat-send-btn:disabled{opacity:.5;cursor:not-allowed;}
+body{padding-bottom:48px;}
 </style>
 </head>
 <body>
@@ -366,6 +447,17 @@ main{
       <textarea id="questionInput" placeholder="Enter your research question — e.g. &quot;How does the replication crisis challenge statistical inference in psychology?&quot;" rows="2"></textarea>
       <button id="generateBtn" onclick="generate()">Generate</button>
       <button class="secondary" id="clearBtn" onclick="clearResearch()">Clear</button>
+    </div>
+    <div class="person-row">
+      <span class="person-row-label">Background:</span>
+      <span class="chip" data-pg="bg" data-pv="beginner" onclick="setPerson(this)">Beginner</span>
+      <span class="chip active" data-pg="bg" data-pv="intermediate" onclick="setPerson(this)">Intermediate</span>
+      <span class="chip" data-pg="bg" data-pv="expert" onclick="setPerson(this)">Expert</span>
+      <span class="person-row-label" style="margin-left:0.4rem">Goal:</span>
+      <span class="chip active" data-pg="goal" data-pv="broad overview" onclick="setPerson(this)">Overview</span>
+      <span class="chip" data-pg="goal" data-pv="deep understanding" onclick="setPerson(this)">Deep dive</span>
+      <span class="chip" data-pg="goal" data-pv="write a paper" onclick="setPerson(this)">Write paper</span>
+      <span class="chip" data-pg="goal" data-pv="teach it" onclick="setPerson(this)">Teach it</span>
     </div>
     <div class="key-row">
       <span class="key-label" style="font-size:0.78rem;color:var(--muted);">Uses same API key &amp; model as Question Generator tab.</span>
@@ -426,6 +518,36 @@ main{
     <div id="answerView" class="answer-streaming"></div>
   </div>
   <div id="answerPlaceholder" style="display:none;"><p class="empty" style="padding:4rem 1rem;text-align:center;">Run the Research Explorer first — the answer will appear here.</p></div>
+</div>
+
+<!-- Concept explore drawer -->
+<div id="cxOverlay" class="cx-overlay" onclick="handleCxBackdrop(event)">
+  <div class="cx-backdrop"></div>
+  <div class="cx-panel" onclick="event.stopPropagation()">
+    <div class="cx-head">
+      <div id="cxCrumb" class="cx-crumb"></div>
+      <button class="cx-close" onclick="closeCx()">&#x2715; Close</button>
+    </div>
+    <div id="cxBody"></div>
+  </div>
+</div>
+
+<!-- AI Chat panel -->
+<div id="chatPanel" class="chat-panel">
+  <div class="chat-header" onclick="toggleChat()">
+    <div class="chat-title" id="chatTitle">&#x1F4AC; Ask about this research</div>
+    <button class="chat-toggle-btn" id="chatToggleBtn">&#x25B2;</button>
+  </div>
+  <div class="chat-body">
+    <div id="chatQuick" class="chat-quick"></div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-empty-msg">Generate a research question above to start chatting.</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" class="chat-input" type="text" placeholder="Ask anything about this research…">
+      <button id="chatSendBtn" class="chat-send-btn" onclick="sendChat()">Send</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -815,6 +937,7 @@ async function generate(){
         setStatus('Loaded from cache.');
         streamLogHide();
         renderResearch();
+        initChat();
         els.generateBtn.disabled = false;
         return;
       }
@@ -845,7 +968,7 @@ async function generate(){
     // Stage 1: concepts
     setStatus('Stage 1/2 — generating concepts…','info');
     streamLogAppend('=== Stage 1: Concepts ===\n');
-    const conceptsRaw = await callClaudeStream(conceptsPrompt(question), 14000, (chunk) => {
+    const conceptsRaw = await callClaudeStream(conceptsPromptP(question), 14000, (chunk) => {
       streamLogAppend(chunk);
     });
     streamLogAppend('\n\n');
@@ -868,7 +991,7 @@ async function generate(){
     setStatus('Stage 2/2 — generating reading list…','info');
     streamLogAppend('=== Stage 2: Reading List ===\n');
     const conceptNames = state.concepts.map(c => c.name);
-    const worksRaw = await callClaudeStream(worksPrompt(question, conceptNames), 32000, (chunk) => {
+    const worksRaw = await callClaudeStream(worksPromptP(question, conceptNames), 32000, (chunk) => {
       streamLogAppend(chunk);
     });
     streamLogAppend('\n');
@@ -900,6 +1023,7 @@ async function generate(){
     await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
     setStatus('Done.');
     streamLogHide();
+    initChat();
   }catch(e){
     setStatus(e.message, 'error');
     console.error(e);
@@ -942,7 +1066,7 @@ function renderConcepts(){
   let html = '';
   for(const c of state.concepts){
     html += `<div class="concept-card" data-name="${esc(c.name.toLowerCase())}">
-      <div class="concept-name">${esc(c.name)}<a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a></div>
+      <div class="concept-name"><span class="concept-name-link" onclick="openCx('${esc(c.name).replace(/'/g,"\\'")}') ">${esc(c.name)}</span><a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a></div>
       <div class="section-label">What it is</div>
       <div class="section-body">${esc(c.explanation||'')}</div>
       <div class="relevance-block">
@@ -1276,6 +1400,248 @@ function exportQuestions(){
     w.document.write('<pre style="white-space:pre-wrap;font-family:monospace;padding:2rem;">' + esc(md) + '</pre>');
   });
 }
+
+// ── Personalization ───────────────────────────────────────────────────────────
+let person = { bg: 'intermediate', goal: 'broad overview' };
+
+function setPerson(el){
+  const group = el.dataset.pg;
+  person[group] = el.dataset.pv;
+  document.querySelectorAll(`[data-pg="${group}"]`).forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function personCtx(){
+  return `\n\nLEARNER PROFILE — tailor depth, vocabulary, and scope accordingly:\n- Background: ${person.bg}\n- Goal: ${person.goal}`;
+}
+
+// ── Modified prompts with personalization ────────────────────────────────────
+function conceptsPromptP(question){
+  return conceptsPrompt(question) + personCtx();
+}
+function worksPromptP(question, conceptNames){
+  return worksPrompt(question, conceptNames) + personCtx();
+}
+
+// ── Streaming helper supporting messages array + system ───────────────────────
+async function callStreamMessages(messages, system, maxTokens, onChunk){
+  const apiKey = els.apiKey.value.trim();
+  if(!apiKey) throw new Error('Anthropic API key required.');
+  const model = els.model.value.trim() || 'claude-sonnet-4-6';
+  const body = { model, max_tokens:maxTokens, stream:true, messages };
+  if(system) body.system = system;
+  const res = await fetch(ANTHROPIC_URL, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    },
+    body: JSON.stringify(body),
+  });
+  if(!res.ok){ const txt = await res.text(); throw new Error(`Claude API ${res.status}: ${txt.slice(0,300)}`); }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer='', full='';
+  while(true){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, {stream:true});
+    const events = buffer.split('\n\n'); buffer = events.pop();
+    for(const evt of events){
+      for(const line of evt.split('\n')){
+        if(!line.startsWith('data: ')) continue;
+        try{
+          const p = JSON.parse(line.slice(6));
+          if(p.type==='content_block_delta'&&p.delta?.text){ full+=p.delta.text; onChunk(p.delta.text,full); }
+        }catch(_){}
+      }
+    }
+  }
+  return full;
+}
+
+// ── Concept explore drawer ────────────────────────────────────────────────────
+const cxOverlayEl = document.getElementById('cxOverlay');
+const cxBodyEl    = document.getElementById('cxBody');
+const cxCrumbEl   = document.getElementById('cxCrumb');
+let cxStack = [];   // [{name, data}]
+
+function cxPrompt(name){
+  const ctx = state?.question ? `\nResearch context: "${state.question}"` : '';
+  return `Concept: "${name}"${ctx}
+
+Generate a structured concept map. Respond ONLY with valid JSON:
+{"what_it_is":"2-3 sentence plain-language explanation",
+"prerequisites":[{"name":"","description":"one sentence why this is needed"}],
+"core_ideas":[{"name":"","description":"one sentence on this central idea"}],
+"successors":[{"name":"","description":"one sentence on what this opens up"}],
+"key_works":[{"title":"","authors":"Lastname, F. (Year).","note":"one sentence on what it contributes"}]}
+
+Rules: 3-5 items each list; real verifiable works; no padding. Return ONLY JSON.`;
+}
+
+function handleCxBackdrop(e){ if(e.target===cxOverlayEl||e.target.classList.contains('cx-backdrop')) closeCx(); }
+function closeCx(){ cxOverlayEl.classList.remove('open'); cxStack=[]; }
+
+function renderCxCrumb(){
+  cxCrumbEl.innerHTML = cxStack.map((item,i) => {
+    if(i===cxStack.length-1) return `<span class="cx-crumb-item" style="color:var(--text);cursor:default">${esc(item.name)}</span>`;
+    return `<span class="cx-crumb-item" onclick="cxNavTo(${i})">${esc(item.name)}</span><span class="cx-crumb-sep">›</span>`;
+  }).join('');
+}
+
+function cxNavTo(idx){
+  cxStack = cxStack.slice(0, idx+1);
+  renderCxContent(cxStack[idx]);
+  renderCxCrumb();
+}
+
+async function openCx(name){
+  if(!els.apiKey.value.trim()){ alert('Enter your API key first.'); return; }
+  cxOverlayEl.classList.add('open');
+  cxBodyEl.innerHTML = `<div class="cx-loader"><div class="cx-loader-bar"></div></div><div class="cx-status">Mapping "${esc(name)}"…</div>`;
+
+  const ckey = 'cx|' + name.toLowerCase();
+  let data;
+  try{
+    const cached = await dbGet('research', ckey);
+    if(cached){ data = cached.data; }
+    else{
+      const raw = await callClaudeStream(cxPrompt(name), 4000, ()=>{});
+      data = parseJSONRobust(raw);
+      await dbPut('research', {key:ckey, data, ts:Date.now()});
+    }
+  }catch(err){
+    cxBodyEl.innerHTML = `<div style="color:#b42318;font-size:.85rem;">${esc(err.message)}</div>`;
+    return;
+  }
+
+  const item = {name, data};
+  if(!cxStack.length || cxStack[cxStack.length-1].name!==name) cxStack.push(item);
+  renderCxCrumb();
+  renderCxContent(item);
+}
+
+function renderCxContent(item){
+  const d = item.data;
+  let html = '';
+  if(d.what_it_is){
+    html += `<div class="cx-section"><div class="cx-sec-label">What it is</div><div class="cx-body">${esc(d.what_it_is)}</div></div>`;
+  }
+  if(d.prerequisites?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x2191; Prerequisites</div>`;
+    d.prerequisites.forEach(p => {
+      html += `<div class="cx-item" onclick="openCx('${esc(p.name).replace(/'/g,"\\'")}')"><div class="cx-item-name">${esc(p.name)}</div><div class="cx-item-desc">${esc(p.description)}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if(d.core_ideas?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x25CE; Core Ideas</div>`;
+    d.core_ideas.forEach(c => {
+      html += `<div class="cx-item" style="cursor:default;"><div class="cx-item-name" style="color:var(--text)">${esc(c.name)}</div><div class="cx-item-desc">${esc(c.description)}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if(d.successors?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x2193; Leads to</div>`;
+    d.successors.forEach(s => {
+      html += `<div class="cx-item" onclick="openCx('${esc(s.name).replace(/'/g,"\\'")}')"><div class="cx-item-name">${esc(s.name)}</div><div class="cx-item-desc">${esc(s.description)}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if(d.key_works?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x1F4DA; Key Works</div>`;
+    d.key_works.forEach(w => {
+      html += `<div class="cx-work"><div class="cx-work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)} &#x2197;</a></div><div class="cx-work-authors">${esc(w.authors||'')}</div>${w.note?`<div class="cx-work-note">${esc(w.note)}</div>`:''}</div>`;
+    });
+    html += `</div>`;
+  }
+  cxBodyEl.innerHTML = html || '<p style="color:var(--muted);font-size:.85rem;">No data.</p>';
+}
+
+// ── AI Chat ───────────────────────────────────────────────────────────────────
+const chatPanelEl  = document.getElementById('chatPanel');
+const chatMsgsEl   = document.getElementById('chatMessages');
+const chatInputEl  = document.getElementById('chatInput');
+const chatSendBtn  = document.getElementById('chatSendBtn');
+const chatQuickEl  = document.getElementById('chatQuick');
+let chatHistory    = [];
+let chatSystem     = '';
+let chatOpen       = false;
+
+const CHAT_QUICK_PROMPTS = [
+  "What's the central debate in this area?",
+  "Where should I start reading?",
+  "What are the open questions?",
+  "Explain the key concept in one paragraph",
+  "What would a skeptic say?",
+];
+
+function toggleChat(){
+  chatOpen = !chatOpen;
+  chatPanelEl.classList.toggle('open', chatOpen);
+  document.getElementById('chatToggleBtn').textContent = chatOpen ? '▼' : '▲';
+  if(chatOpen) chatInputEl.focus();
+}
+
+function initChat(){
+  if(!state) return;
+  const cNames = (state.concepts||[]).map(c=>c.name).join(', ') || 'none';
+  const wTitles = (state.works||[]).map(w=>w.title).join(' | ') || 'none';
+  chatSystem = `You are a concise research assistant helping with this question: "${state.question||''}"\n\nKey concepts: ${cNames}\nKey works: ${wTitles}\n\nAnswer helpfully and concisely (under 150 words unless more detail is explicitly requested). Use plain language.`;
+  chatHistory = [];
+  chatMsgsEl.innerHTML = '';
+  document.getElementById('chatTitle').textContent = '💬 Ask about: ' + (state.question_summary||state.question||'').slice(0,60);
+  chatQuickEl.innerHTML = CHAT_QUICK_PROMPTS.map(q =>
+    `<span class="chat-quick-chip" onclick="sendChatText('${q.replace(/'/g,"\\'")}')">${esc(q)}</span>`
+  ).join('');
+}
+
+function appendBubble(role, text, streaming=false){
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}${streaming?' streaming':''}`;
+  div.textContent = text;
+  chatMsgsEl.appendChild(div);
+  chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+  return div;
+}
+
+async function sendChatText(text){
+  chatInputEl.value = text;
+  await sendChat();
+}
+
+async function sendChat(){
+  const text = chatInputEl.value.trim();
+  if(!text || chatSendBtn.disabled) return;
+  if(!state){ alert('Generate a research topic first.'); return; }
+  if(!chatOpen) toggleChat();
+  chatInputEl.value = '';
+  chatSendBtn.disabled = true;
+  appendBubble('user', text);
+  chatHistory.push({role:'user', content:text});
+  const bubble = appendBubble('assistant', '…', true);
+  let full = '';
+  try{
+    await callStreamMessages(chatHistory, chatSystem, 600, (chunk) => {
+      full += chunk;
+      bubble.textContent = full;
+      chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+    });
+    bubble.classList.remove('streaming');
+    chatHistory.push({role:'assistant', content:full});
+  }catch(err){
+    bubble.textContent = 'Error: ' + err.message;
+    bubble.classList.remove('streaming');
+    chatHistory.pop();
+  }
+  chatSendBtn.disabled = false;
+  chatInputEl.focus();
+}
+
+chatInputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 openDB().then(() => {
