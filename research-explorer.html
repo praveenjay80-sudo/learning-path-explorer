@@ -327,6 +327,29 @@ main{
 .tab-section{display:none;}
 .tab-section.active{display:block;}
 
+/* ── Concept + work ordering ── */
+.concepts-order-note{font-size:.68rem;color:var(--muted);margin-bottom:.65rem;font-style:italic;}
+.concept-order-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.45rem;height:1.45rem;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;
+  flex-shrink:0;margin-right:.35rem;vertical-align:middle;
+}
+.concept-stage-tag{
+  font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:.1rem .4rem;border-radius:3px;margin-left:.35rem;vertical-align:middle;
+  background:rgba(37,99,235,.1);color:var(--accent2);border:1px solid rgba(37,99,235,.2);
+}
+.work-order-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.5rem;height:1.5rem;border-radius:50%;
+  background:var(--surface);border:2px solid var(--accent2);color:var(--accent2);
+  font-size:.65rem;font-weight:800;flex-shrink:0;margin-right:.4rem;vertical-align:middle;
+}
+.concept-chip-link{cursor:pointer;}
+.concept-chip-link:hover{background:rgba(124,58,237,.2);border-color:var(--accent);}
+.history-chip{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none;letter-spacing:0;}
+
 /* ── Personalization chips row ── */
 .person-row{display:flex;align-items:center;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
 .person-row-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap;margin-right:0.1rem;}
@@ -449,15 +472,19 @@ body{padding-bottom:48px;}
       <button class="secondary" id="clearBtn" onclick="clearResearch()">Clear</button>
     </div>
     <div class="person-row">
-      <span class="person-row-label">Background:</span>
-      <span class="chip" data-pg="bg" data-pv="beginner" onclick="setPerson(this)">Beginner</span>
-      <span class="chip active" data-pg="bg" data-pv="intermediate" onclick="setPerson(this)">Intermediate</span>
-      <span class="chip" data-pg="bg" data-pv="expert" onclick="setPerson(this)">Expert</span>
-      <span class="person-row-label" style="margin-left:0.4rem">Goal:</span>
-      <span class="chip active" data-pg="goal" data-pv="broad overview" onclick="setPerson(this)">Overview</span>
-      <span class="chip" data-pg="goal" data-pv="deep understanding" onclick="setPerson(this)">Deep dive</span>
-      <span class="chip" data-pg="goal" data-pv="write a paper" onclick="setPerson(this)">Write paper</span>
-      <span class="chip" data-pg="goal" data-pv="teach it" onclick="setPerson(this)">Teach it</span>
+      <span class="person-row-label">Level:</span>
+      <span class="chip" data-pg="bg" data-pv="complete beginner with no prior knowledge" onclick="setPerson(this)">New to this</span>
+      <span class="chip active" data-pg="bg" data-pv="some background in adjacent fields" onclick="setPerson(this)">Some background</span>
+      <span class="chip" data-pg="bg" data-pv="strong domain knowledge" onclick="setPerson(this)">Domain expert</span>
+      <span class="person-row-label" style="margin-left:0.4rem">I want to:</span>
+      <span class="chip active" data-pg="goal" data-pv="understand the landscape and key ideas" onclick="setPerson(this)">Get the picture</span>
+      <span class="chip" data-pg="goal" data-pv="master the technical details and formal methods" onclick="setPerson(this)">Go deep</span>
+      <span class="chip" data-pg="goal" data-pv="apply this to real problems and projects" onclick="setPerson(this)">Apply it</span>
+      <span class="chip" data-pg="goal" data-pv="conduct original research and publish" onclick="setPerson(this)">Do research</span>
+    </div>
+    <div class="person-row" style="margin-top:.25rem">
+      <span class="person-row-label">Recent:</span>
+      <div id="historyChips" style="display:flex;gap:.3rem;flex-wrap:wrap;"></div>
     </div>
     <div class="key-row">
       <span class="key-label" style="font-size:0.78rem;color:var(--muted);">Uses same API key &amp; model as Question Generator tab.</span>
@@ -626,6 +653,9 @@ function saveSettings(){
     apiKey: els.apiKey.value.trim(),
     model: els.model.value.trim(),
   }));
+}
+function saveLastQuestion(q){
+  localStorage.setItem('re-last-question', q);
 }
 
 // ── IndexedDB ─────────────────────────────────────────────────────────────────
@@ -830,6 +860,20 @@ function renderAnswer(){
   els.answerView.innerHTML = linked;
 }
 
+function scrollToConcept(anchor){
+  switchTab('research');
+  setTimeout(() => {
+    const el = document.getElementById('concept-' + anchor);
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='2px solid var(--accent)'; setTimeout(()=>el.style.outline='',1500); }
+    else {
+      // fallback: search by text
+      const card = [...document.querySelectorAll('#conceptsView .concept-card')]
+        .find(c => c.dataset.name && anchor.includes(c.dataset.name.slice(0,15)));
+      if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); }
+    }
+  }, 80);
+}
+
 function scrollToRef(type, name){
   switchTab('research');
   // Brief delay to let the tab render before scrolling
@@ -1021,6 +1065,8 @@ async function generate(){
 
     // Final save with answer included
     await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+    saveLastQuestion(question);
+    addHistory(question);
     setStatus('Done.');
     streamLogHide();
     initChat();
@@ -1063,10 +1109,29 @@ function renderConcepts(){
     els.conceptsView.innerHTML = '<p class="empty">No concepts generated yet.</p>';
     return;
   }
-  let html = '';
-  for(const c of state.concepts){
-    html += `<div class="concept-card" data-name="${esc(c.name.toLowerCase())}">
-      <div class="concept-name"><span class="concept-name-link" onclick="openCx('${esc(c.name).replace(/'/g,"\\'")}') ">${esc(c.name)}</span><a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a></div>
+  // Order concepts by the earliest stage any of their works appear in
+  const conceptFirstStage = {};
+  for(const w of (state.works||[])){
+    const s = w.stage || 99;
+    for(const cn of (w.concepts_covered||[])){
+      if(!(cn in conceptFirstStage) || s < conceptFirstStage[cn]) conceptFirstStage[cn] = s;
+    }
+  }
+  const ordered = [...state.concepts].sort((a,b) => {
+    return (conceptFirstStage[a.name]??99) - (conceptFirstStage[b.name]??99);
+  });
+
+  let html = '<div class="concepts-order-note">Ordered by when they enter the reading path ↓</div>';
+  ordered.forEach((c, i) => {
+    const stageNum = conceptFirstStage[c.name];
+    const stageTag = stageNum ? `<span class="concept-stage-tag">Stage ${stageNum}</span>` : '';
+    html += `<div class="concept-card" id="concept-${esc(c.name.toLowerCase().replace(/\s+/g,'-'))}" data-name="${esc(c.name.toLowerCase())}">
+      <div class="concept-name">
+        <span class="concept-order-num">${i+1}</span>
+        <span class="concept-name-link" onclick="openCx('${c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${esc(c.name)}</span>
+        ${stageTag}
+        <a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a>
+      </div>
       <div class="section-label">What it is</div>
       <div class="section-body">${esc(c.explanation||'')}</div>
       <div class="relevance-block">
@@ -1074,7 +1139,7 @@ function renderConcepts(){
         <div class="section-body">${esc(c.relevance||'')}</div>
       </div>
     </div>`;
-  }
+  });
   els.conceptsView.innerHTML = html;
 }
 
@@ -1093,19 +1158,27 @@ function renderWorks(){
   const stages = [...stageMap.entries()].sort((a,b) => a[0]-b[0]);
 
   let html = '';
+  let globalOrder = 0;
   stages.forEach(([stageNum, stageData], idx) => {
     const isParallel = stageData.works.length > 1;
     const stageId = `stage-${stageNum}`;
     // Build work cards
     let cardsHtml = '';
     for(const w of stageData.works){
+      globalOrder++;
       const catClass = 'cat-' + (w.category||'foundational').replace(/\s/g,'_');
-      const conceptChips = (w.concepts_covered||[]).map(cn => `<span class="concept-chip">${esc(cn)}</span>`).join('');
+      const conceptChips = (w.concepts_covered||[]).map(cn => {
+        const anchor = cn.toLowerCase().replace(/\s+/g,'-');
+        return `<span class="concept-chip concept-chip-link" onclick="scrollToConcept('${esc(anchor)}')" title="Jump to concept">${esc(cn)}</span>`;
+      }).join('');
       const prereqChips = (w.prerequisites||[]).map(t => `<span class="prereq-work-chip">${esc(t)}</span>`).join('');
       const authStr = Array.isArray(w.authors) ? w.authors.slice(0,4).join(', ') + (w.authors.length>4?' et al.':'') : (w.authors||'');
       const venue = w.venue ? ` · ${esc(w.venue)}` : '';
       cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}">
-        <div class="work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)}</a></div>
+        <div class="work-title">
+          <span class="work-order-num">${globalOrder}</span>
+          <a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)}</a>
+        </div>
         <div class="work-meta">
           <span class="cat-badge ${catClass}">${esc(w.category||'').replace('_',' ')}</span>
           ${esc(authStr)} · ${w.year||''}${venue}
@@ -1643,10 +1716,57 @@ async function sendChat(){
 
 chatInputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
 
+// ── Search history ────────────────────────────────────────────────────────────
+function getHistory(){
+  try{ return JSON.parse(localStorage.getItem('re-history')||'[]'); }catch(_){ return []; }
+}
+function addHistory(q){
+  let h = getHistory().filter(x => x !== q);
+  h.unshift(q);
+  h = h.slice(0, 10);
+  localStorage.setItem('re-history', JSON.stringify(h));
+  renderHistory();
+}
+function renderHistory(){
+  const h = getHistory();
+  const el = document.getElementById('historyChips');
+  if(!el) return;
+  if(!h.length){ el.innerHTML='<span style="font-size:.75rem;color:var(--muted)">No recent searches</span>'; return; }
+  el.innerHTML = h.map(q =>
+    `<span class="chip history-chip" title="${esc(q)}" onclick="loadHistoryItem(${JSON.stringify(esc(q))})">${esc(q.length>50?q.slice(0,50)+'…':q)}</span>`
+  ).join('');
+}
+function loadHistoryItem(q){
+  const decoded = q.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+  els.question.value = decoded;
+  switchTab('research');
+  generate();
+}
+
+// ── Session restore ───────────────────────────────────────────────────────────
+async function tryRestoreSession(){
+  try{
+    const last = localStorage.getItem('re-last-question');
+    if(!last) return;
+    const cached = await dbGet('research', last.toLowerCase());
+    if(cached && cached.data?.concepts?.length){
+      state = cached.data;
+      els.question.value = last;
+      switchTab('research');
+      renderResearch();
+      initChat();
+      setStatus('Session restored — click Generate to refresh.', 'info');
+      setTimeout(()=>setStatus(''), 3000);
+    }
+  }catch(e){ console.warn('Session restore failed:', e); }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
+buildQGTypeChips();   // always build immediately, no IDB dependency
 openDB().then(() => {
   loadSettings();
-  buildQGTypeChips();
+  renderHistory();
+  tryRestoreSession();
 }).catch(e => console.warn('IndexedDB init failed:', e));
 </script>
 </body>
