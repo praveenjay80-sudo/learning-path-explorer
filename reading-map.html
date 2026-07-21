@@ -57,6 +57,8 @@ main{max-width:960px;margin:0 auto;padding:1.25rem;}
 .work a.link{font-size:0.78rem;color:var(--accent2);text-decoration:none;margin-left:0.3rem;}
 .work a.link:hover{text-decoration:underline;}
 .loading{text-align:center;padding:2rem;color:var(--muted);}
+#streamPreview{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.6rem 0.8rem;font-family:ui-monospace,Consolas,monospace;font-size:0.72rem;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow-y:auto;color:var(--muted);margin:0.6rem 0;}
+#streamPreview.show{display:block;}
 .retry-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.3rem 0.8rem;border-radius:6px;font-size:0.8rem;cursor:pointer;margin-top:0.4rem;}
 </style>
 </head>
@@ -76,6 +78,7 @@ main{max-width:960px;margin:0 auto;padding:1.25rem;}
     </div>
     <div id="status"></div>
   </div>
+  <div id="streamPreview"></div>
   <div id="subtopics"></div>
   <div id="statsBar"></div>
   <div id="filterBar">
@@ -253,11 +256,15 @@ function renderSubtopics(subtopics) {
 }
 
 async function runPass1(topic, apiKey) {
+  const previewEl = document.getElementById('streamPreview');
+  previewEl.textContent = '';
+  previewEl.classList.add('show');
   const raw = await streamChatCompletion(
     apiKey,
     [{ role: 'user', content: buildBreadthPrompt(topic) }],
-    () => {} // pass 1 renders only once parsed (JSON isn't safely partial-parseable mid-stream)
+    (text) => { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
   );
+  previewEl.classList.remove('show');
   const parsed = JSON.parse(raw);
   renderSubtopics(parsed.subtopics);
   return parsed.subtopics;
@@ -315,11 +322,15 @@ function renderStages(stages) {
 }
 
 async function runPass2(topic, subtopics, apiKey) {
+  const previewEl = document.getElementById('streamPreview');
+  previewEl.textContent = '';
+  previewEl.classList.add('show');
   const raw = await streamChatCompletion(
     apiKey,
     [{ role: 'user', content: buildDepthPrompt(topic, subtopics) }],
-    () => {}
+    (text) => { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
   );
+  previewEl.classList.remove('show');
   const parsed = JSON.parse(raw);
   renderStages(parsed.stages);
   return parsed.stages;
