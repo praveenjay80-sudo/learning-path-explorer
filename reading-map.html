@@ -86,6 +86,20 @@ main{max-width:960px;margin:0 auto;padding:1.25rem;}
   <div id="results"></div>
 </main>
 <script>
+// ── Pure helpers ─────────────────────────────────────────
+function normalizeTopicKey(topic) {
+  return topic.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function scholarLink(title, author) {
+  const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
+  return 'https://scholar.google.com/scholar?q=' + q;
+}
+
+function booksLink(title, author) {
+  const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
+  return 'https://www.google.com/search?tbm=bks&q=' + q;
+}
 </script>
 </body>
 </html>
