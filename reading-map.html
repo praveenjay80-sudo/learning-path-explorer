@@ -101,6 +101,15 @@ function booksLink(title, author) {
   return 'https://www.google.com/search?tbm=bks&q=' + q;
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── SSE parsing (pure) ───────────────────────────────────
 function parseSSELine(line) {
   if (!line.startsWith('data: ')) return null;
@@ -205,7 +214,7 @@ No artificial caps — include every subtopic that genuinely belongs. Return ONL
 function renderSubtopics(subtopics) {
   const el = document.getElementById('subtopics');
   el.innerHTML = subtopics.map(s => '<span class="chip" title="' +
-    s.description.replace(/"/g, '&quot;') + '">' + s.name + '</span>').join('');
+    escapeHtml(s.description) + '">' + escapeHtml(s.name) + '</span>').join('');
 }
 
 async function runPass1(topic, apiKey) {
