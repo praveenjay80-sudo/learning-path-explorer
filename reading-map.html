@@ -74,6 +74,9 @@ main{max-width:960px;margin:0 auto;padding:1.25rem;}
       <button id="genBtn" disabled>Generate</button>
     </div>
     <div class="row">
+      <input type="text" id="contextInput" placeholder="optional: field/context (e.g. game theory)" />
+    </div>
+    <div class="row">
       <input type="password" id="apiKey" placeholder="OpenRouter API Key (sk-or-...)" />
     </div>
     <div id="status"></div>
@@ -447,13 +450,15 @@ function renderRetry(label, onRetry) {
 genBtn.onclick = async function () {
   const topic = topicInput.value.trim();
   const apiKey = apiKeyInput.value.trim();
+  const context = document.getElementById('contextInput').value.trim();
+  const effectiveTopic = context ? topic + ', in the context of ' + context : topic;
   if (!topic || !apiKey) {
     setStatus('Enter a topic and your OpenRouter API key.', 'error');
     return;
   }
   localStorage.setItem('reading-map-api-key', apiKey);
 
-  const topicKey = normalizeTopicKey(topic);
+  const topicKey = normalizeTopicKey(effectiveTopic);
   genBtn.disabled = true;
   document.getElementById('subtopics').innerHTML = '';
   document.getElementById('statsBar').classList.remove('show');
@@ -466,7 +471,7 @@ genBtn.onclick = async function () {
   if (!subtopics) {
     setStatus('Generating subtopic map (pass 1/2)...', 'info');
     try {
-      subtopics = await runPass1(topic, apiKey);
+      subtopics = await runPass1(effectiveTopic, apiKey);
       await putCached(topicKey, { subtopics });
     } catch (err) {
       setStatus('Pass 1 failed: ' + err.message, 'error');
@@ -483,7 +488,7 @@ genBtn.onclick = async function () {
     setStatus('Generating staged reading map (pass 2/2)...', 'info');
     document.getElementById('results').innerHTML = '<div class="loading">Generating staged reading map...</div>';
     try {
-      stages = await runPass2(topic, subtopics, apiKey);
+      stages = await runPass2(effectiveTopic, subtopics, apiKey);
       await putCached(topicKey, { subtopics, stages });
     } catch (err) {
       setStatus('Pass 2 failed: ' + err.message, 'error');
@@ -492,7 +497,7 @@ genBtn.onclick = async function () {
         genBtn.disabled = true;
         setStatus('Retrying pass 2/2...', 'info');
         try {
-          stages = await runPass2(topic, subtopics, apiKey);
+          stages = await runPass2(effectiveTopic, subtopics, apiKey);
           await putCached(topicKey, { subtopics, stages });
           const stats = computeStats(stages);
           renderStatsBar(stats);
