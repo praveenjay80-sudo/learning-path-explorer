@@ -113,6 +113,27 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// ── Chunking + bounded concurrency ───────────────────────
+function chunkArray(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
+}
+
+async function runWithConcurrencyLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 // ── SSE parsing (pure) ───────────────────────────────────
 function parseSSELine(line) {
   if (!line.startsWith('data: ')) return null;
@@ -321,19 +342,75 @@ function renderStages(stages) {
   }).join('');
 }
 
+const STAGE_ORDER = [
+  'Orientation & Landscape',
+  'Methodological Foundations',
+  'Historical & Philosophical Context',
+  'Core Foundations',
+  'Seminal Works',
+  'Breakthroughs & Advances',
+  'Interdisciplinary Bridges',
+  'Modern Synthesis',
+  'Contemporary Frontiers',
+  'Open Problems & Future Directions',
+  'Application Domains'
+];
+
+function mergeStageBatches(batches) {
+  const byLabel = new Map();
+  for (const batch of batches) {
+    for (const s of batch.stages) {
+      const key = s.label.trim().toLowerCase();
+      if (!byLabel.has(key)) {
+        byLabel.set(key, { label: s.label, summary: s.summary, works: [] });
+      }
+      byLabel.get(key).works.push(...s.works);
+    }
+  }
+  const merged = Array.from(byLabel.values());
+  merged.sort((a, b) => {
+    const ia = STAGE_ORDER.findIndex(x => x.toLowerCase() === a.label.trim().toLowerCase());
+    const ib = STAGE_ORDER.findIndex(x => x.toLowerCase() === b.label.trim().toLowerCase());
+    const oa = ia === -1 ? STAGE_ORDER.length : ia;
+    const ob = ib === -1 ? STAGE_ORDER.length : ib;
+    return oa - ob;
+  });
+  return merged;
+}
+
+const DEPTH_CHUNK_SIZE = 50;
+const DEPTH_CONCURRENCY = 5;
+
 async function runPass2(topic, subtopics, apiKey) {
   const previewEl = document.getElementById('streamPreview');
+  const chunks = chunkArray(subtopics, DEPTH_CHUNK_SIZE);
   previewEl.textContent = '';
   previewEl.classList.add('show');
-  const raw = await streamChatCompletion(
-    apiKey,
-    [{ role: 'user', content: buildDepthPrompt(topic, subtopics) }],
-    (text) => { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
-  );
+
+  const progress = chunks.map(() => 0);
+  function renderProgress() {
+    previewEl.textContent = chunks.length === 1
+      ? previewEl.textContent
+      : progress.map((n, i) => 'Batch ' + (i + 1) + '/' + chunks.length + ': ' + n + ' chars').join('\n');
+    previewEl.scrollTop = previewEl.scrollHeight;
+  }
+
+  const batches = await runWithConcurrencyLimit(chunks, DEPTH_CONCURRENCY, async (chunk, i) => {
+    const raw = await streamChatCompletion(
+      apiKey,
+      [{ role: 'user', content: buildDepthPrompt(topic, chunk) }],
+      (text) => {
+        if (chunks.length === 1) { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
+        else { progress[i] = text.length; renderProgress(); }
+      }
+    );
+    return JSON.parse(raw);
+  });
+
   previewEl.classList.remove('show');
-  const parsed = JSON.parse(raw);
-  renderStages(parsed.stages);
-  return parsed.stages;
+  const stages = chunks.length === 1 ? batches[0].stages : mergeStageBatches(batches);
+  renderStages(stages);
+  return stages;
 }
 
 // ── Main flow ────────────────────────────────────────────
