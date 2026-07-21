@@ -987,3 +987,84 @@ If any check in Step 1 fails, fix the relevant code in `reading-map.html` direct
 git add reading-map.html
 git commit -m "Complete reading-map.html end-to-end verification"
 ```
+
+---
+
+### Task 11: Live raw-text streaming preview
+
+**Why:** Real end-to-end testing (Task 10) showed that for broad topics, a single pass can run for many minutes with the UI stuck on a static "Generating..." spinner and zero feedback. `runPass1`/`runPass2` currently pass `() => {}` as `onDelta` because JSON isn't safely partial-parseable mid-stream — but the user still needs to see *something* moving. This task adds a live raw-text preview box that shows the growing streamed text as it arrives, without attempting to parse it until the stream completes.
+
+**Files:**
+- Modify: `C:\Users\prave\reading-map.html`
+
+**Interfaces:**
+- Consumes: `runPass1`/`runPass2` (Tasks 5-6, current file has them at lines ~255 and ~317 — read the file first since line numbers may have shifted from prior fixes).
+- Produces: `#streamPreview` DOM element; modifies the `onDelta` callback passed to `streamChatCompletion` inside both `runPass1` and `runPass2`.
+
+- [ ] **Step 1: Add the `#streamPreview` element and its CSS**
+
+In the `<style>` block, add (near the existing `.loading{...}` rule):
+
+```css
+#streamPreview{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.6rem 0.8rem;font-family:ui-monospace,Consolas,monospace;font-size:0.72rem;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow-y:auto;color:var(--muted);margin:0.6rem 0;}
+#streamPreview.show{display:block;}
+```
+
+In the HTML body, add the element immediately after `<div id="status"></div>` and before `<div id="subtopics"></div>`:
+
+```html
+<div id="streamPreview"></div>
+```
+
+- [ ] **Step 2: Update `runPass1` to stream into the preview**
+
+Read the current file to find the exact current text of `runPass1` (it should closely match this), then replace it with:
+
+```javascript
+async function runPass1(topic, apiKey) {
+  const previewEl = document.getElementById('streamPreview');
+  previewEl.textContent = '';
+  previewEl.classList.add('show');
+  const raw = await streamChatCompletion(
+    apiKey,
+    [{ role: 'user', content: buildBreadthPrompt(topic) }],
+    (text) => { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
+  );
+  previewEl.classList.remove('show');
+  const parsed = JSON.parse(raw);
+  renderSubtopics(parsed.subtopics);
+  return parsed.subtopics;
+}
+```
+
+- [ ] **Step 3: Update `runPass2` the same way**
+
+```javascript
+async function runPass2(topic, subtopics, apiKey) {
+  const previewEl = document.getElementById('streamPreview');
+  previewEl.textContent = '';
+  previewEl.classList.add('show');
+  const raw = await streamChatCompletion(
+    apiKey,
+    [{ role: 'user', content: buildDepthPrompt(topic, subtopics) }],
+    (text) => { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
+  );
+  previewEl.classList.remove('show');
+  const parsed = JSON.parse(raw);
+  renderStages(parsed.stages);
+  return parsed.stages;
+}
+```
+
+Note: both functions share one `#streamPreview` element — this is correct since only one pass runs at a time in the normal flow. The retry closures added in Task 9 call `runPass2` directly, so they automatically get the same live-preview behavior with no further changes needed there.
+
+- [ ] **Step 4: Manual verification**
+
+Open `reading-map.html`, enter a real key, generate any topic. Expected: immediately after clicking Generate, a scrollable monospace box appears below the status line showing raw JSON text growing in real time during pass 1; it clears and hides once pass 1 finishes and chips render; the same box reappears and fills during pass 2; it hides once stages render.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add reading-map.html
+git commit -m "Add live raw-text streaming preview for both passes"
+```
