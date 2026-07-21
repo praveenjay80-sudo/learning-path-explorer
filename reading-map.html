@@ -345,50 +345,89 @@ topicInput.oninput = updateGenBtn;
 apiKeyInput.oninput = updateGenBtn;
 updateGenBtn();
 
+function renderRetry(label, onRetry) {
+  const el = document.getElementById('results');
+  const div = document.createElement('div');
+  div.className = 'loading';
+  div.innerHTML = label + '<br><button class="retry-btn">Retry</button>';
+  div.querySelector('button').onclick = onRetry;
+  el.appendChild(div);
+}
+
 genBtn.onclick = async function () {
   const topic = topicInput.value.trim();
   const apiKey = apiKeyInput.value.trim();
-  if (!topic || !apiKey) return;
+  if (!topic || !apiKey) {
+    setStatus('Enter a topic and your OpenRouter API key.', 'error');
+    return;
+  }
   localStorage.setItem('reading-map-api-key', apiKey);
 
   const topicKey = normalizeTopicKey(topic);
   genBtn.disabled = true;
   document.getElementById('subtopics').innerHTML = '';
+  document.getElementById('statsBar').classList.remove('show');
+  document.getElementById('filterBar').classList.remove('show');
   document.getElementById('results').innerHTML = '<div class="loading">Checking cache...</div>';
 
-  try {
-    const cached = await getCached(topicKey);
+  const cached = await getCached(topicKey).catch(() => undefined);
 
-    let subtopics = cached?.subtopics;
-    if (subtopics) {
-      renderSubtopics(subtopics);
-    } else {
-      setStatus('Generating subtopic map (pass 1/2)...', 'info');
+  let subtopics = cached?.subtopics;
+  if (!subtopics) {
+    setStatus('Generating subtopic map (pass 1/2)...', 'info');
+    try {
       subtopics = await runPass1(topic, apiKey);
       await putCached(topicKey, { subtopics });
+    } catch (err) {
+      setStatus('Pass 1 failed: ' + err.message, 'error');
+      renderRetry('Subtopic generation failed.', () => genBtn.onclick());
+      genBtn.disabled = false;
+      return;
     }
+  } else {
+    renderSubtopics(subtopics);
+  }
 
-    let stages = cached?.stages;
-    if (stages) {
-      renderStages(stages);
-    } else {
-      setStatus('Generating staged reading map (pass 2/2)...', 'info');
+  let stages = cached?.stages;
+  if (!stages) {
+    setStatus('Generating staged reading map (pass 2/2)...', 'info');
+    document.getElementById('results').innerHTML = '<div class="loading">Generating staged reading map...</div>';
+    try {
       stages = await runPass2(topic, subtopics, apiKey);
       await putCached(topicKey, { subtopics, stages });
+    } catch (err) {
+      setStatus('Pass 2 failed: ' + err.message, 'error');
+      document.getElementById('results').innerHTML = '';
+      renderRetry('Staged reading map generation failed.', async () => {
+        genBtn.disabled = true;
+        setStatus('Retrying pass 2/2...', 'info');
+        try {
+          stages = await runPass2(topic, subtopics, apiKey);
+          await putCached(topicKey, { subtopics, stages });
+          const stats = computeStats(stages);
+          renderStatsBar(stats);
+          document.getElementById('filterBar').classList.add('show');
+          applyFilter('all');
+          setStatus('Done.', '');
+        } catch (err2) {
+          setStatus('Pass 2 failed again: ' + err2.message, 'error');
+          renderRetry('Staged reading map generation failed.', () => genBtn.onclick());
+        }
+        genBtn.disabled = false;
+      });
+      genBtn.disabled = false;
+      return;
     }
-
-    const stats = computeStats(stages);
-    renderStatsBar(stats);
-    document.getElementById('filterBar').classList.add('show');
-    applyFilter('all');
-
-    setStatus('Done.', '');
-  } catch (err) {
-    setStatus('Error: ' + err.message, 'error');
-    document.getElementById('results').innerHTML = '';
-  } finally {
-    genBtn.disabled = false;
+  } else {
+    renderStages(stages);
   }
+
+  const stats = computeStats(stages);
+  renderStatsBar(stats);
+  document.getElementById('filterBar').classList.add('show');
+  applyFilter('all');
+  setStatus('Done.', '');
+  genBtn.disabled = false;
 };
 </script>
 </body>
