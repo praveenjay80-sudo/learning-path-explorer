@@ -227,6 +227,67 @@ async function runPass1(topic, apiKey) {
   renderSubtopics(parsed.subtopics);
   return parsed.subtopics;
 }
+
+// ── Pass 2: depth ────────────────────────────────────────
+function buildDepthPrompt(topic, subtopics) {
+  const subtopicList = subtopics.map(s => '- ' + s.name + ': ' + s.description).join('\n');
+  return `You are an expert academic librarian building a complete staged reading map for "${topic}".
+
+The reading map must cover EVERY one of these subtopics somewhere in its sequence:
+${subtopicList}
+
+Follow natural pedagogical progression — from accessible entry points through foundational texts to cutting-edge frontiers. Each stage builds on prior stages; works within a stage can be read in parallel.
+
+Stage vocabulary (adapt per topic, not all required): "Orientation & Landscape", "Core Foundations", "Seminal Works", "Breakthroughs & Advances", "Modern Synthesis", "Contemporary Frontiers". Optional: "Methodological Foundations", "Historical & Philosophical Context", "Interdisciplinary Bridges", "Open Problems & Future Directions", "Application Domains".
+
+For each work include exactly:
+  - "title" (string)
+  - "author" (string)
+  - "year" (string or number)
+  - "type" (exactly "book" or "paper" — no other value)
+  - "description" (1-2 sentences: what it is and why it matters at this stage)
+  - "role" (short functional label, e.g. "seminal paper", "standard textbook", "key breakthrough", "definitive survey")
+
+Each stage object has "label" (2-6 words), "summary" (1 sentence), "works" (array).
+
+Aim for genuine completeness — when in doubt, include. Include both books AND papers throughout; do not favor one type. No artificial caps.
+
+Return ONLY a JSON object with exactly one key "stages" (array). No markdown fences, no commentary.`;
+}
+
+function workRowHtml(w) {
+  const link = w.type === 'paper' ? scholarLink(w.title, w.author) : booksLink(w.title, w.author);
+  return '<div class="work" data-type="' + w.type + '">' +
+    '<span class="badge ' + w.type + '">' + w.type + '</span>' +
+    '<span class="badge role">' + escapeHtml(w.role) + '</span>' +
+    '<div class="title">' + escapeHtml(w.title) + ' <span class="author">— ' + escapeHtml(w.author) + ', ' + escapeHtml(String(w.year)) + '</span></div>' +
+    '<div class="desc">' + escapeHtml(w.description) + '</div>' +
+    '<a class="link" href="' + link + '" target="_blank" rel="noopener">View →</a>' +
+    '</div>';
+}
+
+function renderStages(stages) {
+  const el = document.getElementById('results');
+  el.innerHTML = stages.map((s, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    return '<div class="stage">' +
+      '<div class="stage-header"><span class="stage-num">' + num + '</span>' + escapeHtml(s.label) + '</div>' +
+      (s.summary ? '<div class="stage-summary">' + escapeHtml(s.summary) + '</div>' : '') +
+      '<div class="stage-body">' + s.works.map(workRowHtml).join('') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function runPass2(topic, subtopics, apiKey) {
+  const raw = await streamChatCompletion(
+    apiKey,
+    [{ role: 'user', content: buildDepthPrompt(topic, subtopics) }],
+    () => {}
+  );
+  const parsed = JSON.parse(raw);
+  renderStages(parsed.stages);
+  return parsed.stages;
+}
 </script>
 </body>
 </html>
