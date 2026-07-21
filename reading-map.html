@@ -198,6 +198,41 @@ async function putCached(topicKey, data) {
   });
 }
 
+// ── Stats ────────────────────────────────────────────────
+function computeStats(stages) {
+  let workCount = 0, bookCount = 0, paperCount = 0;
+  for (const s of stages) {
+    for (const w of s.works) {
+      workCount++;
+      if (w.type === 'book') bookCount++;
+      else if (w.type === 'paper') paperCount++;
+    }
+  }
+  return { stageCount: stages.length, workCount, bookCount, paperCount };
+}
+
+// ── Stats/filter rendering ───────────────────────────────
+function renderStatsBar(stats) {
+  const el = document.getElementById('statsBar');
+  el.textContent = stats.stageCount + ' stages · ' + stats.workCount + ' works (' +
+    stats.bookCount + ' books, ' + stats.paperCount + ' papers)';
+  el.classList.add('show');
+}
+
+function applyFilter(type) {
+  document.querySelectorAll('.work').forEach(w => {
+    w.style.display = (type === 'all' || w.dataset.type === type) ? '' : 'none';
+  });
+}
+
+document.getElementById('filterBar').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-filter]');
+  if (!btn) return;
+  document.querySelectorAll('#filterBar button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter(btn.dataset.filter);
+});
+
 // ── Pass 1: breadth ──────────────────────────────────────
 function buildBreadthPrompt(topic) {
   return `You are an expert academic librarian mapping the full breadth of "${topic}".
@@ -341,6 +376,11 @@ genBtn.onclick = async function () {
       stages = await runPass2(topic, subtopics, apiKey);
       await putCached(topicKey, { subtopics, stages });
     }
+
+    const stats = computeStats(stages);
+    renderStatsBar(stats);
+    document.getElementById('filterBar').classList.add('show');
+    applyFilter('all');
 
     setStatus('Done.', '');
   } catch (err) {
