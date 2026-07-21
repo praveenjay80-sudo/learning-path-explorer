@@ -289,6 +289,67 @@ async function runPass2(topic, subtopics, apiKey) {
   renderStages(parsed.stages);
   return parsed.stages;
 }
+
+// ── Main flow ────────────────────────────────────────────
+const topicInput = document.getElementById('topicInput');
+const apiKeyInput = document.getElementById('apiKey');
+const genBtn = document.getElementById('genBtn');
+const statusEl = document.getElementById('status');
+
+apiKeyInput.value = localStorage.getItem('reading-map-api-key') || '';
+
+function setStatus(msg, cls) {
+  statusEl.textContent = msg;
+  statusEl.className = cls || '';
+}
+
+function updateGenBtn() {
+  genBtn.disabled = !(topicInput.value.trim() && apiKeyInput.value.trim());
+}
+topicInput.oninput = updateGenBtn;
+apiKeyInput.oninput = updateGenBtn;
+updateGenBtn();
+
+genBtn.onclick = async function () {
+  const topic = topicInput.value.trim();
+  const apiKey = apiKeyInput.value.trim();
+  if (!topic || !apiKey) return;
+  localStorage.setItem('reading-map-api-key', apiKey);
+
+  const topicKey = normalizeTopicKey(topic);
+  genBtn.disabled = true;
+  document.getElementById('subtopics').innerHTML = '';
+  document.getElementById('results').innerHTML = '<div class="loading">Checking cache...</div>';
+
+  try {
+    const cached = await getCached(topicKey);
+
+    let subtopics = cached?.subtopics;
+    if (subtopics) {
+      renderSubtopics(subtopics);
+    } else {
+      setStatus('Generating subtopic map (pass 1/2)...', 'info');
+      subtopics = await runPass1(topic, apiKey);
+      await putCached(topicKey, { subtopics });
+    }
+
+    let stages = cached?.stages;
+    if (stages) {
+      renderStages(stages);
+    } else {
+      setStatus('Generating staged reading map (pass 2/2)...', 'info');
+      stages = await runPass2(topic, subtopics, apiKey);
+      await putCached(topicKey, { subtopics, stages });
+    }
+
+    setStatus('Done.', '');
+  } catch (err) {
+    setStatus('Error: ' + err.message, 'error');
+    document.getElementById('results').innerHTML = '';
+  } finally {
+    genBtn.disabled = false;
+  }
+};
 </script>
 </body>
 </html>
