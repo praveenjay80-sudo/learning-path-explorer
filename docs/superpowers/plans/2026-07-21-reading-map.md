@@ -1068,3 +1068,222 @@ Open `reading-map.html`, enter a real key, generate any topic. Expected: immedia
 git add reading-map.html
 git commit -m "Add live raw-text streaming preview for both passes"
 ```
+
+---
+
+### Task 12: Chunked parallel pass 2 for large subtopic counts
+
+**Why:** Real E2E testing showed "game theory" returned 776 subtopics from pass 1, producing a 110KB pass-2 prompt that ran for 10+ minutes without completing. The user chose to keep pass 1 uncapped but wants pass 2 to be faster. This task splits pass 2 into chunks of subtopics, generates each chunk's staged reading map with its own (much smaller, much faster) API call, runs a bounded number of these concurrently, and merges the per-chunk stage results into one final staged reading map, ordered by a canonical stage sequence.
+
+**Files:**
+- Modify: `C:\Users\prave\reading-map.html`
+
+**Interfaces:**
+- Consumes: `buildDepthPrompt`, `streamChatCompletion`, `renderStages`, `#streamPreview` (Task 11).
+- Produces: `chunkArray(arr, size)`, `runWithConcurrencyLimit(items, limit, fn)`, `mergeStageBatches(batches)`, replaces `runPass2` — used by Task 7/9's generate flow (same call signature `runPass2(topic, subtopics, apiKey)` and same return shape `Promise<Array<Stage>>`, so no changes needed to the calling code).
+
+- [ ] **Step 1: Add `chunkArray` and `runWithConcurrencyLimit` (pure/generic helpers)**
+
+```javascript
+// ── Chunking + bounded concurrency ───────────────────────
+function chunkArray(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
+}
+
+async function runWithConcurrencyLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+```
+
+- [ ] **Step 2: Test both standalone with node**
+
+Create a scratch test file `C:\Users\prave\AppData\Local\Temp\claude\C--Users-prave\4e81d10c-2b14-4b96-ba05-4bfaaf9ae5c3\scratchpad\test-chunking.mjs`:
+
+```javascript
+function chunkArray(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+  return chunks;
+}
+
+async function runWithConcurrencyLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
+function assertDeepEqual(actual, expected, label) {
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  if (a !== e) { console.error('FAIL:', label, '\n  got:', a, '\n  want:', e); process.exitCode = 1; }
+  else console.log('PASS:', label);
+}
+
+assertDeepEqual(chunkArray([1,2,3,4,5], 2), [[1,2],[3,4],[5]], 'chunkArray splits into correct groups');
+assertDeepEqual(chunkArray([1,2], 5), [[1,2]], 'chunkArray handles array smaller than size');
+assertDeepEqual(chunkArray([], 5), [], 'chunkArray handles empty array');
+
+(async () => {
+  const active = [];
+  let maxConcurrent = 0;
+  const items = [1,2,3,4,5,6,7,8];
+  const results = await runWithConcurrencyLimit(items, 3, async (n) => {
+    active.push(n);
+    maxConcurrent = Math.max(maxConcurrent, active.length);
+    await new Promise(r => setTimeout(r, 10));
+    active.splice(active.indexOf(n), 1);
+    return n * 2;
+  });
+  assertDeepEqual(results, [2,4,6,8,10,12,14,16], 'runWithConcurrencyLimit preserves order and computes correctly');
+  if (maxConcurrent > 3) { console.error('FAIL: exceeded concurrency limit, max was', maxConcurrent); process.exitCode = 1; }
+  else console.log('PASS: never exceeded concurrency limit of 3 (max observed: ' + maxConcurrent + ')');
+})();
+```
+
+Run: `node "C:\Users\prave\AppData\Local\Temp\claude\C--Users-prave\4e81d10c-2b14-4b96-ba05-4bfaaf9ae5c3\scratchpad\test-chunking.mjs"`
+
+Expected: 5 PASS lines, exit code 0.
+
+- [ ] **Step 3: Add `mergeStageBatches`**
+
+```javascript
+const STAGE_ORDER = [
+  'Orientation & Landscape',
+  'Methodological Foundations',
+  'Historical & Philosophical Context',
+  'Core Foundations',
+  'Seminal Works',
+  'Breakthroughs & Advances',
+  'Interdisciplinary Bridges',
+  'Modern Synthesis',
+  'Contemporary Frontiers',
+  'Open Problems & Future Directions',
+  'Application Domains'
+];
+
+function mergeStageBatches(batches) {
+  const byLabel = new Map();
+  for (const batch of batches) {
+    for (const s of batch.stages) {
+      const key = s.label.trim().toLowerCase();
+      if (!byLabel.has(key)) {
+        byLabel.set(key, { label: s.label, summary: s.summary, works: [] });
+      }
+      byLabel.get(key).works.push(...s.works);
+    }
+  }
+  const merged = Array.from(byLabel.values());
+  merged.sort((a, b) => {
+    const ia = STAGE_ORDER.findIndex(x => x.toLowerCase() === a.label.trim().toLowerCase());
+    const ib = STAGE_ORDER.findIndex(x => x.toLowerCase() === b.label.trim().toLowerCase());
+    const oa = ia === -1 ? STAGE_ORDER.length : ia;
+    const ob = ib === -1 ? STAGE_ORDER.length : ib;
+    return oa - ob;
+  });
+  return merged;
+}
+```
+
+- [ ] **Step 4: Test `mergeStageBatches` standalone with node**
+
+Create `C:\Users\prave\AppData\Local\Temp\claude\C--Users-prave\4e81d10c-2b14-4b96-ba05-4bfaaf9ae5c3\scratchpad\test-merge.mjs` with the same `STAGE_ORDER`/`mergeStageBatches` code above, plus:
+
+```javascript
+function assertDeepEqual(actual, expected, label) {
+  const a = JSON.stringify(actual), e = JSON.stringify(expected);
+  if (a !== e) { console.error('FAIL:', label, '\n  got:', a, '\n  want:', e); process.exitCode = 1; }
+  else console.log('PASS:', label);
+}
+
+const batches = [
+  { stages: [
+    { label: 'Seminal Works', summary: 'S1', works: [{title:'A'}] },
+    { label: 'Orientation & Landscape', summary: 'O1', works: [{title:'B'}] }
+  ]},
+  { stages: [
+    { label: 'seminal works', summary: 'S2 (dup label, different case)', works: [{title:'C'}] },
+    { label: 'Contemporary Frontiers', summary: 'F1', works: [{title:'D'}] }
+  ]}
+];
+const merged = mergeStageBatches(batches);
+assertDeepEqual(merged.map(s => s.label), ['Orientation & Landscape', 'Seminal Works', 'Contemporary Frontiers'], 'merged stages are ordered by STAGE_ORDER regardless of input order');
+assertDeepEqual(merged.find(s => s.label === 'Seminal Works').works.map(w => w.title), ['A', 'C'], 'works from same-label chunks (case-insensitive) are combined into one stage, in arrival order');
+assertDeepEqual(mergeStageBatches([{stages:[{label:'Some Unknown Stage', summary:'x', works:[]}]}]).map(s=>s.label), ['Some Unknown Stage'], 'a label not in STAGE_ORDER still appears (sorted last)');
+```
+
+Run: `node "C:\Users\prave\AppData\Local\Temp\claude\C--Users-prave\4e81d10c-2b14-4b96-ba05-4bfaaf9ae5c3\scratchpad\test-merge.mjs"`
+
+Expected: 3 PASS lines, exit code 0.
+
+- [ ] **Step 5: Replace `runPass2` with the chunked version**
+
+Read the current file first to find `runPass2`'s exact current text (it was last modified in Task 11 to add the streaming preview) and replace the whole function with:
+
+```javascript
+const DEPTH_CHUNK_SIZE = 50;
+const DEPTH_CONCURRENCY = 5;
+
+async function runPass2(topic, subtopics, apiKey) {
+  const previewEl = document.getElementById('streamPreview');
+  const chunks = chunkArray(subtopics, DEPTH_CHUNK_SIZE);
+  previewEl.textContent = '';
+  previewEl.classList.add('show');
+
+  const progress = chunks.map(() => 0);
+  function renderProgress() {
+    previewEl.textContent = chunks.length === 1
+      ? previewEl.textContent
+      : progress.map((n, i) => 'Batch ' + (i + 1) + '/' + chunks.length + ': ' + n + ' chars').join('\n');
+    previewEl.scrollTop = previewEl.scrollHeight;
+  }
+
+  const batches = await runWithConcurrencyLimit(chunks, DEPTH_CONCURRENCY, async (chunk, i) => {
+    const raw = await streamChatCompletion(
+      apiKey,
+      [{ role: 'user', content: buildDepthPrompt(topic, chunk) }],
+      (text) => {
+        if (chunks.length === 1) { previewEl.textContent = text; previewEl.scrollTop = previewEl.scrollHeight; }
+        else { progress[i] = text.length; renderProgress(); }
+      }
+    );
+    return JSON.parse(raw);
+  });
+
+  previewEl.classList.remove('show');
+  const stages = chunks.length === 1 ? batches[0].stages : mergeStageBatches(batches);
+  renderStages(stages);
+  return stages;
+}
+```
+
+Note: for topics with `subtopics.length <= DEPTH_CHUNK_SIZE` (50), this produces exactly one chunk — behavior is functionally identical to before (one call, direct raw-text streaming, no merge needed). Broad topics get split into multiple chunks processed with at most `DEPTH_CONCURRENCY` (5) requests in flight at once, each with a much smaller prompt (at most 50 subtopics' worth of context instead of hundreds), so both per-request latency and total wall-clock time drop substantially versus one giant sequential call.
+
+- [ ] **Step 6: Manual verification**
+
+Open `reading-map.html`, enter a real key, and generate a topic known to produce many subtopics (e.g. "game theory", which returned 776 subtopics in earlier testing). Expected: pass 2's preview box shows multiple "Batch N/M: ... chars" lines updating concurrently (proving parallelism), pass 2 completes in a small fraction of the time observed before this task (minutes, not 10+ minutes), and the final rendered stages still follow the canonical stage order (Orientation & Landscape first, Contemporary Frontiers near the end, etc.) with no duplicate stage sections for the same stage label.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add reading-map.html
+git commit -m "Chunk pass 2 into parallel batches for large subtopic counts"
+```
