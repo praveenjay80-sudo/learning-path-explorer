@@ -1330,3 +1330,154 @@ This is a prompt-text-only change with no new logic to unit test. Read the file 
 git add reading-map.html
 git commit -m "Require subtopic distinctness in breadth prompt to reduce noise"
 ```
+
+---
+
+### Task 14: Optional field/context input to disambiguate topics
+
+**Why:** E2E testing generated a reading map for "prisoners dilemma" that the user found generated content about real incarcerated prisoners rather than the game-theory concept — the bare topic string was ambiguous. Rather than special-casing this one topic, add a reusable optional second input where the user can supply disambiguating context (e.g. "game theory"), which gets folded into the topic string used everywhere (prompts, cache key) with no changes needed to `buildBreadthPrompt`/`buildDepthPrompt`/`runPass1`/`runPass2`'s signatures.
+
+**Files:**
+- Modify: `C:\Users\prave\reading-map.html`
+
+**Interfaces:**
+- Consumes: the existing `genBtn.onclick` handler (Task 9's version, unchanged since).
+- Produces: `#contextInput` DOM element; a new `effectiveTopic` local variable inside the click handler that all downstream calls (`normalizeTopicKey`, `runPass1`, `runPass2`, both `putCached` calls, the pass-2-retry closure) use instead of the raw `topic`.
+
+- [ ] **Step 1: Add the `#contextInput` element**
+
+In the HTML, immediately after the topic input's row (the `<div class="row">` containing `#topicInput` and `#genBtn`) and before the API-key row, add a new row:
+
+```html
+    <div class="row">
+      <input type="text" id="contextInput" placeholder="optional: field/context (e.g. game theory)" />
+    </div>
+```
+
+No new CSS is needed — the existing `.row input[type=text]` rule already styles it identically to `#topicInput`.
+
+- [ ] **Step 2: Read the current `genBtn.onclick` handler and confirm it matches**
+
+Read the current `C:\Users\prave\reading-map.html` and confirm `genBtn.onclick`'s body matches (allowing for Task 8/9's already-applied changes):
+
+```javascript
+genBtn.onclick = async function () {
+  const topic = topicInput.value.trim();
+  const apiKey = apiKeyInput.value.trim();
+  if (!topic || !apiKey) {
+    setStatus('Enter a topic and your OpenRouter API key.', 'error');
+    return;
+  }
+  localStorage.setItem('reading-map-api-key', apiKey);
+
+  const topicKey = normalizeTopicKey(topic);
+  genBtn.disabled = true;
+  document.getElementById('subtopics').innerHTML = '';
+  document.getElementById('statsBar').classList.remove('show');
+  document.getElementById('filterBar').classList.remove('show');
+  document.getElementById('results').innerHTML = '<div class="loading">Checking cache...</div>';
+
+  const cached = await getCached(topicKey).catch(() => undefined);
+
+  let subtopics = cached?.subtopics;
+  if (!subtopics) {
+    setStatus('Generating subtopic map (pass 1/2)...', 'info');
+    try {
+      subtopics = await runPass1(topic, apiKey);
+      await putCached(topicKey, { subtopics });
+    } catch (err) {
+      setStatus('Pass 1 failed: ' + err.message, 'error');
+      renderRetry('Subtopic generation failed.', () => genBtn.onclick());
+      genBtn.disabled = false;
+      return;
+    }
+  } else {
+    renderSubtopics(subtopics);
+  }
+
+  let stages = cached?.stages;
+  if (!stages) {
+    setStatus('Generating staged reading map (pass 2/2)...', 'info');
+    document.getElementById('results').innerHTML = '<div class="loading">Generating staged reading map...</div>';
+    try {
+      stages = await runPass2(topic, subtopics, apiKey);
+      await putCached(topicKey, { subtopics, stages });
+    } catch (err) {
+      setStatus('Pass 2 failed: ' + err.message, 'error');
+      document.getElementById('results').innerHTML = '';
+      renderRetry('Staged reading map generation failed.', async () => {
+        genBtn.disabled = true;
+        setStatus('Retrying pass 2/2...', 'info');
+        try {
+          stages = await runPass2(topic, subtopics, apiKey);
+          await putCached(topicKey, { subtopics, stages });
+          const stats = computeStats(stages);
+          renderStatsBar(stats);
+          document.getElementById('filterBar').classList.add('show');
+          applyFilter('all');
+          setStatus('Done.', '');
+        } catch (err2) {
+          setStatus('Pass 2 failed again: ' + err2.message, 'error');
+          renderRetry('Staged reading map generation failed.', () => genBtn.onclick());
+        }
+        genBtn.disabled = false;
+      });
+      genBtn.disabled = false;
+      return;
+    }
+  } else {
+    renderStages(stages);
+  }
+
+  const stats = computeStats(stages);
+  renderStatsBar(stats);
+  document.getElementById('filterBar').classList.add('show');
+  applyFilter('all');
+  setStatus('Done.', '');
+  genBtn.disabled = false;
+};
+```
+
+If it differs from this in a way that changes the edit points below, STOP and report NEEDS_CONTEXT — do not guess.
+
+- [ ] **Step 3: Apply four targeted edits to the handler**
+
+Make exactly these four changes (everything else in the handler stays byte-identical):
+
+1. Immediately after the line `const apiKey = apiKeyInput.value.trim();`, add:
+```javascript
+  const context = document.getElementById('contextInput').value.trim();
+  const effectiveTopic = context ? topic + ', in the context of ' + context : topic;
+```
+
+2. Change `const topicKey = normalizeTopicKey(topic);` to:
+```javascript
+  const topicKey = normalizeTopicKey(effectiveTopic);
+```
+
+3. Change `subtopics = await runPass1(topic, apiKey);` to:
+```javascript
+      subtopics = await runPass1(effectiveTopic, apiKey);
+```
+
+4. Change BOTH occurrences of `stages = await runPass2(topic, subtopics, apiKey);` (there are two — one in the main try block, one inside the pass-2-retry closure) to:
+```javascript
+      stages = await runPass2(effectiveTopic, subtopics, apiKey);
+```
+
+Do not change the `if (!topic || !apiKey)` validation line, the `localStorage.setItem` line, or anything else — those correctly keep using the raw `topic` (context is optional and shouldn't be required for the button to enable).
+
+- [ ] **Step 4: Structural verification**
+
+No automated test applies (DOM/network-dependent). Read the file back and confirm: `#contextInput` exists once, in the right position; `effectiveTopic` is computed once right after `context`; every one of the three call sites listed in Step 3 items 2-4 now uses `effectiveTopic` (grep for `runPass1(topic` and `runPass2(topic` in the file — both should now return zero matches, since all call sites should read `effectiveTopic`); the raw `topic` variable is still used only in the initial validation check and nowhere else.
+
+- [ ] **Step 5: Manual verification**
+
+Open `reading-map.html`, enter a real key, type "prisoner's dilemma" in the topic field and "game theory" in the new context field, click Generate. Expected: the generated subtopics and reading map are clearly about the game-theoretic concept (Nash equilibrium, iterated games, tit-for-tat, etc.), not real-world incarceration. Then clear both fields, enter just "persuasion" (no context) and Generate — expected: behaves exactly as before, since an empty context leaves `effectiveTopic === topic`.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add reading-map.html
+git commit -m "Add optional field/context input to disambiguate topics"
+```
