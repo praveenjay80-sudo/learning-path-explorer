@@ -105,6 +105,8 @@ header h1{
 }
 .chip.active{background:var(--accent);color:white;border-color:var(--accent);}
 .chip:hover:not(.active){border-color:var(--muted);}
+.qg-type-row{display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;flex-wrap:wrap;}
+.qg-type-row .key-label{white-space:nowrap;}
 
 /* ── Main 2-pane ── */
 main{
@@ -244,6 +246,13 @@ main{
   font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:3px;
   background:rgba(124,58,237,0.1);color:var(--accent);border:1px solid rgba(124,58,237,0.2);
 }
+.key-sections-block{margin-top:0.5rem;}
+.key-sections-list{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.25rem;}
+.key-section-chip{
+  font-size:0.72rem;padding:0.15rem 0.5rem;border-radius:4px;
+  background:rgba(37,99,235,0.08);color:var(--accent2);border:1px solid rgba(37,99,235,0.2);
+  font-weight:500;
+}
 .prereq-works{display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.4rem;align-items:center;}
 .prereq-label{font-size:0.65rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;}
 .prereq-work-chip{
@@ -280,6 +289,13 @@ main{
 }
 .q-card.hidden{display:none;}
 .q-text{font-size:0.93rem;font-weight:600;line-height:1.45;margin-bottom:0.4rem;}
+.explore-q{cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}
+.explore-q:hover{color:var(--accent2);}
+.q-explore-hint{
+  font-size:.65rem;font-weight:700;color:var(--accent2);white-space:nowrap;
+  opacity:0;transition:opacity .15s;margin-top:.18rem;flex-shrink:0;
+}
+.explore-q:hover .q-explore-hint{opacity:1;}
 .q-explanation{font-size:0.84rem;color:var(--muted);line-height:1.5;margin-bottom:0.4rem;}
 .q-footer{display:flex;flex-wrap:wrap;gap:0.3rem;align-items:center;}
 .difficulty-badge{
@@ -324,6 +340,261 @@ main{
 /* Diff sections visibility */
 .tab-section{display:none;}
 .tab-section.active{display:block;}
+
+/* ── Concept + work ordering ── */
+.concepts-order-note{font-size:.68rem;color:var(--muted);margin-bottom:.65rem;font-style:italic;}
+.concept-order-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.45rem;height:1.45rem;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:.65rem;font-weight:700;
+  flex-shrink:0;margin-right:.35rem;vertical-align:middle;
+}
+.concept-stage-tag{
+  font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:.1rem .4rem;border-radius:3px;margin-left:.35rem;vertical-align:middle;
+  background:rgba(37,99,235,.1);color:var(--accent2);border:1px solid rgba(37,99,235,.2);
+}
+.work-order-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:1.5rem;height:1.5rem;border-radius:50%;
+  background:var(--surface);border:2px solid var(--accent2);color:var(--accent2);
+  font-size:.65rem;font-weight:800;flex-shrink:0;margin-right:.4rem;vertical-align:middle;
+}
+.concept-chip-link{cursor:pointer;}
+.concept-chip-link:hover{background:rgba(124,58,237,.2);border-color:var(--accent);}
+.history-chip{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none;letter-spacing:0;}
+
+/* ── Personalization chips row ── */
+.person-row{display:flex;align-items:center;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
+.person-row-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);white-space:nowrap;margin-right:0.1rem;}
+
+/* ── Concept explore drawer ── */
+.cx-overlay{position:fixed;inset:0;z-index:200;display:flex;justify-content:flex-end;pointer-events:none;}
+.cx-overlay.open{pointer-events:all;}
+.cx-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);opacity:0;transition:opacity .2s;}
+.cx-overlay.open .cx-backdrop{opacity:1;}
+.cx-panel{
+  position:relative;width:min(500px,100vw);height:100%;
+  background:var(--surface);border-left:1px solid var(--border);
+  overflow-y:auto;padding:1.1rem 1.2rem;
+  transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+}
+.cx-overlay.open .cx-panel{transform:translateX(0);}
+.cx-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem;
+  padding-bottom:.75rem;border-bottom:1px solid var(--border);margin-bottom:.85rem;
+  position:sticky;top:-1.1rem;background:var(--surface);z-index:1;padding-top:.25rem;margin-top:-.25rem;
+}
+.cx-crumb{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;flex:1;}
+.cx-crumb-item{font-size:.78rem;font-weight:700;color:var(--accent);cursor:pointer;}
+.cx-crumb-item:hover{text-decoration:underline;}
+.cx-crumb-sep{font-size:.75rem;color:var(--muted);}
+.cx-close{background:none;border:1px solid var(--border);border-radius:5px;padding:.2rem .55rem;cursor:pointer;color:var(--muted);font-size:.8rem;font-family:inherit;white-space:nowrap;}
+.cx-close:hover{border-color:var(--muted);color:var(--text);}
+.cx-loader{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:.65rem;}
+.cx-loader-bar{height:100%;width:35%;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));border-radius:2px;animation:cxslide 1.4s ease-in-out infinite;}
+@keyframes cxslide{0%{transform:translateX(-150%)}100%{transform:translateX(420%)}}
+.cx-status{font-size:.78rem;color:var(--muted);margin-bottom:.6rem;}
+.cx-section{margin-bottom:1rem;}
+.cx-sec-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.45rem;}
+.cx-body{font-size:.87rem;line-height:1.65;color:var(--text);}
+.cx-item{
+  display:flex;flex-direction:column;gap:.15rem;padding:.5rem .65rem;
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  margin-bottom:.35rem;cursor:pointer;transition:border-color .15s;
+}
+.cx-item:hover{border-color:var(--accent);}
+.cx-item-name{font-size:.85rem;font-weight:700;color:var(--accent);}
+.cx-item-desc{font-size:.77rem;color:var(--muted);line-height:1.4;}
+.cx-work{padding:.5rem .65rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:.35rem;}
+.cx-work-title{font-size:.84rem;font-weight:700;color:var(--accent2);}
+.cx-work-authors{font-size:.75rem;color:var(--muted);margin-top:.15rem;}
+.cx-work-note{font-size:.78rem;color:var(--text);margin-top:.25rem;font-style:italic;}
+.cx-where-to-look{font-size:.76rem;color:var(--accent);margin-top:.2rem;font-weight:600;}
+.concept-name-link{cursor:pointer;text-decoration:none;border-bottom:1px dashed var(--accent);color:inherit;}
+.concept-name-link:hover{border-bottom-color:transparent;color:var(--accent);}
+
+/* ── OpenAlex badges ── */
+.oa-verified{display:inline-flex;align-items:center;gap:.2rem;font-size:.62rem;font-weight:700;
+  padding:.08rem .38rem;border-radius:3px;vertical-align:middle;margin-left:.3rem;
+  background:rgba(21,128,61,.1);color:#15803d;border:1px solid rgba(21,128,61,.22);}
+.oa-unverified{display:inline-flex;align-items:center;gap:.2rem;font-size:.62rem;font-weight:700;
+  padding:.08rem .38rem;border-radius:3px;vertical-align:middle;margin-left:.3rem;
+  background:rgba(180,83,9,.09);color:var(--methodological);border:1px solid rgba(180,83,9,.22);}
+.cite-count{font-size:.67rem;color:var(--muted);font-weight:600;margin-left:.35rem;}
+.cite-tier{
+  display:inline-flex;align-items:center;font-size:.6rem;font-weight:800;
+  padding:.05rem .32rem;border-radius:3px;margin-right:.28rem;vertical-align:middle;letter-spacing:.02em;
+}
+.cite-top1{background:rgba(234,179,8,.18);color:#a16207;border:1px solid rgba(234,179,8,.35);}
+.cite-top5{background:rgba(21,128,61,.13);color:#15803d;border:1px solid rgba(21,128,61,.3);}
+.cite-top10{background:rgba(37,99,235,.1);color:#1d4ed8;border:1px solid rgba(37,99,235,.25);}
+.cite-top25{background:rgba(107,114,128,.1);color:var(--muted);border:1px solid var(--border);}
+.oa-link{display:inline-flex;align-items:center;gap:.18rem;font-size:.68rem;color:#15803d;
+  text-decoration:none;background:rgba(21,128,61,.08);border:1px solid rgba(21,128,61,.2);
+  padding:.1rem .42rem;border-radius:3px;font-weight:700;margin-left:.3rem;}
+.oa-link:hover{background:rgba(21,128,61,.18);}
+.work-item.min-set-hi{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,58,237,.13);}
+
+/* ── Coverage matrix ── */
+.coverage-wrap{padding:.75rem 1rem 1rem;}
+.coverage-toggle{
+  display:flex;align-items:center;gap:.55rem;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:.55rem 1rem;font-size:.82rem;font-weight:700;color:var(--text);
+  user-select:none;
+}
+.coverage-toggle:hover{border-color:var(--muted);}
+.coverage-toggle-arrow{font-size:.72rem;color:var(--muted);transition:transform .15s;}
+.coverage-wrap.open .coverage-toggle-arrow{transform:rotate(180deg);}
+.coverage-body{
+  background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;
+  border-top:none;padding:.85rem;overflow-x:auto;display:none;
+}
+.coverage-wrap.open .coverage-body{display:block;}
+.matrix-tbl{border-collapse:collapse;font-size:.72rem;}
+.matrix-tbl th{padding:.28rem .4rem;font-weight:700;color:var(--muted);font-size:.63rem;
+  text-transform:uppercase;letter-spacing:.04em;text-align:center;}
+.matrix-tbl td{padding:.22rem .32rem;vertical-align:middle;}
+.matrix-tbl td.mc{font-size:.73rem;font-weight:600;color:var(--text);white-space:nowrap;
+  padding-right:.65rem;max-width:175px;overflow:hidden;text-overflow:ellipsis;}
+.m-dot{width:13px;height:13px;border-radius:2px;margin:0 auto;
+  background:rgba(37,99,235,.07);border:1px solid var(--border);}
+.m-dot.on{background:var(--accent2);border-color:var(--accent2);}
+.m-dot.hi{background:var(--accent);border-color:var(--accent);}
+.matrix-tbl .mrow:hover td{background:rgba(124,58,237,.04);}
+.matrix-tbl .m-wnum{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:1.25rem;height:1.25rem;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--border);
+  font-size:.62rem;font-weight:700;color:var(--text);}
+.matrix-tbl .m-wnum.min{background:var(--accent);border-color:var(--accent);color:#fff;}
+.matrix-tbl .m-covrow td{border-top:1px solid var(--border);font-weight:700;font-size:.67rem;color:var(--accent2);text-align:center;}
+.min-set-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;margin-left:auto;}
+.min-set-btn.active{background:rgba(124,58,237,.1);border-color:var(--accent);color:var(--accent);}
+.min-set-btn:hover:not(.active){border-color:var(--muted);color:var(--text);}
+.citation-filter-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;}
+.citation-filter-btn.active{background:rgba(21,128,61,.1);border-color:#15803d;color:#15803d;}
+.citation-filter-btn:hover:not(.active){border-color:var(--muted);color:var(--text);}
+.oa-verify-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;}
+.oa-verify-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+.oa-verify-btn.running{opacity:.6;cursor:not-allowed;}
+
+/* ── Missing concepts ── */
+.missing-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.15rem .55rem;font-size:.7rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;float:right;margin-top:-.1rem;}
+.missing-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── Concept graph ── */
+.graph-toggle-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.15rem .55rem;font-size:.7rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;display:none;
+}
+.graph-toggle-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+.graph-toggle-btn.active{background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.35);color:var(--accent2);}
+.cg-node rect{transition:opacity .12s;}
+.cg-node:hover rect{opacity:.82!important;}
+.cg-legend{display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:.55rem;}
+.cg-legend-item{display:flex;align-items:center;gap:.3rem;font-size:.67rem;color:var(--muted);}
+.cg-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.missing-section{
+  background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.18);
+  border-radius:6px;padding:.6rem .8rem;margin:.45rem 0;
+  font-size:.82rem;line-height:1.6;display:none;}
+.missing-item{margin-bottom:.4rem;padding:.35rem .55rem;background:var(--surface);border-radius:5px;border:1px solid var(--border);}
+.missing-item-name{font-weight:700;color:var(--accent);}
+.missing-item-reason{font-size:.78rem;color:var(--text);margin-left:.35rem;}
+.add-concept-btn{
+  background:none;border:1px solid var(--accent);border-radius:4px;
+  padding:.1rem .45rem;font-size:.65rem;font-weight:700;cursor:pointer;
+  color:var(--accent);font-family:inherit;white-space:nowrap;flex-shrink:0;
+}
+.add-concept-btn:hover{background:rgba(124,58,237,.1);}
+
+/* ── Progress tracker ── */
+.progress-btn{
+  background:none;border:none;font-size:1.05rem;cursor:pointer;
+  padding:.05rem .2rem;border-radius:4px;line-height:1;flex-shrink:0;
+  transition:transform .1s;
+}
+.progress-btn:hover{transform:scale(1.2);}
+.progress-bar-wrap{display:flex;align-items:center;gap:.45rem;margin-top:.3rem;}
+.progress-bar-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;border:1px solid var(--border);}
+.progress-bar-fill{height:100%;border-radius:2px;background:var(--accent2);transition:width .3s;}
+.progress-bar-fill.done{background:#15803d;}
+.stage-progress-lbl{font-size:.65rem;color:var(--muted);white-space:nowrap;font-weight:600;}
+.pane-progress{font-size:.72rem;color:var(--muted);font-weight:600;float:right;margin-top:-.05rem;}
+.work-item.done-state{opacity:.72;}
+.work-item.done-state .work-title a{text-decoration:line-through;text-decoration-color:var(--muted);}
+
+/* ── Notes ── */
+.notes-btn{
+  background:none;border:1px solid transparent;border-radius:4px;
+  font-size:.7rem;font-weight:700;cursor:pointer;color:var(--muted);
+  padding:.08rem .38rem;font-family:inherit;
+}
+.notes-btn:hover{border-color:var(--border);color:var(--text);}
+.notes-btn.has-note{color:var(--accent2);border-color:rgba(37,99,235,.25);}
+.notes-area{
+  display:none;width:100%;margin-top:.45rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:5px;
+  padding:.4rem .55rem;font-size:.82rem;font-family:inherit;color:var(--text);
+  resize:vertical;min-height:60px;line-height:1.5;
+}
+.notes-area:focus{outline:none;border-color:var(--accent2);}
+.notes-area.open{display:block;}
+
+/* ── Export ── */
+.export-md-btn{
+  background:none;border:1px solid var(--border);border-radius:5px;
+  padding:.18rem .6rem;font-size:.72rem;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;float:right;margin-top:-.05rem;
+}
+.export-md-btn:hover{border-color:var(--accent2);color:var(--accent2);}
+
+/* ── Chat panel ── */
+.chat-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--surface);border-top:1px solid var(--border);
+  box-shadow:0 -4px 20px rgba(0,0,0,.07);
+  transform:translateY(calc(100% - 42px));transition:transform .22s cubic-bezier(.4,0,.2,1);
+}
+.chat-panel.open{transform:translateY(0);}
+.chat-header{display:flex;align-items:center;gap:.6rem;padding:.55rem 1rem;cursor:pointer;user-select:none;}
+.chat-title{font-size:.84rem;font-weight:700;color:var(--accent);flex:1;}
+.chat-toggle-btn{background:none;border:1px solid var(--border);border-radius:4px;padding:.15rem .45rem;cursor:pointer;color:var(--muted);font-size:.72rem;}
+.chat-body{border-top:1px solid var(--border);}
+.chat-quick{display:flex;gap:.3rem;flex-wrap:wrap;padding:.5rem 1rem .35rem;}
+.chat-quick-chip{
+  font-size:.71rem;font-weight:600;padding:.18rem .55rem;border-radius:20px;cursor:pointer;
+  border:1px solid rgba(124,58,237,.25);background:rgba(124,58,237,.07);color:var(--accent);
+}
+.chat-quick-chip:hover{background:rgba(124,58,237,.15);}
+.chat-messages{overflow-y:auto;max-height:210px;padding:.5rem 1rem;display:flex;flex-direction:column;gap:.5rem;}
+.chat-bubble{font-size:.85rem;line-height:1.55;padding:.45rem .7rem;border-radius:8px;max-width:85%;}
+.chat-bubble.user{background:var(--accent);color:#fff;align-self:flex-end;}
+.chat-bubble.assistant{background:var(--surface2);border:1px solid var(--border);align-self:flex-start;}
+.chat-bubble.streaming{border-color:var(--accent);}
+.chat-empty-msg{font-size:.82rem;color:var(--muted);text-align:center;padding:.75rem;}
+.chat-input-row{display:flex;gap:.5rem;padding:.5rem 1rem .6rem;}
+.chat-input{flex:1;padding:.4rem .65rem;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);font-size:.875rem;font-family:inherit;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:.4rem .85rem;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.chat-send-btn:disabled{opacity:.5;cursor:not-allowed;}
+body{padding-bottom:48px;}
 </style>
 </head>
 <body>
@@ -345,11 +616,19 @@ main{
       <button id="qgGenerateBtn" onclick="generateQuestions()">Generate</button>
       <button class="secondary" id="qgClearBtn" onclick="clearQG()">Clear</button>
     </div>
+    <div class="qg-type-row">
+      <span class="key-label">Question type:</span>
+      <div class="filter-chips" id="qgTypeChips"></div>
+    </div>
     <div class="key-row">
       <span class="key-label">Anthropic API key:</span>
       <input type="password" id="apiKeyInput" placeholder="sk-ant-…" style="flex:none;width:240px;">
       <span class="key-label" style="margin-left:0.75rem;">Model:</span>
       <input type="text" id="modelInput" value="claude-sonnet-4-6" style="flex:none;width:180px;">
+      <span class="key-label" style="margin-left:0.75rem;">OpenAlex key:</span>
+      <input type="password" id="oaKeyInput" placeholder="(optional)" style="flex:none;width:155px;" title="OpenAlex API key — improves rate limits for paper verification">
+      <span class="key-label" style="margin-left:0.75rem;">SerpAPI key:</span>
+      <input type="password" id="serpaKeyInput" placeholder="(optional)" style="flex:none;width:155px;" title="SerpAPI key — enables Google Scholar citation counts and verified paper links">
       <span class="cache-hint" id="qgCacheHint"></span>
     </div>
   </div>
@@ -360,6 +639,21 @@ main{
       <textarea id="questionInput" placeholder="Enter your research question — e.g. &quot;How does the replication crisis challenge statistical inference in psychology?&quot;" rows="2"></textarea>
       <button id="generateBtn" onclick="generate()">Generate</button>
       <button class="secondary" id="clearBtn" onclick="clearResearch()">Clear</button>
+    </div>
+    <div class="person-row">
+      <span class="person-row-label">Level:</span>
+      <span class="chip" data-pg="bg" data-pv="complete beginner with no prior knowledge" onclick="setPerson(this)">New to this</span>
+      <span class="chip active" data-pg="bg" data-pv="some background in adjacent fields" onclick="setPerson(this)">Some background</span>
+      <span class="chip" data-pg="bg" data-pv="strong domain knowledge" onclick="setPerson(this)">Domain expert</span>
+      <span class="person-row-label" style="margin-left:0.4rem">I want to:</span>
+      <span class="chip active" data-pg="goal" data-pv="understand the landscape and key ideas" onclick="setPerson(this)">Get the picture</span>
+      <span class="chip" data-pg="goal" data-pv="master the technical details and formal methods" onclick="setPerson(this)">Go deep</span>
+      <span class="chip" data-pg="goal" data-pv="apply this to real problems and projects" onclick="setPerson(this)">Apply it</span>
+      <span class="chip" data-pg="goal" data-pv="conduct original research and publish" onclick="setPerson(this)">Do research</span>
+    </div>
+    <div class="person-row" style="margin-top:.25rem">
+      <span class="person-row-label">Recent:</span>
+      <div id="historyChips" style="display:flex;gap:.3rem;flex-wrap:wrap;"></div>
     </div>
     <div class="key-row">
       <span class="key-label" style="font-size:0.78rem;color:var(--muted);">Uses same API key &amp; model as Question Generator tab.</span>
@@ -379,6 +673,9 @@ main{
   <div class="search-bar" id="searchBar">
     <input type="text" id="searchInput" placeholder="Filter by keyword…" oninput="applyFilters()">
     <div class="filter-chips" id="catChips"></div>
+    <button class="oa-verify-btn" id="oaVerifyBtn" onclick="runOAVerify()" title="Verify works with OpenAlex + reorder by real citation graph">&#x1F50D; Verify works</button>
+    <button class="citation-filter-btn" id="citationFilterBtn" onclick="toggleCitationFilter()" title="Show only works in the top 10% for citations in their field and year">&#x1F3C5; High impact</button>
+    <button class="min-set-btn" id="minSetBtn" onclick="toggleMinSet()">Min reading set</button>
   </div>
 
   <!-- Search bar for question generator -->
@@ -397,7 +694,11 @@ main{
 <div class="tab-section" id="researchMain">
   <main>
     <div class="pane" id="conceptsPane">
-      <h2>Concepts</h2>
+      <h2>Concepts
+        <button class="graph-toggle-btn" id="graphToggleBtn" onclick="toggleConceptView()" style="display:none">&#x2B21; Graph</button>
+        <button class="missing-btn" id="missingBtn" onclick="findMissingConcepts()" style="display:none">Find missing</button>
+      </h2>
+      <div id="missingSection" class="missing-section"></div>
       <div id="conceptsView"><p class="empty">Enter a research question and click Generate.</p></div>
     </div>
     <div class="pane" id="readingPane">
@@ -405,6 +706,15 @@ main{
       <div id="readingView"><p class="empty">Reading list will appear here after generation.</p></div>
     </div>
   </main>
+  <!-- Coverage matrix (full width, below both panes) -->
+  <div class="coverage-wrap" id="coverageWrap" style="display:none">
+    <div class="coverage-toggle" onclick="toggleCoverageMatrix()">
+      <span>&#x1F4CA; Concept &times; Work Coverage Matrix</span>
+      <span class="coverage-toggle-arrow">&#x25BC;</span>
+      <span id="coverageSummary" style="font-size:.72rem;color:var(--muted);font-weight:400;margin-left:.25rem;"></span>
+    </div>
+    <div class="coverage-body" id="coverageBody"></div>
+  </div>
 </div>
 
 <!-- Answer tab -->
@@ -422,6 +732,36 @@ main{
   <div id="answerPlaceholder" style="display:none;"><p class="empty" style="padding:4rem 1rem;text-align:center;">Run the Research Explorer first — the answer will appear here.</p></div>
 </div>
 
+<!-- Concept explore drawer -->
+<div id="cxOverlay" class="cx-overlay" onclick="handleCxBackdrop(event)">
+  <div class="cx-backdrop"></div>
+  <div class="cx-panel" onclick="event.stopPropagation()">
+    <div class="cx-head">
+      <div id="cxCrumb" class="cx-crumb"></div>
+      <button class="cx-close" onclick="closeCx()">&#x2715; Close</button>
+    </div>
+    <div id="cxBody"></div>
+  </div>
+</div>
+
+<!-- AI Chat panel -->
+<div id="chatPanel" class="chat-panel">
+  <div class="chat-header" onclick="toggleChat()">
+    <div class="chat-title" id="chatTitle">&#x1F4AC; Ask about this research</div>
+    <button class="chat-toggle-btn" id="chatToggleBtn">&#x25B2;</button>
+  </div>
+  <div class="chat-body">
+    <div id="chatQuick" class="chat-quick"></div>
+    <div id="chatMessages" class="chat-messages">
+      <div class="chat-empty-msg">Generate a research question above to start chatting.</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" class="chat-input" type="text" placeholder="Ask anything about this research…">
+      <button id="chatSendBtn" class="chat-send-btn" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const STORAGE_KEY = 'research-explorer-settings';
@@ -432,6 +772,8 @@ const els = {
   question: document.getElementById('questionInput'),
   apiKey: document.getElementById('apiKeyInput'),
   model: document.getElementById('modelInput'),
+  oaKey: document.getElementById('oaKeyInput'),
+  serpaKey: document.getElementById('serpaKeyInput'),
   generateBtn: document.getElementById('generateBtn'),
   clearBtn: document.getElementById('clearBtn'),
   cacheHint: document.getElementById('cacheHint'),
@@ -454,6 +796,7 @@ const els = {
   qgSearchBar: document.getElementById('qgSearchBar'),
   qgSearchInput: document.getElementById('qgSearchInput'),
   tierChips: document.getElementById('tierChips'),
+  qgTypeChips: document.getElementById('qgTypeChips'),
   qgResultsView: document.getElementById('qgResultsView'),
 };
 
@@ -461,7 +804,9 @@ let state = null;   // { question, question_summary, concepts[], works[], answer
 let qgState = null; // { field, field_summary, questions[] }
 let activeTab = 'qg';
 let activeCatFilter = 'all';
+let citationFilterActive = false;
 let activeTierFilter = 'all';
+let qgSelectedType = 'all';
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab){
@@ -489,13 +834,20 @@ function loadSettings(){
     const s = JSON.parse(raw);
     els.apiKey.value = s.apiKey || '';
     els.model.value = s.model || 'claude-sonnet-4-6';
+    els.oaKey.value = s.oaKey || '';
+    els.serpaKey.value = s.serpaKey || '';
   }catch(e){ console.warn('settings load failed', e); }
 }
 function saveSettings(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     apiKey: els.apiKey.value.trim(),
     model: els.model.value.trim(),
+    oaKey: els.oaKey.value.trim(),
+    serpaKey: els.serpaKey.value.trim(),
   }));
+}
+function saveLastQuestion(q){
+  localStorage.setItem('re-last-question', q);
 }
 
 // ── IndexedDB ─────────────────────────────────────────────────────────────────
@@ -556,7 +908,18 @@ function escapeStringContents(s){
         let j=i+1;
         while(j<s.length&&/\s/.test(s[j]))j++;
         const next=s[j];
-        if(next===','||next==='}'||next===']'||next===':'){inStr=false;out+=c;}
+        if(next==='}'||next===']'||next===':'){inStr=false;out+=c;}
+        else if(next===','){
+          // Only close if after the comma we see a valid JSON value starter or key,
+          // not prose that's still part of the string value.
+          let k=j+1;
+          while(k<s.length&&/\s/.test(s[k]))k++;
+          const afterComma=s[k];
+          // Valid JSON starts: " { [ t(rue) f(alse) n(ull) digits -
+          // Prose inside a string value would start with letters a-z (non-keyword) or (, )
+          if(/["{\[tfn0-9\-]/.test(afterComma)){inStr=false;out+=c;}
+          else{out+='\\"';}
+        }
         else{out+='\\"';}
       }
     }else if(inStr&&c==='\n'){out+='\\n';}
@@ -700,6 +1063,20 @@ function renderAnswer(){
   els.answerView.innerHTML = linked;
 }
 
+function scrollToConcept(anchor){
+  switchTab('research');
+  setTimeout(() => {
+    const el = document.getElementById('concept-' + anchor);
+    if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.style.outline='2px solid var(--accent)'; setTimeout(()=>el.style.outline='',1500); }
+    else {
+      // fallback: search by text
+      const card = [...document.querySelectorAll('#conceptsView .concept-card')]
+        .find(c => c.dataset.name && anchor.includes(c.dataset.name.slice(0,15)));
+      if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); }
+    }
+  }, 80);
+}
+
 function scrollToRef(type, name){
   switchTab('research');
   // Brief delay to let the tab render before scrolling
@@ -716,20 +1093,395 @@ function scrollToRef(type, name){
   }, 80);
 }
 
+// ── OpenAlex ──────────────────────────────────────────────────────────────────
+const OA_BASE = 'https://api.openalex.org';
+const OA_SELECT = 'id,title,authorships,publication_year,cited_by_count,cited_by_percentile_year,open_access,doi,referenced_works';
+
+function oaRequestUrl(path, params = {}){
+  const key = els.oaKey?.value?.trim();
+  const base = `${OA_BASE}${path}`;
+  const p = new URLSearchParams({
+    mailto: 'praveen.jay80@gmail.com',
+    ...params,
+  });
+  if(key) p.set('api_key', key);
+  return `${base}?${p.toString()}`;
+}
+
+function titleJaccard(a, b){
+  const norm = t => (t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  const wa = new Set(norm(a).split(' ').filter(w=>w.length>3));
+  const wb = new Set(norm(b).split(' ').filter(w=>w.length>3));
+  if(!wa.size && !wb.size) return 0;
+  const inter = [...wa].filter(w=>wb.has(w)).length;
+  const union = new Set([...wa,...wb]).size;
+  return inter / union;
+}
+
+function shortOAId(fullId){
+  return (fullId||'').replace('https://openalex.org/', '');
+}
+
+async function oaSearch(title){
+  try{
+    const url = oaRequestUrl('/works', { search: title, 'per-page': '5', select: OA_SELECT });
+    const res = await fetch(url);
+    if(!res.ok){ console.warn(`OA search ${res.status} for: ${title}`); return null; }
+    const data = await res.json();
+    const candidates = data.results || [];
+    if(!candidates.length) return null;
+    let best = candidates[0], bestScore = titleJaccard(title, candidates[0]?.title||'');
+    for(const c of candidates.slice(1)){
+      const s = titleJaccard(title, c.title||'');
+      if(s > bestScore){ bestScore = s; best = c; }
+    }
+    return best;
+  }catch(e){ console.warn('OA search error:', e); return null; }
+}
+
+// ── SerpAPI Google Scholar ────────────────────────────────────────────────────
+async function serpaGSSearch(title){
+  const key = els.serpaKey?.value?.trim();
+  if(!key) return null;
+  try{
+    const url = `https://serpapi.com/search?engine=google_scholar&q=${encodeURIComponent(title)}&num=5&api_key=${encodeURIComponent(key)}`;
+    const res = await fetch(url);
+    if(!res.ok){ console.warn(`SerpAPI ${res.status} for: ${title}`); return null; }
+    const data = await res.json();
+    if(data.error){ console.warn('SerpAPI error:', data.error); return null; }
+    const results = data.organic_results || [];
+    if(!results.length) return null;
+    let best = results[0], bestScore = titleJaccard(title, results[0]?.title||'');
+    for(const r of results.slice(1)){
+      const s = titleJaccard(title, r.title||'');
+      if(s > bestScore){ bestScore = s; best = r; }
+    }
+    return best;
+  }catch(e){ console.warn('SerpAPI error:', e); return null; }
+}
+
+function topoStages(n, citesInList){
+  // citesInList[i] = Set of indices that work i cites (i depends on those)
+  // Stage = 1 + max stage of all cited works; cycle-safe via visiting guard
+  const stages = new Map(), visiting = new Set();
+  function stageOf(i){
+    if(stages.has(i)) return stages.get(i);
+    if(visiting.has(i)){ return 1; }  // break cycle
+    visiting.add(i);
+    const deps = citesInList[i] || new Set();
+    const s = deps.size ? Math.max(...[...deps].map(stageOf)) + 1 : 1;
+    visiting.delete(i);
+    stages.set(i, s);
+    return s;
+  }
+  for(let i=0;i<n;i++) stageOf(i);
+  return stages;
+}
+
+async function runOAVerify(){
+  if(!state?.works?.length) return;
+  const btn = document.getElementById('oaVerifyBtn');
+  if(btn){ btn.classList.add('running'); btn.textContent = 'Verifying…'; btn.disabled = true; }
+  streamLogShow();
+  try{
+    state.works = await verifyWorksWithOA(state.works);
+    state.oaVerified = true;
+    const cacheKey = state.question.toLowerCase();
+    await dbPut('research', {key: cacheKey, data: state, ts: Date.now()});
+    renderResearch();
+    setStatus('OpenAlex verification complete.', 'info');
+    setTimeout(()=>setStatus(''), 3000);
+    streamLogHide();
+  }catch(e){
+    setStatus('OpenAlex verify failed: ' + e.message, 'error');
+  }finally{
+    if(btn){ btn.classList.remove('running'); btn.textContent = '🔍 Verify works'; btn.disabled = false; }
+  }
+}
+
+async function verifyWorksWithOA(works){
+  const usingSerpAPI = !!els.serpaKey?.value?.trim();
+  streamLogAppend(`=== Verifying via OpenAlex${usingSerpAPI ? ' + Google Scholar (SerpAPI)' : ''} ===\n`);
+  const verified = [];
+
+  for(let i=0;i<works.length;i++){
+    const w = works[i];
+    setStatus(`Verifying ${i+1}/${works.length}: ${w.title.slice(0,45)}…`, 'info');
+
+    // Run OA and SerpAPI in parallel
+    const [oa, serpa] = await Promise.all([
+      oaSearch(w.title),
+      serpaGSSearch(w.title),
+    ]);
+
+    if(oa || serpa){
+      const oaId = oa ? shortOAId(oa.id) : null;
+      // Prefer GS citation count (more comprehensive); fall back to OA
+      const citationCount = serpa?.inline_links?.cited_by?.total || oa?.cited_by_count || 0;
+      const citationPercentile = oa?.cited_by_percentile_year?.min ?? null;
+      const openAccessUrl = oa?.open_access?.oa_url || serpa?.resources?.[0]?.link || null;
+      const referencedWorks = oa ? (oa.referenced_works || []).map(shortOAId) : [];
+      const gsLink = serpa?.link || null;
+      const authorNames = oa
+        ? (oa.authorships || []).map(a=>a.author?.display_name).filter(Boolean)
+        : w.authors;
+      const sources = [oa ? 'OA' : null, serpa ? 'GS' : null].filter(Boolean).join('+');
+      const pctLabel = citationPercentile != null ? ` p${citationPercentile}` : '';
+      streamLogAppend(`✓ ${w.title.slice(0,44)} [${sources}] ${citationCount} cites${pctLabel}\n`);
+      verified.push({
+        ...w,
+        authors: authorNames.length ? authorNames : w.authors,
+        year: oa?.publication_year || w.year,
+        oa:{ oaId, verified:true, citationCount, citationPercentile, openAccessUrl, referencedWorks, gsLink }
+      });
+    }else{
+      streamLogAppend(`✗ Not found: ${w.title.slice(0,50)}\n`);
+      verified.push({...w, oa:{verified:false,citationCount:0,openAccessUrl:null,referencedWorks:[],gsLink:null}});
+    }
+    if(i < works.length-1) await new Promise(r=>setTimeout(r, 300));
+  }
+
+  // Build citation graph from referenced_works
+  const verifiedWithId = verified.filter(w=>w.oa?.oaId);
+  if(verifiedWithId.length > 1){
+    const idMap = new Map();
+    verified.forEach((w,i)=>{ if(w.oa?.oaId) idMap.set(w.oa.oaId, i); });
+    const citesInList = verified.map(w =>
+      new Set((w.oa?.referencedWorks||[]).map(id=>idMap.get(id)).filter(x=>x!=null))
+    );
+    const totalLinks = citesInList.reduce((s,c)=>s+c.size, 0);
+
+    if(totalLinks > 0){
+      const newStages = topoStages(verified.length, citesInList);
+      // Remap stages: renumber 1..N and carry over the closest original stage_label
+      const origLabelForStage = new Map(verified.map(w=>[w.stage, w.stage_label]));
+      verified.forEach((w,i)=>{ w.stage = newStages.get(i)||1; });
+      // Give each new stage a label from the closest original stage
+      const stageToOrigStages = new Map();
+      verified.forEach(w=>{
+        if(!stageToOrigStages.has(w.stage)) stageToOrigStages.set(w.stage,[]);
+      });
+      // Re-assign stage_labels per new stage
+      const newStageSorted = [...new Set(verified.map(w=>w.stage))].sort((a,b)=>a-b);
+      const origLabels = [...origLabelForStage.entries()].sort((a,b)=>a[0]-b[0]).map(e=>e[1]);
+      newStageSorted.forEach((ns,idx)=>{
+        const label = origLabels[idx] || `Stage ${ns}`;
+        verified.filter(w=>w.stage===ns).forEach(w=>w.stage_label=label);
+      });
+      streamLogAppend(`\n${totalLinks} citation links → reading order recomputed from real data.\n`);
+    }else{
+      streamLogAppend(`\nNo citation links between these works — keeping original order.\n`);
+    }
+  }
+
+  return verified.sort((a,b)=>(a.stage||99)-(b.stage||99));
+}
+
+// ── Coverage matrix ───────────────────────────────────────────────────────────
+let minSetActive = false;
+let minSetIndices = null;
+let coverageOpen = false;
+
+function toggleCoverageMatrix(){
+  coverageOpen = !coverageOpen;
+  document.getElementById('coverageWrap').classList.toggle('open', coverageOpen);
+  if(coverageOpen) renderCoverageMatrix();
+}
+
+function renderCoverageMatrix(){
+  const body = document.getElementById('coverageBody');
+  const wrap = document.getElementById('coverageWrap');
+  if(!body||!state?.works?.length||!state?.concepts?.length){ if(wrap) wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  const works = state.works;
+  const concepts = state.concepts;
+
+  // concept i is covered by work j iff works[j].concepts_covered includes concepts[i].name
+  const covered = concepts.map(c => works.map(w => (w.concepts_covered||[]).includes(c.name)));
+  // work coverage count
+  const wCov = works.map((_,wi) => concepts.filter((_,ci)=>covered[ci][wi]).length);
+
+  // summary
+  const total = concepts.length * works.length;
+  const filled = covered.flat().filter(Boolean).length;
+  const pct = total ? Math.round(filled/total*100) : 0;
+  const sumEl = document.getElementById('coverageSummary');
+  if(sumEl) sumEl.textContent = `${concepts.length} concepts × ${works.length} works · ${pct}% coverage`;
+
+  // Build work order numbers (same as renderWorks: sorted by stage)
+  let gNum = 0;
+  const wNums = works.map(()=>++gNum);
+
+  let html = `<table class="matrix-tbl"><thead><tr><th style="text-align:left">Concept</th>`;
+  works.forEach((_,wi)=>{
+    const isMin = minSetActive && minSetIndices?.has(wi);
+    html += `<th><span class="m-wnum${isMin?' min':''}">${ wNums[wi] }</span></th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  concepts.forEach((c,ci)=>{
+    html += `<tr class="mrow"><td class="mc" title="${esc(c.name)}">${esc(c.name.length>23?c.name.slice(0,22)+'…':c.name)}</td>`;
+    works.forEach((_,wi)=>{
+      const on = covered[ci][wi];
+      const hi = on && minSetActive && minSetIndices?.has(wi);
+      html += `<td><div class="m-dot${hi?' hi':on?' on':''}"></div></td>`;
+    });
+    html += `</tr>`;
+  });
+
+  // Coverage count row
+  html += `<tr class="m-covrow"><td style="text-align:left;font-size:.67rem;color:var(--muted)">Concepts covered</td>`;
+  works.forEach((_,wi)=>html+=`<td>${wCov[wi]}</td>`);
+  html += `</tr></tbody></table>`;
+  body.innerHTML = html;
+}
+
+function computeMinSet(){
+  if(!state?.works?.length||!state?.concepts?.length) return new Set();
+  const works = state.works, concepts = state.concepts;
+  // Case-insensitive lookup map
+  const nameToIdx = new Map(concepts.map((c,i)=>[c.name.toLowerCase().trim(), i]));
+  const resolve = cn => nameToIdx.get((cn||'').toLowerCase().trim()) ?? -1;
+
+  const uncovered = new Set(concepts.map((_,i)=>i));
+  const selected = new Set();
+  while(uncovered.size>0){
+    let best=-1, bestCount=0;
+    works.forEach((w,wi)=>{
+      if(selected.has(wi)) return;
+      const n = (w.concepts_covered||[]).filter(cn=>{
+        const ci = resolve(cn); return ci>=0 && uncovered.has(ci);
+      }).length;
+      if(n>bestCount){ bestCount=n; best=wi; }
+    });
+    if(best<0||bestCount===0) break;
+    selected.add(best);
+    (works[best].concepts_covered||[]).forEach(cn=>{
+      const ci = resolve(cn); if(ci>=0) uncovered.delete(ci);
+    });
+  }
+  return selected;
+}
+
+function toggleMinSet(){
+  minSetActive = !minSetActive;
+  const btn = document.getElementById('minSetBtn');
+  if(btn) btn.classList.toggle('active', minSetActive);
+  if(minSetActive){
+    minSetIndices = computeMinSet();
+    document.querySelectorAll('#readingView .work-item').forEach((el,i)=>{
+      el.classList.toggle('min-set-hi', minSetIndices.has(i));
+    });
+  }else{
+    minSetIndices = null;
+    document.querySelectorAll('#readingView .work-item').forEach(el=>el.classList.remove('min-set-hi'));
+  }
+  if(coverageOpen) renderCoverageMatrix();
+}
+
+// ── Find missing concepts ─────────────────────────────────────────────────────
+let missingConceptsCache = [];
+
+async function findMissingConcepts(){
+  if(!state?.concepts?.length||!state?.works?.length) return;
+  const btn = document.getElementById('missingBtn');
+  const sec = document.getElementById('missingSection');
+  if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
+  if(sec){ sec.style.display='block'; sec.innerHTML='<span style="color:var(--muted);font-size:.78rem;">Asking Claude to review the concept map…</span>'; }
+  try{
+    const cNames = state.concepts.map(c=>c.name).join(', ');
+    const prompt = `Research question: "${state.question}"
+
+Current concept map includes: ${cNames}
+
+You are a senior researcher reviewing this concept map. Identify 3-5 concepts that are MISSING — concepts that are genuinely load-bearing for answering this question but absent from the list. Be specific. Only include concepts whose absence creates a real gap.
+
+For each missing concept provide full detail so it can be added directly to the concept map:
+- name: concept name
+- reason: one sentence on what gap it fills
+- explanation: a full paragraph in plain language — what it is, the core ideas, key figures or milestones
+- relevance: a full paragraph explaining how this concept is required to answer THIS research question
+- dependencies: array of names of concepts (from the current list or the new ones) that must be understood first — empty array if none
+
+Respond ONLY with valid JSON (no markdown). Do NOT use double-quote characters inside JSON string values:
+{"missing":[{"name":"...","reason":"...","explanation":"...","relevance":"...","dependencies":[]}]}`;
+    const raw = await callClaudeStream(prompt, 3000, ()=>{});
+    const data = parseJSONRobust(raw);
+    const missing = data.missing||[];
+    missingConceptsCache = missing;
+    if(!missing.length){ sec.innerHTML='<span style="color:var(--muted);font-size:.78rem;">No significant gaps found.</span>'; return; }
+    renderMissingConcepts(missing, sec);
+  }catch(e){
+    if(sec) sec.innerHTML = `<span style="color:var(--muted);font-size:.78rem;">${esc(e.message)}</span>`;
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='Find missing'; }
+  }
+}
+
+function renderMissingConcepts(missing, sec){
+  const alreadyAdded = new Set(state.concepts.map(c=>c.name.toLowerCase()));
+  let html = '';
+  missing.forEach((m, idx)=>{
+    const added = alreadyAdded.has((m.name||'').toLowerCase());
+    html += `<div class="missing-item" id="missing-item-${idx}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem">
+        <div>
+          <span class="missing-item-name">${esc(m.name)}</span>
+          <span class="missing-item-reason">${esc(m.reason||'')}</span>
+        </div>
+        ${added
+          ? `<span style="font-size:.65rem;color:var(--muted);white-space:nowrap;padding-top:.15rem">Already added</span>`
+          : `<button class="add-concept-btn" onclick="addMissingConcept(${idx})" title="Add to concept map">+ Add</button>`
+        }
+      </div>
+    </div>`;
+  });
+  sec.innerHTML = html;
+}
+
+function addMissingConcept(idx){
+  const m = missingConceptsCache[idx];
+  if(!m || !state) return;
+  if(state.concepts.some(c=>c.name.toLowerCase()===m.name.toLowerCase())) return;
+  state.concepts.push({
+    name: m.name,
+    explanation: m.explanation || m.reason || '',
+    relevance: m.relevance || '',
+    dependencies: m.dependencies || [],
+  });
+  // Save to cache
+  const cacheKey = state.question.toLowerCase();
+  dbPut('research', {key: cacheKey, data: state, ts: Date.now()});
+  // Re-render
+  renderConcepts();
+  const graphBtn = document.getElementById('graphToggleBtn');
+  if(graphBtn) graphBtn.style.display = 'inline-flex';
+  // Update the button in missing section to "Already added"
+  const sec = document.getElementById('missingSection');
+  if(sec && missingConceptsCache.length) renderMissingConcepts(missingConceptsCache, sec);
+}
+
 // ── RESEARCH EXPLORER ─────────────────────────────────────────────────────────
 
 function conceptsPrompt(question){
   return `Research question: "${question}"
 
-Identify ALL concepts — fields, frameworks, theories, methods, phenomena — that a researcher must understand to fully answer this research question. Include only load-bearing, genuinely necessary concepts. No padding.
+Identify ONLY the concepts a researcher absolutely must understand to answer THIS SPECIFIC research question — not the field in general. Apply this strict exclusion test to every candidate concept: "If this concept were removed, could the research question still be fully and specifically answered?" If yes, exclude it. Only include concepts where their absence creates a direct gap in answering exactly this question.
 
-For each concept provide:
+Do NOT include:
+- General background that any educated reader already knows
+- Concepts that are adjacent or interesting but not load-bearing for this question
+- Sub-concepts already fully explained by a higher-level concept already in the list
+
+For each included concept provide:
 - name: the concept name (concise, standard)
 - explanation: a full paragraph in plain language — what it is, the core ideas, key figures or milestones, and how it fits the broader intellectual landscape. Write for an intelligent non-specialist.
-- relevance: a full paragraph explaining specifically how this concept is needed to answer the research question — what angle it illuminates, what it enables the researcher to understand, what would be missing without it.
+- relevance: a full paragraph explaining specifically how THIS concept is required to answer THIS research question — what specific gap it fills, what the researcher cannot understand without it, and what would be missing from the answer if this concept were absent.
+- dependencies: an array of names of OTHER concepts in this list that must be understood BEFORE this one. Use exact names. Empty array if this concept has no prerequisites within the list.
 
-Respond ONLY with valid JSON (no markdown, no commentary before or after):
-{ "question_summary": "one crisp sentence restating the question", "concepts": [ { "name": "...", "explanation": "...", "relevance": "..." } ] }`;
+Respond ONLY with valid JSON (no markdown, no commentary before or after). Do NOT use double-quote characters inside JSON string values — rephrase to avoid them:
+{ "question_summary": "one crisp sentence restating the question", "concepts": [ { "name": "...", "explanation": "...", "relevance": "...", "dependencies": [] } ] }`;
 }
 
 function worksPrompt(question, conceptNames){
@@ -755,9 +1507,12 @@ For each work provide:
 - explanation: a full paragraph in plain language — what the work argues, how it works, what it contributes to the field
 - relevance: a full paragraph explaining how this specific work helps answer the research question — what insight or framework it provides
 - concepts_covered: array of concept names from the list above that this work covers
+- key_sections: array of 2-3 specific chapters, sections, or named parts within this work most directly relevant to the research question (e.g. ["Ch. 4: The Causal Model", "Section 2.3: Experimental Design"]). For journal articles, name specific subsections (e.g. ["Methods: Instrumental Variables", "Discussion: Causal Interpretation"]). Be precise and specific — not "Chapter 3" but "Chapter 3: The Mechanism of Cooperation".
+
+IMPORTANT: Do NOT use double-quote characters inside any JSON string values. Rephrase or use parentheses instead of quotes within strings.
 
 Respond ONLY with valid JSON (no markdown, no commentary):
-{ "works": [ { "title": "...", "authors": [...], "year": ..., "venue": "...", "category": "...", "stage": ..., "stage_label": "...", "prerequisites": [...], "explanation": "...", "relevance": "...", "concepts_covered": [...] } ] }`;
+{ "works": [ { "title": "...", "authors": [...], "year": ..., "venue": "...", "category": "...", "stage": ..., "stage_label": "...", "prerequisites": [...], "explanation": "...", "relevance": "...", "concepts_covered": [...], "key_sections": [...] } ] }`;
 }
 
 async function generate(){
@@ -807,6 +1562,7 @@ async function generate(){
         setStatus('Loaded from cache.');
         streamLogHide();
         renderResearch();
+        initChat();
         els.generateBtn.disabled = false;
         return;
       }
@@ -835,9 +1591,9 @@ async function generate(){
     els.cacheHint.classList.remove('hit');
 
     // Stage 1: concepts
-    setStatus('Stage 1/2 — generating concepts…','info');
+    setStatus('Stage 1/3 — generating concepts…','info');
     streamLogAppend('=== Stage 1: Concepts ===\n');
-    const conceptsRaw = await callClaudeStream(conceptsPrompt(question), 14000, (chunk) => {
+    const conceptsRaw = await callClaudeStream(conceptsPromptP(question), 14000, (chunk) => {
       streamLogAppend(chunk);
     });
     streamLogAppend('\n\n');
@@ -857,10 +1613,10 @@ async function generate(){
     renderResearch();
 
     // Stage 2: reading list
-    setStatus('Stage 2/2 — generating reading list…','info');
+    setStatus('Stage 2/3 — generating reading list…','info');
     streamLogAppend('=== Stage 2: Reading List ===\n');
     const conceptNames = state.concepts.map(c => c.name);
-    const worksRaw = await callClaudeStream(worksPrompt(question, conceptNames), 32000, (chunk) => {
+    const worksRaw = await callClaudeStream(worksPromptP(question, conceptNames), 32000, (chunk) => {
       streamLogAppend(chunk);
     });
     streamLogAppend('\n');
@@ -874,6 +1630,16 @@ async function generate(){
 
     // Save stage 2 result
     await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+
+    // Stage 2.5: OpenAlex verification + citation-graph ordering
+    try{
+      state.works = await verifyWorksWithOA(state.works);
+      state.oaVerified = true;
+      renderResearch();
+      await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+    }catch(oaErr){
+      streamLogAppend(`\nOpenAlex verification skipped: ${oaErr.message}\n`);
+    }
 
     // Stage 3: synthesized answer
     setStatus('Stage 3/3 — writing answer…','info');
@@ -890,14 +1656,168 @@ async function generate(){
 
     // Final save with answer included
     await dbPut('research', { key: cacheKey, data: state, ts: Date.now() });
+    saveLastQuestion(question);
+    addHistory(question);
     setStatus('Done.');
     streamLogHide();
+    initChat();
   }catch(e){
     setStatus(e.message, 'error');
     console.error(e);
   }finally{
     els.generateBtn.disabled = false;
   }
+}
+
+// ── Concept Graph ─────────────────────────────────────────────────────────────
+let conceptViewMode = 'list'; // 'list' | 'graph'
+
+function toggleConceptView(){
+  conceptViewMode = conceptViewMode === 'list' ? 'graph' : 'list';
+  const btn = document.getElementById('graphToggleBtn');
+  if(btn) btn.classList.toggle('active', conceptViewMode === 'graph');
+  renderConcepts();
+}
+
+function computeConceptLevels(concepts, conceptFirstStage){
+  const nameToIdx = new Map(concepts.map((c,i) => [c.name.toLowerCase().trim(), i]));
+  const levels = new Array(concepts.length).fill(-1);
+  const visiting = new Set();
+  function levelOf(i){
+    if(levels[i] >= 0) return levels[i];
+    if(visiting.has(i)){ levels[i] = 0; return 0; }
+    visiting.add(i);
+    const deps = (concepts[i].dependencies || [])
+      .map(d => nameToIdx.get((d||'').toLowerCase().trim()))
+      .filter(j => j != null && j !== i);
+    const lvl = deps.length ? Math.max(...deps.map(levelOf)) + 1 : 0;
+    visiting.delete(i);
+    levels[i] = lvl;
+    return lvl;
+  }
+  for(let i = 0; i < concepts.length; i++) levelOf(i);
+  // If no dependencies were specified, fall back to work-stage ordering
+  if(levels.every(l => l === 0) && conceptFirstStage){
+    const stages = concepts.map(c => conceptFirstStage[c.name] || 1);
+    const minStage = Math.min(...stages);
+    concepts.forEach((c, i) => { levels[i] = stages[i] - minStage; });
+  }
+  return levels;
+}
+
+function buildConceptGraphSVG(concepts, conceptFirstStage){
+  const levels = computeConceptLevels(concepts, conceptFirstStage);
+  const nameToIdx = new Map(concepts.map((c,i) => [c.name.toLowerCase().trim(), i]));
+
+  // Group by level, sort within level by work-stage then alphabetically
+  const byLevel = new Map();
+  concepts.forEach((c, i) => {
+    const lvl = levels[i];
+    if(!byLevel.has(lvl)) byLevel.set(lvl, []);
+    byLevel.get(lvl).push(i);
+  });
+  const sortedLevels = [...byLevel.keys()].sort((a,b) => a - b);
+  sortedLevels.forEach(lvl => {
+    byLevel.get(lvl).sort((a,b) =>
+      ((conceptFirstStage[concepts[a].name]||99) - (conceptFirstStage[concepts[b].name]||99)) ||
+      concepts[a].name.localeCompare(concepts[b].name)
+    );
+  });
+
+  // Layout constants
+  const nodeW = 168, nodeH = 40, colGap = 228, rowGap = 56;
+  const padX = 18, padY = 22;
+
+  // Assign positions
+  const pos = new Array(concepts.length);
+  sortedLevels.forEach((lvl, colIdx) => {
+    byLevel.get(lvl).forEach((nodeIdx, rowIdx) => {
+      pos[nodeIdx] = { x: padX + colIdx * colGap, y: padY + rowIdx * rowGap };
+    });
+  });
+
+  const numCols = sortedLevels.length;
+  const maxRows = Math.max(...sortedLevels.map(lvl => byLevel.get(lvl).length));
+  const svgW = 2*padX + (numCols-1)*colGap + nodeW;
+  const svgH = 2*padY + (maxRows-1)*rowGap + nodeH;
+
+  const LVL_COLORS = ['#2563eb','#4f46e5','#7c3aed','#9333ea','#a855f7','#c084fc'];
+  function lvlColor(l){ return LVL_COLORS[Math.min(l, LVL_COLORS.length-1)]; }
+
+  const parts = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" style="display:block;">`,
+    `<defs><marker id="cgArrow" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">`,
+    `<path d="M0,0 L7,2.5 L0,5 Z" fill="#94a3b8"/></marker></defs>`
+  ];
+
+  // Edges (behind nodes)
+  concepts.forEach((c, i) => {
+    (c.dependencies || []).forEach(depName => {
+      const j = nameToIdx.get((depName||'').toLowerCase().trim());
+      if(j == null || j === i) return;
+      const sx = pos[j].x + nodeW, sy = pos[j].y + nodeH/2;
+      const tx = pos[i].x,        ty = pos[i].y + nodeH/2;
+      const cx = (sx + tx) / 2;
+      parts.push(`<path d="M${sx},${sy} C${cx},${sy} ${cx},${ty} ${tx},${ty}" ` +
+        `fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-opacity="0.55" marker-end="url(#cgArrow)"/>`);
+    });
+  });
+
+  // Nodes
+  concepts.forEach((c, i) => {
+    const {x, y} = pos[i];
+    const color = lvlColor(levels[i]);
+    const label = c.name.length > 22 ? c.name.slice(0, 20) + '…' : c.name;
+    const safeClick = c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    parts.push(
+      `<g class="cg-node" onclick="openCx('${safeClick}')" tabindex="0" role="button" aria-label="${esc(c.name)}">`,
+      `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="7" ry="7" ` +
+        `fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-width="1.6"/>`,
+      `<text x="${x + nodeW/2}" y="${y + nodeH/2 + 0.5}" text-anchor="middle" dominant-baseline="middle" ` +
+        `font-family="-apple-system,BlinkMacSystemFont,system-ui,sans-serif" font-size="11" font-weight="600" fill="${color}">` +
+        esc(label) + `</text>`,
+      `</g>`
+    );
+  });
+
+  parts.push('</svg>');
+  return parts.join('');
+}
+
+function renderConceptGraph(){
+  if(!state?.concepts?.length){
+    els.conceptsView.innerHTML = '<p class="empty">No concepts to display.</p>';
+    return;
+  }
+  const conceptFirstStage = {};
+  for(const w of (state.works||[])){
+    for(const cn of (w.concepts_covered||[])){
+      const s = w.stage || 99;
+      if(!(cn in conceptFirstStage) || s < conceptFirstStage[cn]) conceptFirstStage[cn] = s;
+    }
+  }
+  const levels = computeConceptLevels(state.concepts, conceptFirstStage);
+  const maxLvl = Math.max(...levels);
+  const LVL_COLORS = ['#2563eb','#4f46e5','#7c3aed','#9333ea','#a855f7','#c084fc'];
+  const LVL_NAMES = ['Foundation','Core','Advanced','Research'];
+  let legendHtml = '<div class="cg-legend">';
+  for(let l = 0; l <= maxLvl; l++){
+    const c = LVL_COLORS[Math.min(l, LVL_COLORS.length-1)];
+    const name = LVL_NAMES[l] || `Level ${l+1}`;
+    legendHtml += `<span class="cg-legend-item"><span class="cg-legend-dot" style="background:${c};opacity:.75"></span>${name}</span>`;
+  }
+  legendHtml += '</div>';
+
+  const hasDeps = state.concepts.some(c => (c.dependencies||[]).length > 0);
+  const note = hasDeps
+    ? 'Dependencies flow left → right. Click any node to explore.'
+    : 'Ordered by reading stage. Click any node to explore.';
+
+  const svg = buildConceptGraphSVG(state.concepts, conceptFirstStage);
+  els.conceptsView.innerHTML =
+    `<div class="concepts-order-note" style="margin-bottom:.45rem">${note}</div>` +
+    legendHtml +
+    `<div style="overflow-x:auto;padding-bottom:4px">${svg}</div>`;
 }
 
 function clearResearch(){
@@ -914,6 +1834,21 @@ function clearResearch(){
   els.conceptsView.innerHTML = '<p class="empty">Enter a research question and click Generate.</p>';
   els.readingView.innerHTML = '<p class="empty">Reading list will appear here after generation.</p>';
   els.searchBar.classList.remove('visible');
+  // Reset new state
+  minSetActive = false; minSetIndices = null; coverageOpen = false;
+  conceptViewMode = 'list'; missingConceptsCache = []; citationFilterActive = false;
+  const cw = document.getElementById('coverageWrap');
+  if(cw){ cw.style.display='none'; cw.classList.remove('open'); }
+  const sec = document.getElementById('missingSection');
+  if(sec){ sec.style.display='none'; sec.innerHTML=''; }
+  const mb = document.getElementById('missingBtn');
+  if(mb){ mb.style.display='none'; mb.textContent='Find missing'; }
+  const msb = document.getElementById('minSetBtn');
+  if(msb) msb.classList.remove('active');
+  const gtb = document.getElementById('graphToggleBtn');
+  if(gtb){ gtb.style.display='none'; gtb.classList.remove('active'); }
+  const cfb = document.getElementById('citationFilterBtn');
+  if(cfb) cfb.classList.remove('active');
 }
 
 function renderResearch(){
@@ -924,6 +1859,19 @@ function renderResearch(){
   els.searchBar.classList.add('visible');
   buildCatChips();
   applyFilters();
+  // Show "Find missing" and graph toggle buttons once concepts+works are ready
+  const missingBtn = document.getElementById('missingBtn');
+  if(missingBtn) missingBtn.style.display = (state.concepts?.length && state.works?.length) ? '' : 'none';
+  const graphBtn = document.getElementById('graphToggleBtn');
+  if(graphBtn) graphBtn.style.display = state.concepts?.length ? 'inline-flex' : 'none';
+  // Render coverage matrix if open, or just update the wrapper visibility
+  const cw = document.getElementById('coverageWrap');
+  if(cw && state.works?.length && state.concepts?.length){
+    cw.style.display = 'block';
+    if(coverageOpen) renderCoverageMatrix();
+  }
+  // Re-apply min-set highlighting if active
+  if(minSetActive){ minSetIndices = computeMinSet(); }
 }
 
 function renderConcepts(){
@@ -931,10 +1879,30 @@ function renderConcepts(){
     els.conceptsView.innerHTML = '<p class="empty">No concepts generated yet.</p>';
     return;
   }
-  let html = '';
-  for(const c of state.concepts){
-    html += `<div class="concept-card" data-name="${esc(c.name.toLowerCase())}">
-      <div class="concept-name">${esc(c.name)}<a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a></div>
+  if(conceptViewMode === 'graph'){ renderConceptGraph(); return; }
+  // Order concepts by the earliest stage any of their works appear in
+  const conceptFirstStage = {};
+  for(const w of (state.works||[])){
+    const s = w.stage || 99;
+    for(const cn of (w.concepts_covered||[])){
+      if(!(cn in conceptFirstStage) || s < conceptFirstStage[cn]) conceptFirstStage[cn] = s;
+    }
+  }
+  const ordered = [...state.concepts].sort((a,b) => {
+    return (conceptFirstStage[a.name]??99) - (conceptFirstStage[b.name]??99);
+  });
+
+  let html = '<div class="concepts-order-note">Ordered by when they enter the reading path ↓</div>';
+  ordered.forEach((c, i) => {
+    const stageNum = conceptFirstStage[c.name];
+    const stageTag = stageNum ? `<span class="concept-stage-tag">Stage ${stageNum}</span>` : '';
+    html += `<div class="concept-card" id="concept-${esc(c.name.toLowerCase().replace(/\s+/g,'-'))}" data-name="${esc(c.name.toLowerCase())}">
+      <div class="concept-name">
+        <span class="concept-order-num">${i+1}</span>
+        <span class="concept-name-link" onclick="openCx('${c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${esc(c.name)}</span>
+        ${stageTag}
+        <a class="concept-scholar" href="${scholarUrl(c.name)}" target="_blank" rel="noopener">Scholar ↗</a>
+      </div>
       <div class="section-label">What it is</div>
       <div class="section-body">${esc(c.explanation||'')}</div>
       <div class="relevance-block">
@@ -942,7 +1910,7 @@ function renderConcepts(){
         <div class="section-body">${esc(c.relevance||'')}</div>
       </div>
     </div>`;
-  }
+  });
   els.conceptsView.innerHTML = html;
 }
 
@@ -961,22 +1929,49 @@ function renderWorks(){
   const stages = [...stageMap.entries()].sort((a,b) => a[0]-b[0]);
 
   let html = '';
+  let globalOrder = 0;
   stages.forEach(([stageNum, stageData], idx) => {
     const isParallel = stageData.works.length > 1;
     const stageId = `stage-${stageNum}`;
     // Build work cards
     let cardsHtml = '';
     for(const w of stageData.works){
+      globalOrder++;
       const catClass = 'cat-' + (w.category||'foundational').replace(/\s/g,'_');
-      const conceptChips = (w.concepts_covered||[]).map(cn => `<span class="concept-chip">${esc(cn)}</span>`).join('');
+      const conceptChips = (w.concepts_covered||[]).map(cn => {
+        const anchor = cn.toLowerCase().replace(/\s+/g,'-');
+        return `<span class="concept-chip concept-chip-link" onclick="scrollToConcept('${esc(anchor)}')" title="Jump to concept">${esc(cn)}</span>`;
+      }).join('');
       const prereqChips = (w.prerequisites||[]).map(t => `<span class="prereq-work-chip">${esc(t)}</span>`).join('');
       const authStr = Array.isArray(w.authors) ? w.authors.slice(0,4).join(', ') + (w.authors.length>4?' et al.':'') : (w.authors||'');
       const venue = w.venue ? ` · ${esc(w.venue)}` : '';
-      cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}">
-        <div class="work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)}</a></div>
+      // Verification enrichment
+      const oa = w.oa || null;
+      const verBadge = oa ? (oa.verified ? `<span class="oa-verified">&#x2713; Verified</span>` : `<span class="oa-unverified">? unverified</span>`) : '';
+      const oaLink = oa?.openAccessUrl ? `<a class="oa-link" href="${esc(oa.openAccessUrl)}" target="_blank" rel="noopener">&#x1F513; Free PDF</a>` : '';
+      const citeBadge = (() => {
+        if(!oa?.citationCount) return '';
+        const pct = oa.citationPercentile;
+        const raw = oa.citationCount.toLocaleString() + ' citations';
+        if(pct == null) return `<span class="cite-count">&#x1F4C8; ${raw}</span>`;
+        let tier = '', cls = '';
+        if(pct >= 99){ tier = 'Top 1%'; cls = 'cite-top1'; }
+        else if(pct >= 95){ tier = 'Top 5%'; cls = 'cite-top5'; }
+        else if(pct >= 90){ tier = 'Top 10%'; cls = 'cite-top10'; }
+        else if(pct >= 75){ tier = 'Top 25%'; cls = 'cite-top25'; }
+        const tierHtml = tier ? `<span class="cite-tier ${cls}">${tier}</span>` : '';
+        return `<span class="cite-count" title="${raw} · ${pct}th percentile vs same-year works in field">${tierHtml}&#x1F4C8; ${raw}</span>`;
+      })();
+      const workLink = oa?.gsLink || scholarUrl(w.title);
+      cardsHtml += `<div class="work-item" data-stage="${stageNum}" data-cat="${esc(w.category||'')}" data-text="${esc((w.title+' '+(w.explanation||'')+' '+(w.relevance||'')).toLowerCase())}" data-percentile="${oa?.citationPercentile ?? ''}">
+        <div class="work-title">
+          <span class="work-order-num">${globalOrder}</span>
+          <a href="${esc(workLink)}" target="_blank" rel="noopener">${esc(w.title)}</a>
+          ${verBadge}${oaLink}
+        </div>
         <div class="work-meta">
           <span class="cat-badge ${catClass}">${esc(w.category||'').replace('_',' ')}</span>
-          ${esc(authStr)} · ${w.year||''}${venue}
+          ${esc(authStr)} · ${w.year||''}${venue}${citeBadge}
         </div>
         ${prereqChips ? `<div class="prereq-works"><span class="prereq-label">Read first:</span>${prereqChips}</div>` : ''}
         <div class="section-label" style="margin-top:0.6rem;">What this work does</div>
@@ -985,6 +1980,7 @@ function renderWorks(){
           <div class="section-label">How it answers your question</div>
           <div class="section-body">${esc(w.relevance||'')}</div>
         </div>
+        ${w.key_sections?.length ? `<div class="key-sections-block"><div class="section-label">Where to look</div><div class="key-sections-list">${w.key_sections.map(s=>`<span class="key-section-chip">${esc(s)}</span>`).join('')}</div></div>` : ''}
         ${conceptChips ? `<div class="concepts-chips">${conceptChips}</div>` : ''}
       </div>`;
     }
@@ -1017,6 +2013,13 @@ function setCatFilter(cat){
   applyFilters();
 }
 
+function toggleCitationFilter(){
+  citationFilterActive = !citationFilterActive;
+  const btn = document.getElementById('citationFilterBtn');
+  if(btn) btn.classList.toggle('active', citationFilterActive);
+  applyFilters();
+}
+
 function applyFilters(){
   if(!state) return;
   const kw = (els.searchInput.value||'').toLowerCase().trim();
@@ -1025,13 +2028,15 @@ function applyFilters(){
     const fullText = el.textContent.toLowerCase();
     el.classList.toggle('hidden', !(!kw || fullText.includes(kw)));
   });
-  // Works: category + keyword filter per card
+  // Works: category + keyword + citation filter per card
   document.querySelectorAll('#readingView .work-item').forEach(el => {
     const cat = el.dataset.cat || '';
     const text = el.dataset.text || '';
+    const pct = el.dataset.percentile !== '' ? Number(el.dataset.percentile) : null;
     const catMatch = activeCatFilter === 'all' || cat === activeCatFilter;
     const kwMatch = !kw || text.includes(kw);
-    el.classList.toggle('hidden', !(catMatch && kwMatch));
+    const citeMatch = !citationFilterActive || (pct != null && pct >= 90);
+    el.classList.toggle('hidden', !(catMatch && kwMatch && citeMatch));
   });
   // Hide entire stage block if all its work cards are hidden; also hide THEN markers
   document.querySelectorAll('#readingView .stage-block').forEach(block => {
@@ -1060,9 +2065,27 @@ const TIER_DESC = {
   research:'Open problems & synthesis — PhD / researcher level',
 };
 
+const QG_TYPES = ['all','conceptual','theoretical','applied','historical','comparative','critical'];
+const QG_TYPE_LABELS = {
+  all:'All Types', conceptual:'Conceptual', theoretical:'Theoretical',
+  applied:'Applied', historical:'Historical', comparative:'Comparative', critical:'Critical',
+};
+const QG_TYPE_INSTR = {
+  all: '',
+  conceptual: 'Frame ALL questions to test understanding of core mechanisms, structures, and principles — focus on how and why things work.',
+  theoretical: 'Frame ALL questions around formal, mathematical, logical, or axiomatic reasoning — proofs, derivations, and theoretical foundations.',
+  applied: 'Frame ALL questions around real-world problem-solving, practical implementation, case studies, and concrete decisions.',
+  historical: 'Frame ALL questions around intellectual lineage, development of ideas, key figures, schools of thought, and historical context.',
+  comparative: 'Frame ALL questions to compare and contrast frameworks, paradigms, methods, or competing approaches within the field.',
+  critical: 'Frame ALL questions to evaluate evidence, challenge assumptions, debate open questions, and examine methodological critique.',
+};
+
 function questionsPrompt(field, subtopic){
   const sub = subtopic ? `\nSub-topic focus: "${subtopic}"` : '';
-  return `Academic field: "${field}"${sub}
+  const typeInstr = qgSelectedType !== 'all'
+    ? `\nQuestion type: ${QG_TYPE_LABELS[qgSelectedType]}. ${QG_TYPE_INSTR[qgSelectedType]} Do not include questions outside this framing.`
+    : '';
+  return `Academic field: "${field}"${sub}${typeInstr}
 
 Generate a comprehensive question bank spanning from foundational to research level. Cover the full intellectual range of this field. Include only questions that are intellectually substantive and genuinely test understanding (no trivial fill-in-the-blank).
 
@@ -1087,7 +2110,7 @@ async function generateQuestions(){
   streamLogShow();
 
   const subtopic = els.subtopicInput.value.trim();
-  const cacheKey = field.toLowerCase() + '|' + subtopic.toLowerCase();
+  const cacheKey = field.toLowerCase() + '|' + subtopic.toLowerCase() + '|' + qgSelectedType;
   try{
     const cached = await dbGet('questions', cacheKey);
     if(cached){
@@ -1160,7 +2183,7 @@ function renderQuestions(){
     for(const q of qs){
       const prereqs = (q.concepts_needed||[]).map(p => `<span class="prereq-chip">${esc(p)}</span>`).join('');
       cardsHtml += `<div class="q-card" data-tier="${tier}" data-text="${esc((q.question+' '+(q.explanation||'')).toLowerCase())}">
-        <div class="q-text">${esc(q.question)}</div>
+        <div class="q-text explore-q" data-q="${esc(q.question)}" onclick="useQuestion(this.dataset.q)" title="Click to explore in Research tab">${esc(q.question)}<span class="q-explore-hint">Explore &#x2192;</span></div>
         ${q.explanation ? `<div class="q-explanation">${esc(q.explanation)}</div>` : ''}
         <div class="q-footer">
           <span class="difficulty-badge">Difficulty ${q.difficulty||'?'}/10</span>
@@ -1183,9 +2206,26 @@ function renderQuestions(){
   buildTierChips();
 }
 
+function useQuestion(question){
+  els.question.value = question;
+  switchTab('research');
+  els.question.focus();
+}
+
 function toggleTier(tier){
   const el = document.getElementById('tier-' + tier);
   if(el) el.classList.toggle('collapsed');
+}
+
+function buildQGTypeChips(){
+  els.qgTypeChips.innerHTML = QG_TYPES.map(t =>
+    `<span class="chip${t===qgSelectedType?' active':''}" onclick="setQGType('${t}')">${QG_TYPE_LABELS[t]}</span>`
+  ).join('');
+}
+
+function setQGType(type){
+  qgSelectedType = type;
+  buildQGTypeChips();
 }
 
 function buildTierChips(){
@@ -1240,10 +2280,303 @@ function exportQuestions(){
   });
 }
 
+// ── Personalization ───────────────────────────────────────────────────────────
+let person = { bg: 'intermediate', goal: 'broad overview' };
+
+function setPerson(el){
+  const group = el.dataset.pg;
+  person[group] = el.dataset.pv;
+  document.querySelectorAll(`[data-pg="${group}"]`).forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function personCtx(){
+  return `\n\nLEARNER PROFILE — tailor depth, vocabulary, and scope accordingly:\n- Background: ${person.bg}\n- Goal: ${person.goal}`;
+}
+
+// ── Modified prompts with personalization ────────────────────────────────────
+function conceptsPromptP(question){
+  return conceptsPrompt(question) + personCtx();
+}
+function worksPromptP(question, conceptNames){
+  return worksPrompt(question, conceptNames) + personCtx();
+}
+
+// ── Streaming helper supporting messages array + system ───────────────────────
+async function callStreamMessages(messages, system, maxTokens, onChunk){
+  const apiKey = els.apiKey.value.trim();
+  if(!apiKey) throw new Error('Anthropic API key required.');
+  const model = els.model.value.trim() || 'claude-sonnet-4-6';
+  const body = { model, max_tokens:maxTokens, stream:true, messages };
+  if(system) body.system = system;
+  const res = await fetch(ANTHROPIC_URL, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true',
+    },
+    body: JSON.stringify(body),
+  });
+  if(!res.ok){ const txt = await res.text(); throw new Error(`Claude API ${res.status}: ${txt.slice(0,300)}`); }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer='', full='';
+  while(true){
+    const {done, value} = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, {stream:true});
+    const events = buffer.split('\n\n'); buffer = events.pop();
+    for(const evt of events){
+      for(const line of evt.split('\n')){
+        if(!line.startsWith('data: ')) continue;
+        try{
+          const p = JSON.parse(line.slice(6));
+          if(p.type==='content_block_delta'&&p.delta?.text){ full+=p.delta.text; onChunk(p.delta.text,full); }
+        }catch(_){}
+      }
+    }
+  }
+  return full;
+}
+
+// ── Concept explore drawer ────────────────────────────────────────────────────
+const cxOverlayEl = document.getElementById('cxOverlay');
+const cxBodyEl    = document.getElementById('cxBody');
+const cxCrumbEl   = document.getElementById('cxCrumb');
+let cxStack = [];   // [{name, data}]
+
+function cxPrompt(name){
+  const ctx = state?.question ? `\nResearch context: "${state.question}"` : '';
+  return `Concept: "${name}"${ctx}
+
+Generate a structured concept map. Respond ONLY with valid JSON:
+{"what_it_is":"2-3 sentence plain-language explanation",
+"prerequisites":[{"name":"","description":"one sentence why this is needed"}],
+"core_ideas":[{"name":"","description":"one sentence on this central idea"}],
+"successors":[{"name":"","description":"one sentence on what this opens up"}],
+"key_works":[{"title":"","authors":"Lastname, F. (Year).","where_to_look":"exact chapter, section, or pages covering this concept best (e.g. Ch. 3: The Core Model, or Section 2.1-2.4, or Part II)","note":"one sentence on what it contributes"}]}
+
+Rules: 3-5 items each list; real verifiable works; specific where_to_look per work; no padding. Do NOT use double-quote characters inside any JSON string values. Return ONLY JSON.`;
+}
+
+function handleCxBackdrop(e){ if(e.target===cxOverlayEl||e.target.classList.contains('cx-backdrop')) closeCx(); }
+function closeCx(){ cxOverlayEl.classList.remove('open'); cxStack=[]; }
+
+function renderCxCrumb(){
+  cxCrumbEl.innerHTML = cxStack.map((item,i) => {
+    if(i===cxStack.length-1) return `<span class="cx-crumb-item" style="color:var(--text);cursor:default">${esc(item.name)}</span>`;
+    return `<span class="cx-crumb-item" onclick="cxNavTo(${i})">${esc(item.name)}</span><span class="cx-crumb-sep">›</span>`;
+  }).join('');
+}
+
+function cxNavTo(idx){
+  cxStack = cxStack.slice(0, idx+1);
+  renderCxContent(cxStack[idx]);
+  renderCxCrumb();
+}
+
+async function openCx(name){
+  if(!els.apiKey.value.trim()){ alert('Enter your API key first.'); return; }
+  cxOverlayEl.classList.add('open');
+  cxBodyEl.innerHTML = `<div class="cx-loader"><div class="cx-loader-bar"></div></div><div class="cx-status">Mapping "${esc(name)}"…</div>`;
+
+  const ckey = 'cx|' + name.toLowerCase();
+  let data;
+  try{
+    const cached = await dbGet('research', ckey);
+    if(cached){ data = cached.data; }
+    else{
+      const raw = await callClaudeStream(cxPrompt(name), 4000, ()=>{});
+      data = parseJSONRobust(raw);
+      await dbPut('research', {key:ckey, data, ts:Date.now()});
+    }
+  }catch(err){
+    cxBodyEl.innerHTML = `<div style="color:#b42318;font-size:.85rem;">${esc(err.message)}</div>`;
+    return;
+  }
+
+  const item = {name, data};
+  if(!cxStack.length || cxStack[cxStack.length-1].name!==name) cxStack.push(item);
+  renderCxCrumb();
+  renderCxContent(item);
+}
+
+function renderCxContent(item){
+  const d = item.data;
+  let html = '';
+  if(d.what_it_is){
+    html += `<div class="cx-section"><div class="cx-sec-label">What it is</div><div class="cx-body">${esc(d.what_it_is)}</div></div>`;
+  }
+  if(d.prerequisites?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x2191; Prerequisites</div>`;
+    d.prerequisites.forEach(p => {
+      html += `<div class="cx-item" onclick="openCx('${esc(p.name).replace(/'/g,"\\'")}')"><div class="cx-item-name">${esc(p.name)}</div><div class="cx-item-desc">${esc(p.description)}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if(d.core_ideas?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x25CE; Core Ideas</div>`;
+    d.core_ideas.forEach(c => {
+      html += `<div class="cx-item" style="cursor:default;"><div class="cx-item-name" style="color:var(--text)">${esc(c.name)}</div><div class="cx-item-desc">${esc(c.description)}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if(d.successors?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x2193; Leads to</div>`;
+    d.successors.forEach(s => {
+      html += `<div class="cx-item" onclick="openCx('${esc(s.name).replace(/'/g,"\\'")}')"><div class="cx-item-name">${esc(s.name)}</div><div class="cx-item-desc">${esc(s.description)}</div></div>`;
+    });
+    html += `</div>`;
+  }
+  if(d.key_works?.length){
+    html += `<div class="cx-section"><div class="cx-sec-label">&#x1F4DA; Key Works</div>`;
+    d.key_works.forEach(w => {
+      html += `<div class="cx-work"><div class="cx-work-title"><a href="${scholarUrl(w.title)}" target="_blank" rel="noopener">${esc(w.title)} &#x2197;</a></div><div class="cx-work-authors">${esc(w.authors||'')}</div>${w.where_to_look?`<div class="cx-where-to-look">&#x1F50D; Find it in: ${esc(w.where_to_look)}</div>`:''} ${w.note?`<div class="cx-work-note">${esc(w.note)}</div>`:''}</div>`;
+    });
+    html += `</div>`;
+  }
+  cxBodyEl.innerHTML = html || '<p style="color:var(--muted);font-size:.85rem;">No data.</p>';
+}
+
+// ── AI Chat ───────────────────────────────────────────────────────────────────
+const chatPanelEl  = document.getElementById('chatPanel');
+const chatMsgsEl   = document.getElementById('chatMessages');
+const chatInputEl  = document.getElementById('chatInput');
+const chatSendBtn  = document.getElementById('chatSendBtn');
+const chatQuickEl  = document.getElementById('chatQuick');
+let chatHistory    = [];
+let chatSystem     = '';
+let chatOpen       = false;
+
+const CHAT_QUICK_PROMPTS = [
+  "What's the central debate in this area?",
+  "Where should I start reading?",
+  "What are the open questions?",
+  "Explain the key concept in one paragraph",
+  "What would a skeptic say?",
+];
+
+function toggleChat(){
+  chatOpen = !chatOpen;
+  chatPanelEl.classList.toggle('open', chatOpen);
+  document.getElementById('chatToggleBtn').textContent = chatOpen ? '▼' : '▲';
+  if(chatOpen) chatInputEl.focus();
+}
+
+function initChat(){
+  if(!state) return;
+  const cNames = (state.concepts||[]).map(c=>c.name).join(', ') || 'none';
+  const wTitles = (state.works||[]).map(w=>w.title).join(' | ') || 'none';
+  chatSystem = `You are a concise research assistant helping with this question: "${state.question||''}"\n\nKey concepts: ${cNames}\nKey works: ${wTitles}\n\nAnswer helpfully and concisely (under 150 words unless more detail is explicitly requested). Use plain language.`;
+  chatHistory = [];
+  chatMsgsEl.innerHTML = '';
+  document.getElementById('chatTitle').textContent = '💬 Ask about: ' + (state.question_summary||state.question||'').slice(0,60);
+  chatQuickEl.innerHTML = CHAT_QUICK_PROMPTS.map(q =>
+    `<span class="chat-quick-chip" onclick="sendChatText('${q.replace(/'/g,"\\'")}')">${esc(q)}</span>`
+  ).join('');
+}
+
+function appendBubble(role, text, streaming=false){
+  const div = document.createElement('div');
+  div.className = `chat-bubble ${role}${streaming?' streaming':''}`;
+  div.textContent = text;
+  chatMsgsEl.appendChild(div);
+  chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+  return div;
+}
+
+async function sendChatText(text){
+  chatInputEl.value = text;
+  await sendChat();
+}
+
+async function sendChat(){
+  const text = chatInputEl.value.trim();
+  if(!text || chatSendBtn.disabled) return;
+  if(!state){ alert('Generate a research topic first.'); return; }
+  if(!chatOpen) toggleChat();
+  chatInputEl.value = '';
+  chatSendBtn.disabled = true;
+  appendBubble('user', text);
+  chatHistory.push({role:'user', content:text});
+  const bubble = appendBubble('assistant', '…', true);
+  let full = '';
+  try{
+    await callStreamMessages(chatHistory, chatSystem, 600, (chunk) => {
+      full += chunk;
+      bubble.textContent = full;
+      chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight;
+    });
+    bubble.classList.remove('streaming');
+    chatHistory.push({role:'assistant', content:full});
+  }catch(err){
+    bubble.textContent = 'Error: ' + err.message;
+    bubble.classList.remove('streaming');
+    chatHistory.pop();
+  }
+  chatSendBtn.disabled = false;
+  chatInputEl.focus();
+}
+
+chatInputEl.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendChat(); } });
+
+// ── Search history ────────────────────────────────────────────────────────────
+function getHistory(){
+  try{ return JSON.parse(localStorage.getItem('re-history')||'[]'); }catch(_){ return []; }
+}
+function addHistory(q){
+  let h = getHistory().filter(x => x !== q);
+  h.unshift(q);
+  h = h.slice(0, 10);
+  localStorage.setItem('re-history', JSON.stringify(h));
+  renderHistory();
+}
+function renderHistory(){
+  const h = getHistory();
+  const el = document.getElementById('historyChips');
+  if(!el) return;
+  if(!h.length){ el.innerHTML='<span style="font-size:.75rem;color:var(--muted)">No recent searches</span>'; return; }
+  el.innerHTML = h.map(q =>
+    `<span class="chip history-chip" title="${esc(q)}" onclick="loadHistoryItem(${JSON.stringify(esc(q))})">${esc(q.length>50?q.slice(0,50)+'…':q)}</span>`
+  ).join('');
+}
+function loadHistoryItem(q){
+  const decoded = q.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+  els.question.value = decoded;
+  switchTab('research');
+  generate();
+}
+
+// ── Session restore ───────────────────────────────────────────────────────────
+async function tryRestoreSession(){
+  try{
+    const last = localStorage.getItem('re-last-question');
+    if(!last) return;
+    const cached = await dbGet('research', last.toLowerCase());
+    if(cached && cached.data?.concepts?.length){
+      state = cached.data;
+      els.question.value = last;
+      switchTab('research');
+      renderResearch();
+      initChat();
+      setStatus('Session restored — click Generate to refresh.', 'info');
+      setTimeout(()=>setStatus(''), 3000);
+    }
+  }catch(e){ console.warn('Session restore failed:', e); }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
+buildQGTypeChips();   // always build immediately, no IDB dependency
 openDB().then(() => {
   loadSettings();
+  renderHistory();
+  tryRestoreSession();
 }).catch(e => console.warn('IndexedDB init failed:', e));
+
+document.getElementById('oaKeyInput').addEventListener('change', saveSettings);
+document.getElementById('serpaKeyInput').addEventListener('change', saveSettings);
 </script>
 </body>
 </html>
