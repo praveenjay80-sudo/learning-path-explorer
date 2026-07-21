@@ -257,8 +257,9 @@ Return ONLY a JSON object with exactly one key "stages" (array). No markdown fen
 
 function workRowHtml(w) {
   const link = w.type === 'paper' ? scholarLink(w.title, w.author) : booksLink(w.title, w.author);
-  return '<div class="work" data-type="' + w.type + '">' +
-    '<span class="badge ' + w.type + '">' + w.type + '</span>' +
+  const safeType = escapeHtml(w.type);
+  return '<div class="work" data-type="' + safeType + '">' +
+    '<span class="badge ' + safeType + '">' + safeType + '</span>' +
     '<span class="badge role">' + escapeHtml(w.role) + '</span>' +
     '<div class="title">' + escapeHtml(w.title) + ' <span class="author">— ' + escapeHtml(w.author) + ', ' + escapeHtml(String(w.year)) + '</span></div>' +
     '<div class="desc">' + escapeHtml(w.description) + '</div>' +
