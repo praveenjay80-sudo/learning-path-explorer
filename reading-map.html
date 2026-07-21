@@ -100,6 +100,41 @@ function booksLink(title, author) {
   const q = encodeURIComponent([title, author].filter(Boolean).join(' '));
   return 'https://www.google.com/search?tbm=bks&q=' + q;
 }
+
+// ── IndexedDB cache ──────────────────────────────────────
+const DB_NAME = 'reading-map-cache';
+const STORE_NAME = 'topics';
+
+function openCacheDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore(STORE_NAME, { keyPath: 'key' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getCached(topicKey) {
+  const db = await openCacheDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(topicKey);
+    req.onsuccess = () => resolve(req.result ? req.result.data : undefined);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function putCached(topicKey, data) {
+  const db = await openCacheDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put({ key: topicKey, data });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 </script>
 </body>
 </html>
