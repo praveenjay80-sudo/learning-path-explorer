@@ -1287,3 +1287,46 @@ Open `reading-map.html`, enter a real key, and generate a topic known to produce
 git add reading-map.html
 git commit -m "Chunk pass 2 into parallel batches for large subtopic counts"
 ```
+
+---
+
+### Task 13: Require subtopic distinctness in the breadth prompt
+
+**Why:** Real E2E testing showed "prisoner's dilemma" (a narrow, specific concept) returned 140 subtopics — many likely near-duplicates or overly fine-grained variants rather than genuinely distinct branches. The user confirmed this reads as noise. Keep "no artificial caps" (broad fields should still get broad coverage) but add explicit guidance that each subtopic must be a genuinely distinct major branch, with instructions to merge near-duplicate variants into one entry instead of listing each separately.
+
+**Files:**
+- Modify: `C:\Users\prave\reading-map.html`
+
+**Interfaces:**
+- Consumes/Modifies: `buildBreadthPrompt(topic)` (Task 5). No signature or return-type change — pure prompt text edit.
+
+- [ ] **Step 1: Replace `buildBreadthPrompt`'s prompt text**
+
+Read the current file to find `buildBreadthPrompt`'s exact current text (should match Task 5's original almost exactly, no prior task modified it), then replace the function body with:
+
+```javascript
+function buildBreadthPrompt(topic) {
+  return `You are an expert academic librarian mapping the full breadth of "${topic}".
+
+List every major subtopic, subfield, or branch a genuinely complete treatment of "${topic}" must cover. Think broadly: core theory, methodology, historical development, major schools of thought, applied domains, and adjacent areas that serious students are expected to know.
+
+Each subtopic must be a genuinely distinct major branch or school of thought — not a minor variant, narrow special case, or near-duplicate of another entry. If several named concepts are really facets of the same broader idea, merge them into one subtopic rather than listing each separately. Favor a smaller set of substantive, clearly distinct subtopics over an exhaustive list of fine-grained variants.
+
+Return ONLY a JSON object with exactly one key "subtopics": an array of objects, each with:
+  - "name" (2-6 words)
+  - "description" (1 sentence: what this subtopic covers)
+
+No artificial caps — include every subtopic that genuinely belongs, but do not pad the list with redundant or overly granular entries. Return ONLY valid JSON, no markdown fences, no commentary.`;
+}
+```
+
+- [ ] **Step 2: Structural verification**
+
+This is a prompt-text-only change with no new logic to unit test. Read the file back and confirm: the function's signature (`function buildBreadthPrompt(topic)`) and return type (still a template string) are unchanged; the new distinctness/merge-guidance paragraph is present; the JSON schema instructions (`"subtopics"`, `"name"`, `"description"`) and the "Return ONLY valid JSON" closing instruction are still present and unchanged in substance.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add reading-map.html
+git commit -m "Require subtopic distinctness in breadth prompt to reduce noise"
+```
