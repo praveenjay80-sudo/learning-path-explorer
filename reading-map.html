@@ -188,6 +188,36 @@ async function putCached(topicKey, data) {
     tx.onerror = () => reject(tx.error);
   });
 }
+
+// ── Pass 1: breadth ──────────────────────────────────────
+function buildBreadthPrompt(topic) {
+  return `You are an expert academic librarian mapping the full breadth of "${topic}".
+
+List every major subtopic, subfield, or branch a genuinely complete treatment of "${topic}" must cover. Think broadly: core theory, methodology, historical development, major schools of thought, applied domains, and adjacent areas that serious students are expected to know.
+
+Return ONLY a JSON object with exactly one key "subtopics": an array of objects, each with:
+  - "name" (2-6 words)
+  - "description" (1 sentence: what this subtopic covers)
+
+No artificial caps — include every subtopic that genuinely belongs. Return ONLY valid JSON, no markdown fences, no commentary.`;
+}
+
+function renderSubtopics(subtopics) {
+  const el = document.getElementById('subtopics');
+  el.innerHTML = subtopics.map(s => '<span class="chip" title="' +
+    s.description.replace(/"/g, '&quot;') + '">' + s.name + '</span>').join('');
+}
+
+async function runPass1(topic, apiKey) {
+  const raw = await streamChatCompletion(
+    apiKey,
+    [{ role: 'user', content: buildBreadthPrompt(topic) }],
+    () => {} // pass 1 renders only once parsed (JSON isn't safely partial-parseable mid-stream)
+  );
+  const parsed = JSON.parse(raw);
+  renderSubtopics(parsed.subtopics);
+  return parsed.subtopics;
+}
 </script>
 </body>
 </html>
