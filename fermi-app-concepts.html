@@ -52,6 +52,8 @@ a{color:var(--accent)}
   <input id="model" placeholder="model" style="width:200px">
   <input id="search" placeholder="Search concepts…">
   <span class="hint" id="stats"></span>
+  <button class="sec" id="chkNew" title="Compare against Fermi's live concept list">Check Fermi for new concepts</button>
+  <span class="hint" id="newStatus"></span>
 </header>
 <main>
   <div id="tree"></div>
@@ -107,6 +109,29 @@ function select(n){
 }
 $('#stats').textContent=ROOT.count.toLocaleString()+' concepts';
 ROOT.kids.forEach(k=>renderNode(k,$('#tree')));
+
+// ---- live update check: concepts on Fermi that aren't in the bundled snapshot ----
+const FIELD_TITLE={'physics-new':'Physics','chemistry':'Chemistry','biology':'Biology','mathematics-new':'Mathematics','cs-ai':'CS & AI','frontier':'The Frontier of Science','ndli-cbse':'CBSE curriculum','ndli-icse':'ICSE & ISC curriculum','hs-physics-new':'High School Physics','hs-chemistry':'High School Chemistry','hs-math':'High School Mathematics'};
+const known=new Set();(function w(n){if(n.leaf&&n.path)known.add(n.path);n.kids.forEach(w)})(ROOT);
+let newNode=null;
+async function checkNew(manual){
+  const st=$('#newStatus');st.textContent='checking Fermi…';
+  try{
+    const r=await fetch('/api/fermi-new');if(!r.ok)throw new Error(r.status);
+    const {items,fetchedAt}=await r.json();
+    const fresh=items.filter(i=>!known.has(i[4]));
+    if(newNode&&newNode.wrap){newNode.wrap.remove();ROOT.kids=ROOT.kids.filter(k=>k!==newNode);newNode=null}
+    if(!fresh.length){st.textContent='no new concepts on Fermi · checked '+new Date(fetchedAt).toLocaleTimeString();return}
+    const byField={};
+    fresh.forEach(([f,b,t,title,path])=>{const F=byField[f]=byField[f]||{};const g=F[b||'—']=F[b||'—']||[];g.push({title,path})});
+    const node={title:'🆕 New on Fermi',path:'new-on-fermi',leaves:[],children:Object.entries(byField).map(([f,bs])=>({title:FIELD_TITLE[f]||f,leaves:[],children:Object.entries(bs).map(([b,ls])=>({title:b,children:[],leaves:ls}))}))};
+    norm(node,ROOT);ROOT.kids.unshift(node);newNode=node;
+    const holder=document.createElement('div');renderNode(node,holder);node.wrap=holder.firstChild;
+    $('#tree').prepend(node.wrap);
+    st.textContent=fresh.length+' new concept'+(fresh.length==1?'':'s')+' found on Fermi';
+    if(manual){node.expand();select(node)}
+  }catch(e){st.textContent='update check unavailable'+(manual?' ('+e.message+')':'')}
+}
 
 // ---- search ----
 $('#search').oninput=e=>{
@@ -218,6 +243,8 @@ async function showDetail(n){
   b.onclick=()=>run(false);r.onclick=()=>run(true);
   const cached=await dbGet(key(n));if(cached){renderList(out,cached);r.hidden=false;b.hidden=true}
 }
+$('#chkNew').onclick=()=>checkNew(true);
+checkNew(false);
 dbReady.then(async()=>{(await dbKeys()).forEach(k=>doneKeys.add(k));document.querySelectorAll('.row').forEach(()=>{})});
 </script>
 </body>
