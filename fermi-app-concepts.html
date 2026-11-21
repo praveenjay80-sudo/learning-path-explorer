@@ -78,7 +78,7 @@ const dbKeys=()=>new Promise(r=>{if(!db)return r([]);const q=db.transaction('lis
 function norm(n,parent){
   n.parent=parent;n.kids=[];
   for(const c of n.children||[])n.kids.push(norm(c,n));
-  for(const l of n.leaves||[]){l.parent=n;l.kids=[];l.leaf=true;n.kids.push(l)}
+  for(const l of n.leaves||[]){l.parent=n;l.kids=[];l.leaf=true;l.count=1;n.kids.push(l)}
   n.count=n.leaf?1:n.kids.reduce((a,k)=>a+k.count,0);
   return n;
 }
