@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fermi App Concepts</title>
+<style>
+:root{--bg:#f6f8fb;--panel:#fff;--ink:#1b2330;--mute:#6b7788;--line:#e1e7ef;--accent:#5b3fd6;--accent2:#e9e4fb;--ok:#1f8a5b}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 system-ui,Segoe UI,sans-serif;background:var(--bg);color:var(--ink);height:100vh;display:flex;flex-direction:column}
+header{padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:16px;margin:0}
+header input,header select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font:inherit}
+#apiKey{width:260px}
+#search{flex:1;min-width:160px}
+.hint{color:var(--mute);font-size:12px}
+main{flex:1;display:grid;grid-template-columns:minmax(280px,38%) 1fr;min-height:0}
+#tree{overflow:auto;padding:8px 6px 40px;background:var(--panel);border-right:1px solid var(--line)}
+#detail{overflow:auto;padding:20px 28px 60px}
+.row{display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.row:hover{background:var(--bg)}
+.row.sel{background:var(--accent2)}
+.row .tw{width:14px;color:var(--mute);flex:none;text-align:center;font-size:10px}
+.row .lbl{overflow:hidden;text-overflow:ellipsis}
+.row .cnt{color:var(--mute);font-size:11px;margin-left:auto;padding-left:8px}
+.row .done{color:var(--ok);font-size:11px}
+.kids{margin-left:14px;border-left:1px solid var(--line);padding-left:2px}
+h2{margin:0 0 4px}
+.crumb{color:var(--mute);font-size:12px;margin-bottom:10px}
+button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:7px 12px;font:inherit;cursor:pointer}
+button.sec{background:var(--accent2);color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+.stage{margin-top:18px}
+.stage h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin:0 0 6px}
+.work{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.work .t{font-weight:600}
+.work .m{color:var(--mute);font-size:12px}
+.work .why{margin-top:4px}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:var(--accent2);color:var(--accent);margin-right:4px}
+a{color:var(--accent)}
+.err{color:#b3261e;margin-top:10px;white-space:pre-wrap}
+.sub{margin:8px 0 14px}
+.sub .chip{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer;font-size:12px}
+.sub .chip:hover{border-color:var(--accent)}
+@media(max-width:760px){main{grid-template-columns:1fr;grid-template-rows:40vh 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fermi App Concepts</h1>
+  <input id="apiKey" type="password" placeholder="OpenRouter (sk-or-…) or Anthropic (sk-ant-…) key" autocomplete="off">
+  <input id="model" placeholder="model" style="width:200px">
+  <input id="search" placeholder="Search concepts…">
+  <span class="hint" id="stats"></span>
+</header>
+<main>
+  <div id="tree"></div>
+  <div id="detail"><p class="hint">Select a concept in the tree (hierarchy copied from fermi.ai/concept). Pick any concept to generate a precise reading list; pick a branch to generate for every concept beneath it.</p></div>
+</main>
+<script src="fermi-concepts-data.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const LS=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
+const LSset=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+$('#apiKey').value=LS('fermi_key');$('#apiKey').oninput=e=>LSset('fermi_key',e.target.value.trim());
+$('#model').value=LS('fermi_model');$('#model').oninput=e=>LSset('fermi_model',e.target.value.trim());
+
+// ---- IndexedDB cache of reading lists ----
+let db;
+const dbReady=new Promise(res=>{try{const r=indexedDB.open('fermi-concepts',1);r.onupgradeneeded=()=>r.result.createObjectStore('lists');r.onsuccess=()=>{db=r.result;res()};r.onerror=()=>res()}catch(e){res()}});
+const dbGet=k=>new Promise(r=>{if(!db)return r(null);const q=db.transaction('lists').objectStore('lists').get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)});
+const dbPut=(k,v)=>new Promise(r=>{if(!db)return r();const t=db.transaction('lists','readwrite');t.objectStore('lists').put(v,k);t.oncomplete=()=>r();t.onerror=()=>r()});
+const dbKeys=()=>new Promise(r=>{if(!db)return r([]);const q=db.transaction('lists').objectStore('lists').getAllKeys();q.onsuccess=()=>r(q.result);q.onerror=()=>r([])});
+
+// ---- tree ----
+// data: FERMI_TREE = {title, children:[{title,path,children:[],leaves:[{title,path}]}]}
+// Normalise: every leaf becomes a node with no children.
+function norm(n,parent){
+  n.parent=parent;n.kids=[];
+  for(const c of n.children||[])n.kids.push(norm(c,n));
+  for(const l of n.leaves||[]){l.parent=n;l.kids=[];l.leaf=true;n.kids.push(l)}
+  n.count=n.leaf?1:n.kids.reduce((a,k)=>a+k.count,0);
+  return n;
+}
+const ROOT=norm(FERMI_TREE,null);
+const crumb=n=>{const a=[];for(;n&&n.parent;n=n.parent)a.unshift(n.title);return a};
+const leavesOf=n=>n.leaf?[n]:n.kids.flatMap(leavesOf);
+let doneKeys=new Set(),selected=null;
+const key=n=>n.path||crumb(n).join('>');
+
+function renderNode(n,box){
+  const wrap=document.createElement('div');
+  const row=document.createElement('div');row.className='row';
+  row.innerHTML=`<span class="tw">${n.kids.length?'▶':''}</span><span class="lbl"></span><span class="done">${doneKeys.has(key(n))?'✓':''}</span><span class="cnt">${n.leaf?'':n.count}</span>`;
+  row.querySelector('.lbl').textContent=n.title;
+  row.title=n.title;n.row=row;
+  const kids=document.createElement('div');kids.className='kids';kids.hidden=true;
+  let built=false;
+  const toggle=()=>{if(!n.kids.length)return;if(!built){n.kids.forEach(k=>renderNode(k,kids));built=true}kids.hidden=!kids.hidden;row.querySelector('.tw').textContent=kids.hidden?'▶':'▼'};
+  n.expand=()=>{if(kids.hidden)toggle()};
+  row.onclick=e=>{select(n);if(n.kids.length&&(e.target.classList.contains('tw')||true))toggle()};
+  wrap.append(row,kids);box.append(wrap);
+}
+function select(n){
+  if(selected&&selected.row)selected.row.classList.remove('sel');
+  selected=n;if(n.row)n.row.classList.add('sel');showDetail(n);
+}
+$('#stats').textContent=ROOT.count.toLocaleString()+' concepts';
+ROOT.kids.forEach(k=>renderNode(k,$('#tree')));
+
+// ---- search ----
+$('#search').oninput=e=>{
+  const q=e.target.value.trim().toLowerCase();if(q.length<3)return;
+  const hit=[];(function walk(n){if(n.leaf&&n.title.toLowerCase().includes(q))hit.push(n);n.kids.forEach(walk)})(ROOT);
+  const d=$('#detail');d.innerHTML=`<h2>${hit.length} match${hit.length==1?'':'es'}</h2>`;
+  const sub=document.createElement('div');sub.className='sub';
+  hit.slice(0,200).forEach(n=>{const c=document.createElement('span');c.className='chip';c.textContent=n.title+'  ·  '+crumb(n).slice(0,-1).join(' › ');c.onclick=()=>reveal(n);sub.append(c)});
+  d.append(sub);
+};
+function reveal(n){const chain=[];for(let x=n.parent;x&&x.parent;x=x.parent)chain.unshift(x);chain.forEach(x=>x.expand&&x.expand());setTimeout(()=>{select(n);n.row&&n.row.scrollIntoView({block:'center'})},0)}
+
+// ---- LLM ----
+function endpoint(){
+  const key=$('#apiKey').value.trim();
+  if(!key)throw new Error('Enter an API key first.');
+  const model=$('#model').value.trim();
+  if(key.startsWith('sk-ant-'))return{key,kind:'anthropic',model:model||'claude-sonnet-4-6'};
+  return{key,kind:'openrouter',model:model||'anthropic/claude-sonnet-4-6'};
+}
+async function llm(prompt){
+  const e=endpoint();let r,j;
+  if(e.kind==='anthropic'){
+    r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':e.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:e.model,max_tokens:4000,messages:[{role:'user',content:prompt}]})});
+    j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);return j.content.map(c=>c.text||'').join('');
+  }
+  r=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+e.key},body:JSON.stringify({model:e.model,max_tokens:4000,messages:[{role:'user',content:prompt}]})});
+  j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);return j.choices[0].message.content;
+}
+function promptFor(n){
+  const path=crumb(n);
+  return `You are an expert academic librarian and professor. Build a PRECISE reading list for one concept.
+
+Concept: "${n.title}"
+Place in the curriculum hierarchy (broad → narrow): ${path.join(' › ')}
+Siblings in the same group (for context, to keep scope tight): ${(n.parent?n.parent.kids:[]).filter(k=>k!==n).slice(0,12).map(k=>k.title).join('; ')||'none'}
+
+Rules:
+- Only list real, verifiable works (textbooks, specific chapters/sections, landmark papers, lecture notes, review articles). Never invent titles, authors, or page numbers. If unsure of a chapter number, give the section/topic name instead.
+- Be specific to THIS concept, not the whole field. Prefer chapter/section-level pointers.
+- Organise into 2-4 sequential stages (e.g. Intuition → Rigorous treatment → Advanced/Original sources); items inside a stage are parallel.
+- 4-8 works total. Each: author(s), title, year, exact location (chapter/section) if known, and one sentence on why it fits this concept.
+
+Respond with ONLY JSON:
+{"stages":[{"name":"...","works":[{"title":"","authors":"","year":"","location":"","kind":"textbook|paper|lecture-notes|review|original-source","why":""}]}]}`;
+}
+function parseJSON(t){const m=t.match(/\{[\s\S]*\}/);if(!m)throw new Error('No JSON in response');return JSON.parse(m[0])}
+async function generate(n,force){
+  const k=key(n);
+  if(!force){const c=await dbGet(k);if(c)return c}
+  const out=parseJSON(await llm(promptFor(n)));
+  await dbPut(k,out);doneKeys.add(k);if(n.row)n.row.querySelector('.done').textContent='✓';
+  return out;
+}
+
+// ---- detail ----
+function scholar(w){return 'https://scholar.google.com/scholar?q='+encodeURIComponent((w.title+' '+(w.authors||'')).trim())}
+function renderList(box,data){
+  box.innerHTML='';
+  (data.stages||[]).forEach((s,i)=>{
+    const st=document.createElement('div');st.className='stage';
+    const h=document.createElement('h3');h.textContent=`Stage ${i+1} · ${s.name}`;st.append(h);
+    (s.works||[]).forEach(w=>{
+      const d=document.createElement('div');d.className='work';
+      const t=document.createElement('div');t.className='t';
+      const a=document.createElement('a');a.href=scholar(w);a.target='_blank';a.rel='noopener';a.textContent=w.title;t.append(a);
+      const m=document.createElement('div');m.className='m';m.textContent=[w.authors,w.year,w.location].filter(Boolean).join(' · ');
+      const tag=document.createElement('span');tag.className='tag';tag.textContent=w.kind||'';
+      const why=document.createElement('div');why.className='why';why.textContent=w.why||'';
+      d.append(t,m,why);if(w.kind)d.insertBefore(tag,why);st.append(d);
+    });
+    box.append(st);
+  });
+}
+async function showDetail(n){
+  const d=$('#detail');d.innerHTML='';
+  const c=document.createElement('div');c.className='crumb';c.textContent=crumb(n).slice(0,-1).join(' › ');
+  const h=document.createElement('h2');h.textContent=n.title;
+  d.append(c,h);
+  const out=document.createElement('div');
+  if(!n.leaf){
+    const ls=leavesOf(n);
+    const p=document.createElement('p');p.className='hint';p.textContent=`${ls.length} concepts beneath this node.`;
+    const sub=document.createElement('div');sub.className='sub';
+    n.kids.forEach(k=>{const ch=document.createElement('span');ch.className='chip';ch.textContent=k.title;ch.onclick=()=>{n.expand();select(k);k.row&&k.row.scrollIntoView({block:'center'})};sub.append(ch)});
+    const b=document.createElement('button');b.textContent=`Generate reading lists for all ${ls.length} (skips cached)`;
+    const stop=document.createElement('button');stop.className='sec';stop.textContent='Stop';stop.hidden=true;stop.style.marginLeft='8px';
+    const prog=document.createElement('div');prog.className='hint';prog.style.marginTop='8px';
+    let halt=false;stop.onclick=()=>halt=true;
+    b.onclick=async()=>{
+      b.disabled=true;stop.hidden=false;halt=false;let i=0,fail=0;
+      const queue=ls.slice();
+      async function w(){while(queue.length&&!halt){const x=queue.shift();try{await generate(x)}catch(e){fail++;out.innerHTML='<div class="err"></div>';out.firstChild.textContent='Last error: '+e.message;if(/key|auth|401|402/i.test(e.message)){halt=true}}i++;prog.textContent=`${i}/${ls.length} done · ${fail} failed`}}
+      await Promise.all([w(),w(),w()]);
+      b.disabled=false;stop.hidden=true;prog.textContent+=halt?' · stopped':' · finished';
+    };
+    d.append(p,sub,b,stop,prog,out);return;
+  }
+  const b=document.createElement('button');b.textContent='Generate reading list';
+  const r=document.createElement('button');r.className='sec';r.textContent='Regenerate';r.style.marginLeft='8px';r.hidden=true;
+  d.append(b,r,out);
+  if(n.path){const a=document.createElement('a');a.href='https://fermi.ai'+n.path;a.target='_blank';a.rel='noopener';a.textContent='Open on Fermi ↗';a.style.marginLeft='12px';d.insertBefore(a,out)}
+  const run=async force=>{
+    b.disabled=true;out.innerHTML='<p class="hint">Generating…</p>';
+    try{const data=await generate(n,force);renderList(out,data);r.hidden=false;b.hidden=true}
+    catch(e){out.innerHTML='<div class="err"></div>';out.firstChild.textContent=e.message}
+    b.disabled=false;
+  };
+  b.onclick=()=>run(false);r.onclick=()=>run(true);
+  const cached=await dbGet(key(n));if(cached){renderList(out,cached);r.hidden=false;b.hidden=true}
+}
+dbReady.then(async()=>{(await dbKeys()).forEach(k=>doneKeys.add(k));document.querySelectorAll('.row').forEach(()=>{})});
+</script>
+</body>
+</html>
